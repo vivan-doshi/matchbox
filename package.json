@@ -1,0 +1,26 @@
+{
+  "name": "matchbox",
+  "version": "1.0.0",
+  "description": "App for MOR 531 - Students can meet other like minded people who want to work on projects",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
+    "dev:client": "npm run dev --workspace=client",
+    "dev:server": "npm run dev --workspace=server",
+    "install:all": "npm install && npm install --workspace=client && npm install --workspace=server"
+  },
+  "keywords": [
+    "matchmaking",
+    "students",
+    "projects"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

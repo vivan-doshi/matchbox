@@ -1,0 +1,44 @@
+{
+  "folders": [
+    {
+      "name": "🔥 Matchbox (Root)",
+      "path": "."
+    },
+    {
+      "name": "🎨 Frontend (Client)",
+      "path": "client"
+    },
+    {
+      "name": "⚙️ Backend (Server)",
+      "path": "server"
+    }
+  ],
+  "settings": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": true
+    },
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "typescript.enablePromptUseWorkspaceTsdk": true,
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/.next": true,
+      "**/dist": true
+    },
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/.next": true,
+      "**/dist": true
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "dbaeumer.vscode-eslint",
+      "esbenp.prettier-vscode",
+      "bradlc.vscode-tailwindcss",
+      "mongodb.mongodb-vscode",
+      "rangav.vscode-thunder-client"
+    ]
+  }
+}
