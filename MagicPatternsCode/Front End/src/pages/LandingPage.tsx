@@ -17,7 +17,7 @@ const LandingPage: React.FC = () => {
             <Link to="/signup" className="bg-white text-slate-800 px-5 py-2 rounded-full font-medium border border-slate-200 shadow-sm hover:shadow-md transition-all mr-3">
               Sign Up
             </Link>
-            <Link to="/dashboard" className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-5 py-2 rounded-full font-medium hover:shadow-lg transition-all">
+            <Link to="/login" className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-5 py-2 rounded-full font-medium hover:shadow-lg transition-all">
               Log In
             </Link>
           </div>
