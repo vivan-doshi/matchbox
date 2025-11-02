@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Routes, Route, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeftIcon, ArrowRightIcon, LinkedinIcon, GithubIcon } from 'lucide-react';
+import { ArrowLeftIcon, ArrowRightIcon, LinkedinIcon, GithubIcon, CameraIcon, UploadIcon, XIcon, FileTextIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import AvailabilityCalendar, { TimeSlot } from '../components/shared/AvailabilityCalendar';
 const SignupEmail: React.FC = () => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
@@ -60,7 +61,7 @@ const SignupEmail: React.FC = () => {
       </form>
       <p className="mt-6 text-center text-sm text-slate-600">
         Already have an account?{' '}
-        <Link to="/dashboard" className="text-orange-600 font-medium hover:text-orange-700">
+        <Link to="/login" className="text-orange-600 font-medium hover:text-orange-700">
           Log in
         </Link>
       </p>
@@ -72,19 +73,61 @@ const SignupProfile: React.FC = () => {
     lastName: '',
     preferredName: ''
   });
+  const [profilePicture, setProfilePicture] = useState<File | null>(null);
+  const [profilePicturePreview, setProfilePicturePreview] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState('');
+
   const {
     updateUserProfile
   } = useAuth();
   const navigate = useNavigate();
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
   };
+
+  const handleProfilePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    setUploadError('');
+
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setUploadError('Please upload an image file (JPG, PNG, WEBP)');
+        return;
+      }
+
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        setUploadError('File size must be less than 5MB');
+        return;
+      }
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfilePicturePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+
+      setProfilePicture(file);
+    }
+  };
+
+  const removeProfilePicture = () => {
+    setProfilePicture(null);
+    setProfilePicturePreview(null);
+    setUploadError('');
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    updateUserProfile(formData);
+    // In a real app, you would upload the profile picture here
+    // For now, we'll just pass the form data
+    updateUserProfile({ ...formData, profilePicture: profilePicturePreview });
     navigate('/signup/links');
   };
   return <div>
@@ -94,6 +137,55 @@ const SignupProfile: React.FC = () => {
         users.
       </p>
       <form onSubmit={handleSubmit}>
+        {/* Profile Picture Upload */}
+        <div className="mb-6 flex flex-col items-center">
+          <label className="block text-sm font-medium text-slate-700 mb-3">
+            Profile Picture (optional)
+          </label>
+
+          <div className="relative">
+            {profilePicturePreview ? (
+              <div className="relative">
+                <img
+                  src={profilePicturePreview}
+                  alt="Profile preview"
+                  className="w-32 h-32 rounded-full object-cover border-4 border-slate-200"
+                />
+                <button
+                  type="button"
+                  onClick={removeProfilePicture}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 transition-colors"
+                  aria-label="Remove picture"
+                >
+                  <XIcon className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <label className="cursor-pointer">
+                <div className="w-32 h-32 rounded-full bg-slate-100 border-2 border-dashed border-slate-300 flex flex-col items-center justify-center hover:border-orange-500 hover:bg-orange-50 transition-all">
+                  <CameraIcon className="h-8 w-8 text-slate-400 mb-2" />
+                  <span className="text-xs text-slate-500 text-center px-2">
+                    Add Photo
+                  </span>
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProfilePictureChange}
+                  className="hidden"
+                />
+              </label>
+            )}
+          </div>
+
+          {uploadError && (
+            <p className="mt-2 text-sm text-red-600">{uploadError}</p>
+          )}
+          <p className="mt-2 text-xs text-slate-500 text-center">
+            JPG, PNG or WEBP (max 5MB)
+          </p>
+        </div>
+
         <div className="mb-4">
           <label htmlFor="firstName" className="block text-sm font-medium text-slate-700 mb-1">
             First Name
@@ -124,15 +216,47 @@ const SignupLinks: React.FC = () => {
     github: '',
     medium: ''
   });
+  const [resume, setResume] = useState<File | null>(null);
+  const [resumeError, setResumeError] = useState('');
   const navigate = useNavigate();
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
   };
+
+  const handleResumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    setResumeError('');
+
+    if (file) {
+      // Validate file type (PDF or DOCX)
+      const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+      if (!validTypes.includes(file.type)) {
+        setResumeError('Please upload a PDF or DOCX file');
+        return;
+      }
+
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        setResumeError('File size must be less than 5MB');
+        return;
+      }
+
+      setResume(file);
+    }
+  };
+
+  const removeResume = () => {
+    setResume(null);
+    setResumeError('');
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Saving links and resume:', { formData, resume: resume?.name });
     navigate('/signup/bio');
   };
   return <div>
@@ -163,12 +287,59 @@ const SignupLinks: React.FC = () => {
             <input id="github" name="github" type="url" className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all" placeholder="https://github.com/username" value={formData.github} onChange={handleChange} />
           </div>
         </div>
-        <div className="mb-6">
+        <div className="mb-4">
           <label htmlFor="medium" className="block text-sm font-medium text-slate-700 mb-1">
             Medium or Portfolio
           </label>
           <input id="medium" name="medium" type="url" className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all" placeholder="https://medium.com/@username" value={formData.medium} onChange={handleChange} />
         </div>
+
+        {/* Resume Upload Section */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-slate-700 mb-2">
+            Resume (optional)
+          </label>
+
+          {resume ? (
+            <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-lg">
+              <div className="flex items-center">
+                <FileTextIcon className="h-5 w-5 text-orange-500 mr-3" />
+                <div>
+                  <p className="text-sm font-medium text-slate-700">{resume.name}</p>
+                  <p className="text-xs text-slate-500">{(resume.size / 1024).toFixed(1)} KB</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={removeResume}
+                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+              >
+                <XIcon className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <label className="cursor-pointer">
+              <div className="flex items-center justify-center p-6 border-2 border-dashed border-slate-300 rounded-lg hover:border-orange-500 hover:bg-orange-50 transition-all">
+                <UploadIcon className="h-6 w-6 text-slate-400 mr-3" />
+                <div>
+                  <p className="text-sm font-medium text-slate-700">Upload Resume</p>
+                  <p className="text-xs text-slate-500">PDF or DOCX (max 5MB)</p>
+                </div>
+              </div>
+              <input
+                type="file"
+                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                onChange={handleResumeChange}
+                className="hidden"
+              />
+            </label>
+          )}
+
+          {resumeError && (
+            <p className="mt-2 text-sm text-red-600">{resumeError}</p>
+          )}
+        </div>
+
         <button type="submit" className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all">
           Continue
         </button>
@@ -212,6 +383,7 @@ const SignupBio: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSkillNames, setSelectedSkillNames] = useState<string[]>([]);
   const [userSkills, setUserSkills] = useState<UserSkill[]>([]);
+  const [availabilitySlots, setAvailabilitySlots] = useState<TimeSlot[]>([]);
   const navigate = useNavigate();
 
   // Toggle interest selection
@@ -275,6 +447,7 @@ const SignupBio: React.FC = () => {
     console.log('Bio:', bio);
     console.log('Interests:', interests);
     console.log('Skills:', userSkills);
+    console.log('Availability:', availabilitySlots);
     navigate('/signup/education');
   };
 
@@ -533,6 +706,15 @@ const SignupBio: React.FC = () => {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Availability Calendar Section */}
+        <div className="mb-6 p-6 bg-white border border-slate-200 rounded-lg">
+          <AvailabilityCalendar
+            selectedSlots={availabilitySlots}
+            onChange={setAvailabilitySlots}
+            editable={true}
+          />
         </div>
 
         <button

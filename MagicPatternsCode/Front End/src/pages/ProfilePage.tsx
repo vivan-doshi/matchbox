@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeftIcon, LinkedinIcon, GithubIcon, ExternalLinkIcon, EditIcon, FolderIcon, FileTextIcon, UploadIcon, CheckIcon, XIcon } from 'lucide-react';
+import AvailabilityCalendar, { TimeSlot } from '../components/shared/AvailabilityCalendar';
 const ProfilePage: React.FC = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [activeProjectTab, setActiveProjectTab] = useState<'active' | 'completed'>('active');
@@ -38,15 +39,36 @@ const ProfilePage: React.FC = () => {
     },
     interests: ['Web Development', 'Mobile Apps', 'Machine Learning', 'Hackathons', 'Open Source', 'Cloud Computing'],
     availability: [
-      { day: 'Monday', startTime: '09:00', endTime: '12:00', available: true },
-      { day: 'Monday', startTime: '14:00', endTime: '17:00', available: true },
-      { day: 'Tuesday', startTime: '10:00', endTime: '15:00', available: true },
-      { day: 'Wednesday', startTime: '09:00', endTime: '12:00', available: true },
-      { day: 'Wednesday', startTime: '14:00', endTime: '18:00', available: true },
-      { day: 'Thursday', startTime: '13:00', endTime: '17:00', available: true },
-      { day: 'Friday', startTime: '09:00', endTime: '13:00', available: true },
-      { day: 'Saturday', startTime: '10:00', endTime: '14:00', available: true }
-    ],
+      { day: 'Mon', time: '9:00 AM' },
+      { day: 'Mon', time: '10:00 AM' },
+      { day: 'Mon', time: '11:00 AM' },
+      { day: 'Mon', time: '2:00 PM' },
+      { day: 'Mon', time: '3:00 PM' },
+      { day: 'Tue', time: '10:00 AM' },
+      { day: 'Tue', time: '11:00 AM' },
+      { day: 'Tue', time: '12:00 PM' },
+      { day: 'Tue', time: '1:00 PM' },
+      { day: 'Tue', time: '2:00 PM' },
+      { day: 'Wed', time: '9:00 AM' },
+      { day: 'Wed', time: '10:00 AM' },
+      { day: 'Wed', time: '11:00 AM' },
+      { day: 'Wed', time: '2:00 PM' },
+      { day: 'Wed', time: '3:00 PM' },
+      { day: 'Wed', time: '4:00 PM' },
+      { day: 'Wed', time: '5:00 PM' },
+      { day: 'Thu', time: '1:00 PM' },
+      { day: 'Thu', time: '2:00 PM' },
+      { day: 'Thu', time: '3:00 PM' },
+      { day: 'Thu', time: '4:00 PM' },
+      { day: 'Fri', time: '9:00 AM' },
+      { day: 'Fri', time: '10:00 AM' },
+      { day: 'Fri', time: '11:00 AM' },
+      { day: 'Fri', time: '12:00 PM' },
+      { day: 'Sat', time: '10:00 AM' },
+      { day: 'Sat', time: '11:00 AM' },
+      { day: 'Sat', time: '12:00 PM' },
+      { day: 'Sat', time: '1:00 PM' }
+    ] as TimeSlot[],
     projects: [{
       id: '1',
       title: 'Campus Events Platform',
@@ -94,6 +116,7 @@ const ProfilePage: React.FC = () => {
   const [editedGithub, setEditedGithub] = useState(originalUser.links.github);
   const [editedPortfolio, setEditedPortfolio] = useState(originalUser.links.portfolio);
   const [editedInterests, setEditedInterests] = useState<string[]>(originalUser.interests);
+  const [editedAvailability, setEditedAvailability] = useState<TimeSlot[]>(originalUser.availability);
   const [newInterest, setNewInterest] = useState('');
 
   // Use original data for display
@@ -111,7 +134,8 @@ const ProfilePage: React.FC = () => {
         linkedin: editedLinkedin,
         github: editedGithub,
         portfolio: editedPortfolio,
-        interests: editedInterests
+        interests: editedInterests,
+        availability: editedAvailability
       });
       // In a real app, you would make an API call here to save all changes
       alert('Profile updated successfully!');
@@ -130,6 +154,7 @@ const ProfilePage: React.FC = () => {
     setEditedGithub(originalUser.links.github);
     setEditedPortfolio(originalUser.links.portfolio);
     setEditedInterests(originalUser.interests);
+    setEditedAvailability(originalUser.availability);
     setIsEditMode(false);
   };
 
@@ -431,69 +456,11 @@ const ProfilePage: React.FC = () => {
               >
                 {/* Availability Calendar */}
                 <div className="mb-6">
-                  <h4 className="text-sm font-semibold mb-3 text-slate-700">Weekly Availability</h4>
-                  <div className="bg-slate-50 rounded-lg p-3 overflow-x-auto">
-                    <div className="min-w-[500px]">
-                      {/* Legend */}
-                      <div className="flex items-center gap-4 mb-3 text-xs">
-                        <div className="flex items-center">
-                          <div className="w-4 h-4 bg-green-100 border border-green-300 rounded mr-1.5"></div>
-                          <span className="text-slate-600">Available</span>
-                        </div>
-                        <div className="flex items-center">
-                          <div className="w-4 h-4 bg-slate-200 border border-slate-300 rounded mr-1.5"></div>
-                          <span className="text-slate-600">Unavailable</span>
-                        </div>
-                      </div>
-
-                      {/* Days Header */}
-                      <div className="grid grid-cols-8 gap-1 mb-1">
-                        <div className="text-xs font-medium text-slate-500 p-2"></div>
-                        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-                          <div key={day} className="text-xs font-medium text-slate-700 text-center p-2 bg-white rounded">
-                            {day}
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Time Slots */}
-                      {['09:00', '12:00', '15:00', '18:00'].map(time => {
-                        const getAvailability = (day: string) => {
-                          const dayMap: Record<string, string> = {
-                            'Mon': 'Monday', 'Tue': 'Tuesday', 'Wed': 'Wednesday',
-                            'Thu': 'Thursday', 'Fri': 'Friday', 'Sat': 'Saturday', 'Sun': 'Sunday'
-                          };
-                          const fullDay = dayMap[day];
-                          return user.availability.some(slot => {
-                            const slotStart = parseInt(slot.startTime.split(':')[0]);
-                            const slotEnd = parseInt(slot.endTime.split(':')[0]);
-                            const currentHour = parseInt(time.split(':')[0]);
-                            return slot.day === fullDay && currentHour >= slotStart && currentHour < slotEnd && slot.available;
-                          });
-                        };
-
-                        return (
-                          <div key={time} className="grid grid-cols-8 gap-1 mb-1">
-                            <div className="text-xs text-slate-500 p-2 text-right">{time}</div>
-                            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => {
-                              const isAvailable = getAvailability(day);
-                              return (
-                                <div
-                                  key={day}
-                                  className={`h-8 rounded transition-colors ${
-                                    isAvailable
-                                      ? 'bg-green-100 border border-green-300 hover:bg-green-200'
-                                      : 'bg-slate-200 border border-slate-300'
-                                  }`}
-                                  title={`${day} ${time} - ${isAvailable ? 'Available' : 'Unavailable'}`}
-                                ></div>
-                              );
-                            })}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
+                  <AvailabilityCalendar
+                    selectedSlots={isEditMode ? editedAvailability : user.availability}
+                    onChange={isEditMode ? setEditedAvailability : undefined}
+                    editable={isEditMode}
+                  />
                 </div>
 
                 {/* Interests */}
