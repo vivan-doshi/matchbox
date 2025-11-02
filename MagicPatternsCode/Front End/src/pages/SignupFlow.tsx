@@ -41,7 +41,7 @@ const SignupEmail: React.FC = () => {
       <h2 className="text-2xl font-bold mb-6">Join MATCHBOX</h2>
       <p className="text-slate-600 mb-6">
         Enter your academic email to get started. MATCHBOX is exclusively for
-        students and alumni.
+        USC students and alumni.
       </p>
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
@@ -178,30 +178,110 @@ const SignupLinks: React.FC = () => {
       </form>
     </div>;
 };
+// Available interests organized by category
+const AVAILABLE_INTERESTS = {
+  'Tech & Development': ['Web Development', 'Mobile Apps', 'AI & Machine Learning', 'Blockchain', 'Cybersecurity', 'Cloud Computing', 'IoT', 'AR/VR'],
+  'Design & Creative': ['UI/UX Design', 'Graphic Design', 'Product Design', 'Animation', 'Photography', 'Video Production', '3D Modeling', 'Illustration'],
+  'Business & Entrepreneurship': ['Startups', 'Product Management', 'Marketing', 'Sales', 'Business Strategy', 'Consulting', 'Finance', 'E-commerce'],
+  'Data & Analytics': ['Data Science', 'Data Visualization', 'Business Intelligence', 'Analytics', 'Research', 'Statistics'],
+  'Community & Events': ['Hackathons', 'Networking Events', 'Mentorship', 'Community Building', 'Public Speaking', 'Workshops'],
+  'Content & Media': ['Content Creation', 'Blogging', 'Podcasting', 'Social Media', 'Copywriting', 'Journalism', 'Technical Writing'],
+  'Other': ['Open Source', 'Gaming', 'Education', 'Sustainability', 'Healthcare Tech', 'Music Tech', 'Sports Tech']
+};
+
+// Available skills organized by category
+const AVAILABLE_SKILLS = {
+  'Programming': ['JavaScript', 'Python', 'Java', 'C++', 'TypeScript', 'Go', 'Rust', 'PHP', 'Swift', 'Kotlin'],
+  'Web Development': ['React', 'Vue.js', 'Angular', 'Node.js', 'HTML/CSS', 'Next.js', 'Express', 'Django', 'Flask'],
+  'Data & AI': ['Machine Learning', 'Data Science', 'TensorFlow', 'PyTorch', 'SQL', 'Data Analysis', 'Deep Learning', 'NLP'],
+  'Design': ['UI Design', 'UX Design', 'Figma', 'Adobe XD', 'Sketch', 'Graphic Design', 'Prototyping', 'User Research'],
+  'Mobile': ['React Native', 'Flutter', 'iOS Development', 'Android Development', 'Mobile UI/UX'],
+  'DevOps & Cloud': ['Docker', 'Kubernetes', 'AWS', 'Azure', 'GCP', 'CI/CD', 'Linux', 'DevOps'],
+  'Other': ['Project Management', 'Marketing', 'Content Writing', 'Research', 'Product Management', 'Business Strategy']
+};
+
+interface UserSkill {
+  name: string;
+  proficiency: 'Beginner' | 'Intermediate' | 'Fluent' | 'Expert';
+}
+
 const SignupBio: React.FC = () => {
   const [bio, setBio] = useState('');
-  const [skills, setSkills] = useState({
-    programming: 0,
-    design: 0,
-    marketing: 0,
-    writing: 0,
-    research: 0
-  });
+  const [interests, setInterests] = useState<string[]>([]);
+  const [phase, setPhase] = useState<'selecting' | 'proficiency'>('selecting');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSkillNames, setSelectedSkillNames] = useState<string[]>([]);
+  const [userSkills, setUserSkills] = useState<UserSkill[]>([]);
   const navigate = useNavigate();
-  const handleSkillChange = (skill: string, value: number) => {
-    setSkills({
-      ...skills,
-      [skill]: value
-    });
+
+  // Toggle interest selection
+  const toggleInterest = (interest: string) => {
+    setInterests(prev =>
+      prev.includes(interest)
+        ? prev.filter(i => i !== interest)
+        : [...prev, interest]
+    );
   };
+
+  // Toggle skill selection
+  const toggleSkillSelection = (skillName: string) => {
+    setSelectedSkillNames(prev =>
+      prev.includes(skillName)
+        ? prev.filter(name => name !== skillName)
+        : [...prev, skillName]
+    );
+  };
+
+  // Proceed to proficiency assignment
+  const proceedToProficiency = () => {
+    const skillsWithDefaults: UserSkill[] = selectedSkillNames.map(name => ({
+      name,
+      proficiency: 'Intermediate' // Smart default
+    }));
+    setUserSkills(skillsWithDefaults);
+    setPhase('proficiency');
+  };
+
+  // Go back to selection
+  const goBackToSelection = () => {
+    setPhase('selecting');
+  };
+
+  // Update skill proficiency
+  const updateSkillProficiency = (skillName: string, proficiency: UserSkill['proficiency']) => {
+    setUserSkills(prev =>
+      prev.map(skill =>
+        skill.name === skillName ? { ...skill, proficiency } : skill
+      )
+    );
+  };
+
+  // Set all skills to same proficiency
+  const setAllProficiency = (proficiency: UserSkill['proficiency']) => {
+    setUserSkills(prev =>
+      prev.map(skill => ({ ...skill, proficiency }))
+    );
+  };
+
+  // Remove a skill
+  const removeSkill = (skillName: string) => {
+    setUserSkills(prev => prev.filter(skill => skill.name !== skillName));
+    setSelectedSkillNames(prev => prev.filter(name => name !== skillName));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Save data
+    console.log('Bio:', bio);
+    console.log('Interests:', interests);
+    console.log('Skills:', userSkills);
     navigate('/signup/education');
   };
-  return <div>
+
+  return <div className="max-h-[80vh] overflow-y-auto">
       <h2 className="text-2xl font-bold mb-6">Tell Us About Yourself</h2>
       <p className="text-slate-600 mb-6">
-        Share a bit about your background and rate your skills.
+        Share a bit about your background and select your skills.
       </p>
       <form onSubmit={handleSubmit}>
         <div className="mb-6">
@@ -210,97 +290,483 @@ const SignupBio: React.FC = () => {
           </label>
           <textarea id="bio" className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all" rows={4} placeholder="Tell us about your interests, experience, and what you're looking to work on..." value={bio} onChange={e => setBio(e.target.value)} />
         </div>
+
+        {/* Interests Section */}
         <div className="mb-6">
           <h3 className="text-sm font-medium text-slate-700 mb-3">
-            Rate Your Skills
+            Your Interests
           </h3>
-          <div className="space-y-4">
-            {Object.entries(skills).map(([skill, value]) => <div key={skill}>
-                <div className="flex justify-between mb-1">
-                  <label htmlFor={skill} className="text-sm font-medium capitalize">
-                    {skill}
-                  </label>
-                  <span className="text-sm text-slate-500">{value}/10</span>
+          <p className="text-sm text-slate-500 mb-4">
+            Select the areas you're interested in working on or learning about.
+          </p>
+
+          {/* Selected Interests Display */}
+          {interests.length > 0 && (
+            <div className="mb-4 p-3 bg-slate-50 rounded-lg">
+              <div className="flex flex-wrap gap-2">
+                {interests.map((interest) => (
+                  <span key={interest} className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm flex items-center gap-2">
+                    {interest}
+                    <button
+                      type="button"
+                      onClick={() => toggleInterest(interest)}
+                      className="text-orange-700 hover:text-orange-900 font-bold"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-slate-500">
+                {interests.length} interest{interests.length !== 1 ? 's' : ''} selected
+              </p>
+            </div>
+          )}
+
+          {/* Interests by Category - Scrollable */}
+          <div className="max-h-[300px] overflow-y-auto pr-2 border border-slate-200 rounded-lg p-4" style={{
+            scrollbarWidth: 'thin',
+            scrollbarColor: '#cbd5e1 #f1f5f9'
+          }}>
+            {Object.entries(AVAILABLE_INTERESTS).map(([category, categoryInterests]) => (
+              <div key={category} className="mb-6 last:mb-0">
+                <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">
+                  {category}
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {categoryInterests.map((interest) => (
+                    <button
+                      key={interest}
+                      type="button"
+                      onClick={() => toggleInterest(interest)}
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                        interests.includes(interest)
+                          ? 'bg-orange-500 text-white border-2 border-orange-500'
+                          : 'bg-white text-slate-700 border-2 border-slate-200 hover:border-orange-300 hover:bg-orange-50'
+                      }`}
+                    >
+                      {interest}
+                      {interests.includes(interest) && (
+                        <span className="ml-1">✓</span>
+                      )}
+                    </button>
+                  ))}
                 </div>
-                <input id={skill} type="range" min="0" max="10" value={value} onChange={e => handleSkillChange(skill, parseInt(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-orange-500" />
-              </div>)}
+              </div>
+            ))}
           </div>
         </div>
-        <button type="submit" className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all">
+
+        {/* Skills Section */}
+        <div className="mb-6">
+          <h3 className="text-sm font-medium text-slate-700 mb-3">
+            Your Skills
+          </h3>
+
+          {phase === 'selecting' && (
+            <div className="skills-selection-phase">
+              <p className="text-sm text-slate-500 mb-4">
+                Choose all skills that apply. You'll set proficiency levels next.
+              </p>
+
+              {/* Search Bar */}
+              <input
+                type="text"
+                placeholder="Search skills..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-4 py-2 mb-4 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+              />
+
+              {/* Skills by Category - Fixed Height with Scroll */}
+              <div className="max-h-[400px] overflow-y-auto pr-2 mb-4 border border-slate-200 rounded-lg p-4" style={{
+                scrollbarWidth: 'thin',
+                scrollbarColor: '#cbd5e1 #f1f5f9'
+              }}>
+                {Object.entries(AVAILABLE_SKILLS).map(([category, skills]) => {
+                  const filteredSkills = skills.filter(skill =>
+                    skill.toLowerCase().includes(searchQuery.toLowerCase())
+                  );
+
+                  if (filteredSkills.length === 0) return null;
+
+                  return (
+                    <div key={category} className="mb-6 last:mb-0">
+                      <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">
+                        {category}
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {filteredSkills.map(skill => (
+                          <button
+                            key={skill}
+                            type="button"
+                            onClick={() => toggleSkillSelection(skill)}
+                            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                              selectedSkillNames.includes(skill)
+                                ? 'bg-orange-500 text-white border-2 border-orange-500'
+                                : 'bg-white text-slate-700 border-2 border-slate-200 hover:border-orange-300 hover:bg-orange-50'
+                            }`}
+                          >
+                            {skill}
+                            {selectedSkillNames.includes(skill) && (
+                              <span className="ml-1">✓</span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Selection Footer */}
+              <div className="flex items-center justify-between bg-slate-50 p-4 rounded-lg">
+                <span className="text-sm font-medium text-slate-700">
+                  {selectedSkillNames.length} skill{selectedSkillNames.length !== 1 ? 's' : ''} selected
+                </span>
+                <button
+                  type="button"
+                  onClick={proceedToProficiency}
+                  disabled={selectedSkillNames.length === 0}
+                  className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                    selectedSkillNames.length === 0
+                      ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:shadow-lg'
+                  }`}
+                >
+                  Set Proficiency Levels →
+                </button>
+              </div>
+            </div>
+          )}
+
+          {phase === 'proficiency' && (
+            <div className="proficiency-assignment-phase">
+              <div className="flex items-center justify-between mb-4">
+                <button
+                  type="button"
+                  onClick={goBackToSelection}
+                  className="text-orange-500 hover:text-orange-600 font-medium text-sm flex items-center"
+                >
+                  ← Back to Skills
+                </button>
+                <p className="text-sm text-slate-500">
+                  {userSkills.length} skill{userSkills.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+
+              {/* Batch Actions */}
+              <div className="flex items-center gap-2 mb-4 p-3 bg-slate-50 rounded-lg flex-wrap">
+                <span className="text-sm font-medium text-slate-600">Quick assign:</span>
+                <button
+                  type="button"
+                  onClick={() => setAllProficiency('Beginner')}
+                  className="px-3 py-1 text-xs rounded-md bg-white border border-slate-300 hover:border-orange-500 hover:bg-orange-50 transition-all"
+                >
+                  All Beginner
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAllProficiency('Intermediate')}
+                  className="px-3 py-1 text-xs rounded-md bg-white border border-slate-300 hover:border-orange-500 hover:bg-orange-50 transition-all"
+                >
+                  All Intermediate
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAllProficiency('Fluent')}
+                  className="px-3 py-1 text-xs rounded-md bg-white border border-slate-300 hover:border-orange-500 hover:bg-orange-50 transition-all"
+                >
+                  All Fluent
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAllProficiency('Expert')}
+                  className="px-3 py-1 text-xs rounded-md bg-white border border-slate-300 hover:border-orange-500 hover:bg-orange-50 transition-all"
+                >
+                  All Expert
+                </button>
+              </div>
+
+              {/* Skills List with Proficiency - Fixed Height with Scroll */}
+              <div className="max-h-[400px] overflow-y-auto pr-2 space-y-3" style={{
+                scrollbarWidth: 'thin',
+                scrollbarColor: '#cbd5e1 #f1f5f9'
+              }}>
+                {userSkills.map((skill, index) => (
+                  <div key={skill.name} className="p-3 border border-slate-200 rounded-lg hover:shadow-sm transition-all bg-white">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <span className="font-medium text-slate-800">{skill.name}</span>
+                        <span className="ml-2 text-xs text-slate-400">
+                          {index + 1}/{userSkills.length}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeSkill(skill.name)}
+                        className="text-red-500 hover:text-red-700 text-xs"
+                      >
+                        Remove
+                      </button>
+                    </div>
+
+                    {/* Proficiency Buttons */}
+                    <div className="grid grid-cols-4 gap-2">
+                      {(['Beginner', 'Intermediate', 'Fluent', 'Expert'] as const).map(level => (
+                        <button
+                          key={level}
+                          type="button"
+                          onClick={() => updateSkillProficiency(skill.name, level)}
+                          className={`py-2 px-2 text-xs rounded-md font-medium transition-all ${
+                            skill.proficiency === level
+                              ? 'bg-orange-500 text-white border-2 border-orange-500'
+                              : 'bg-white text-slate-600 border-2 border-slate-200 hover:border-orange-300 hover:bg-orange-50'
+                          }`}
+                        >
+                          {level}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <button
+          type="submit"
+          disabled={phase === 'selecting' && selectedSkillNames.length === 0}
+          className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        >
           Continue
         </button>
       </form>
     </div>;
 };
+// USC Schools and their majors
+const USC_SCHOOLS_MAJORS: Record<string, string[]> = {
+  "USC Dornsife College of Letters, Arts and Sciences": [
+    "African American Studies", "American Studies & Ethnicity", "Anthropology", "Art History",
+    "Biochemistry", "Biological Sciences", "Chemistry", "Classics", "Comparative Literature",
+    "Earth Sciences", "East Asian Languages and Cultures", "Economics", "English", "Environmental Studies",
+    "French & Francophone Studies", "Gender & Sexuality Studies", "Geodesign", "Gerontology",
+    "Health & Humanity", "History", "Human Biology", "International Relations", "Italian Studies",
+    "Jewish Studies", "Linguistics", "Mathematics", "Middle East Studies", "Narrative Studies",
+    "Neuroscience", "Philosophy", "Physics", "Political Science", "Psychology", "Public Policy",
+    "Quantitative Biology", "Religion", "Science, Technology & Society", "Slavic Languages & Literatures",
+    "Sociology", "Spanish & Portuguese", "Statistics"
+  ],
+  "USC Marshall School of Business": [
+    "Business Administration", "Accounting", "Finance", "Marketing", "Business Analytics",
+    "Entrepreneurship", "Global Business", "Real Estate Finance", "Supply Chain Management"
+  ],
+  "USC Viterbi School of Engineering": [
+    "Aerospace Engineering", "Astronautical Engineering", "Biomedical Engineering", "Chemical Engineering",
+    "Civil Engineering", "Computer Engineering & Computer Science", "Computer Science", "Computer Science & Business Administration",
+    "Computer Science & Economics", "Computer Science (Games)", "Data Science", "Electrical Engineering",
+    "Environmental Engineering", "Industrial & Systems Engineering", "Mechanical Engineering", "Petroleum Engineering"
+  ],
+  "USC School of Cinematic Arts": [
+    "Animation & Digital Arts", "Business of Cinematic Arts", "Cinema & Media Studies",
+    "Film & Television Production", "Interactive Entertainment", "Media Arts & Practice",
+    "Peter Stark Producing Program", "Writing for Screen & Television"
+  ],
+  "USC Annenberg School for Communication and Journalism": [
+    "Communication", "Communication Data Science", "Journalism", "Public Relations"
+  ],
+  "USC Roski School of Art and Design": [
+    "Art", "Design", "Fine Arts"
+  ],
+  "USC Thornton School of Music": [
+    "Arts Leadership", "Composition", "Jazz Studies", "Music Industry", "Music Production",
+    "Performance", "Popular Music", "Screen Scoring"
+  ],
+  "USC School of Architecture": [
+    "Architecture", "Architectural Studies", "Landscape Architecture"
+  ],
+  "USC Price School of Public Policy": [
+    "Public Policy", "Policy, Planning, & Development", "Real Estate Development"
+  ],
+  "USC Suzanne Dworak-Peck School of Social Work": [
+    "Human Development & Aging", "Social Work"
+  ],
+  "USC Bovard College": [
+    "Interdisciplinary Studies"
+  ],
+  "USC Kaufman School of Dance": [
+    "Dance"
+  ],
+  "USC School of Dramatic Arts": [
+    "Theatre", "Acting", "Design", "Stage Management", "Technical Direction"
+  ],
+  "Other": ["Other"]
+};
+
 const SignupEducation: React.FC = () => {
-  const [formData, setFormData] = useState({
-    university: '',
-    major: '',
-    graduationYear: '',
-    isAlumni: false
-  });
+  const [school, setSchool] = useState('');
+  const [major, setMajor] = useState('');
+  const [customMajor, setCustomMajor] = useState('');
+  const [graduationYear, setGraduationYear] = useState('');
+  const [isAlumni, setIsAlumni] = useState(false);
+  const [availableMajors, setAvailableMajors] = useState<string[]>([]);
+
   const navigate = useNavigate();
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const value = e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.value;
-    setFormData({
-      ...formData,
-      [e.target.name]: value
-    });
-  };
+
+  // Update available majors when school changes
+  React.useEffect(() => {
+    if (school) {
+      setAvailableMajors(USC_SCHOOLS_MAJORS[school] || []);
+      setMajor(''); // Reset major when school changes
+      setCustomMajor(''); // Reset custom major
+    } else {
+      setAvailableMajors([]);
+    }
+  }, [school]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validation
+    if (!school) {
+      alert('Please select your school/college');
+      return;
+    }
+    if (!major) {
+      alert('Please select your major');
+      return;
+    }
+    if (major === 'Other' && !customMajor.trim()) {
+      alert('Please specify your major');
+      return;
+    }
+    if (!graduationYear) {
+      alert('Please select your graduation year');
+      return;
+    }
+
+    // Save data and navigate
+    console.log({
+      school,
+      major: major === 'Other' ? customMajor : major,
+      graduationYear,
+      isAlumni
+    });
     navigate('/dashboard');
   };
   return <div>
       <h2 className="text-2xl font-bold mb-6">Education Information</h2>
       <p className="text-slate-600 mb-6">
-        Tell us about your academic background.
+        Tell us about your academic background at USC.
       </p>
       <form onSubmit={handleSubmit}>
+        {/* School/College Dropdown */}
         <div className="mb-4">
-          <label htmlFor="university" className="block text-sm font-medium text-slate-700 mb-1">
-            University/College
+          <label htmlFor="school" className="block text-sm font-medium text-slate-700 mb-1">
+            USC School/College <span className="text-red-500">*</span>
           </label>
-          <input id="university" name="university" type="text" className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all" placeholder="e.g. Stanford University" value={formData.university} onChange={handleChange} required />
-        </div>
-        <div className="mb-4">
-          <label htmlFor="major" className="block text-sm font-medium text-slate-700 mb-1">
-            Major/Field of Study
-          </label>
-          <input id="major" name="major" type="text" className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all" placeholder="e.g. Computer Science" value={formData.major} onChange={handleChange} required />
-        </div>
-        <div className="mb-4">
-          <label htmlFor="graduationYear" className="block text-sm font-medium text-slate-700 mb-1">
-            Expected/Actual Graduation Year
-          </label>
-          <select id="graduationYear" name="graduationYear" className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all" value={formData.graduationYear} onChange={handleChange} required>
-            <option value="">Select Year</option>
-            {Array.from({
-            length: 10
-          }, (_, i) => new Date().getFullYear() + 5 - i).map(year => <option key={year} value={year}>
-                {year}
-              </option>)}
-            {Array.from({
-            length: 10
-          }, (_, i) => new Date().getFullYear() - i).map(year => <option key={year} value={year}>
-                {year}
-              </option>)}
+          <select
+            id="school"
+            value={school}
+            onChange={(e) => setSchool(e.target.value)}
+            className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+            required
+          >
+            <option value="">Select your school/college...</option>
+            {Object.keys(USC_SCHOOLS_MAJORS).map(schoolName => (
+              <option key={schoolName} value={schoolName}>{schoolName}</option>
+            ))}
           </select>
         </div>
+
+        {/* Major Dropdown - Dependent on School */}
+        <div className="mb-4">
+          <label htmlFor="major" className="block text-sm font-medium text-slate-700 mb-1">
+            Major/Field of Study <span className="text-red-500">*</span>
+          </label>
+          <select
+            id="major"
+            value={major}
+            onChange={(e) => setMajor(e.target.value)}
+            disabled={!school}
+            className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all disabled:bg-slate-100 disabled:cursor-not-allowed"
+            required
+          >
+            <option value="">
+              {school ? "Select your major..." : "Select a school first"}
+            </option>
+            {availableMajors.map(majorName => (
+              <option key={majorName} value={majorName}>{majorName}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Custom Major Input - Only if "Other" selected */}
+        {major === 'Other' && (
+          <div className="mb-4">
+            <label htmlFor="customMajor" className="block text-sm font-medium text-slate-700 mb-1">
+              Please specify your major <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="customMajor"
+              type="text"
+              value={customMajor}
+              onChange={(e) => setCustomMajor(e.target.value)}
+              className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+              placeholder="Enter your major"
+              required
+            />
+          </div>
+        )}
+
+        {/* Graduation Year */}
+        <div className="mb-4">
+          <label htmlFor="graduationYear" className="block text-sm font-medium text-slate-700 mb-1">
+            Expected/Actual Graduation Year <span className="text-red-500">*</span>
+          </label>
+          <select
+            id="graduationYear"
+            value={graduationYear}
+            onChange={(e) => setGraduationYear(e.target.value)}
+            className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+            required
+          >
+            <option value="">Select Year</option>
+            {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + 5 - i).map(year => (
+              <option key={year} value={year}>{year}</option>
+            ))}
+            {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i).map(year => (
+              <option key={`past-${year}`} value={year}>{year}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Alumni Checkbox */}
         <div className="mb-6 flex items-center">
-          <input id="isAlumni" name="isAlumni" type="checkbox" className="w-4 h-4 text-orange-500 border-slate-300 rounded focus:ring-orange-500" checked={formData.isAlumni} onChange={handleChange} />
+          <input
+            id="isAlumni"
+            type="checkbox"
+            checked={isAlumni}
+            onChange={(e) => setIsAlumni(e.target.checked)}
+            className="w-4 h-4 text-orange-500 border-slate-300 rounded focus:ring-orange-500"
+          />
           <label htmlFor="isAlumni" className="ml-2 text-sm text-slate-700">
             I am an alumni
           </label>
         </div>
-        <button type="submit" className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all">
+
+        <button
+          type="submit"
+          className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all"
+        >
           Complete Signup
         </button>
       </form>
     </div>;
 };
 const SignupFlow: React.FC = () => {
-  return <div className="min-h-screen bg-slate-50 flex">
+  return <div className="min-h-screen auth-page-background flex">
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-orange-500 to-red-500 relative overflow-hidden">
         <div className="absolute inset-0 bg-pattern opacity-10"></div>
         <div className="flex flex-col justify-center items-center h-full text-white p-12">
@@ -311,8 +777,7 @@ const SignupFlow: React.FC = () => {
           </div>
           <h1 className="text-4xl font-bold mb-4">MATCHBOX</h1>
           <p className="text-xl mb-8 text-center max-w-md">
-            Connect with like-minded students and build amazing projects
-            together.
+            Connect with other Trojans for your next team project
           </p>
           <div className="mt-12 space-y-6 w-full max-w-md">
             <div className="bg-white bg-opacity-10 p-6 rounded-xl">
@@ -322,12 +787,11 @@ const SignupFlow: React.FC = () => {
                 </div>
                 <div className="ml-4">
                   <h3 className="font-bold">John Doe</h3>
-                  <p className="text-sm opacity-80">Computer Science @ MIT</p>
+                  <p className="text-sm opacity-80">Business Administration, '24</p>
                 </div>
               </div>
               <p className="text-sm">
-                "MATCHBOX helped me find the perfect team for my senior project.
-                We ended up winning the department's innovation award!"
+                "Matchbox helped me find the perfect team for a recent consulting case competition. We ended up winning 1st place!"
               </p>
             </div>
             <div className="bg-white bg-opacity-10 p-6 rounded-xl">
@@ -337,12 +801,11 @@ const SignupFlow: React.FC = () => {
                 </div>
                 <div className="ml-4">
                   <h3 className="font-bold">Anna Smith</h3>
-                  <p className="text-sm opacity-80">UX Design @ RISD</p>
+                  <p className="text-sm opacity-80">MBA Student</p>
                 </div>
               </div>
               <p className="text-sm">
-                "As a designer, I was looking for developers to bring my app
-                idea to life. MATCHBOX connected me with the perfect team!"
+                "As an MBA student, I was looking for Data Analytics students to bring my passion project to life. Matchbox made it super easy."
               </p>
             </div>
           </div>
