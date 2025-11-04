@@ -1,160 +1,102 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon, LinkedinIcon, GithubIcon, ExternalLinkIcon, EditIcon, FolderIcon, FileTextIcon, UploadIcon, CheckIcon, XIcon } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import AvailabilityCalendar, { TimeSlot } from '../components/shared/AvailabilityCalendar';
+
 const ProfilePage: React.FC = () => {
+  const { user, updateUserProfile, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+
   const [isEditMode, setIsEditMode] = useState(false);
   const [activeProjectTab, setActiveProjectTab] = useState<'active' | 'completed'>('active');
   const [uploadingResume, setUploadingResume] = useState(false);
   const [showUploadSuccess, setShowUploadSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  // Original user data - This would come from authentication context in a real app
-  const originalUser = {
-    name: 'Jordan Smith',
-    university: 'Stanford University',
-    major: 'Computer Science',
-    graduationYear: '2024',
-    bio: 'Full-stack developer with a passion for building user-friendly applications. Looking to collaborate on innovative projects and expand my skill set.',
-    profilePicture: 'https://i.pravatar.cc/300?img=33',
-    links: {
-      linkedin: 'https://linkedin.com/in/jordansmith',
-      github: 'https://github.com/jordansmith',
-      portfolio: 'https://jordansmith.dev',
-      resume: {
-        url: 'https://example.com/resume.pdf',
-        filename: 'Jordan_Smith_Resume.pdf',
-        uploadedAt: '2024-01-15'
-      }
-    },
-    skills: {
-      React: 9,
-      'Node.js': 8,
-      'UI/UX Design': 7,
-      MongoDB: 6,
-      TypeScript: 8,
-      Python: 7,
-      'Machine Learning': 6,
-      Docker: 7,
-      AWS: 6
-    },
-    interests: ['Web Development', 'Mobile Apps', 'Machine Learning', 'Hackathons', 'Open Source', 'Cloud Computing'],
-    availability: [
-      { day: 'Mon', time: '9:00 AM' },
-      { day: 'Mon', time: '10:00 AM' },
-      { day: 'Mon', time: '11:00 AM' },
-      { day: 'Mon', time: '2:00 PM' },
-      { day: 'Mon', time: '3:00 PM' },
-      { day: 'Tue', time: '10:00 AM' },
-      { day: 'Tue', time: '11:00 AM' },
-      { day: 'Tue', time: '12:00 PM' },
-      { day: 'Tue', time: '1:00 PM' },
-      { day: 'Tue', time: '2:00 PM' },
-      { day: 'Wed', time: '9:00 AM' },
-      { day: 'Wed', time: '10:00 AM' },
-      { day: 'Wed', time: '11:00 AM' },
-      { day: 'Wed', time: '2:00 PM' },
-      { day: 'Wed', time: '3:00 PM' },
-      { day: 'Wed', time: '4:00 PM' },
-      { day: 'Wed', time: '5:00 PM' },
-      { day: 'Thu', time: '1:00 PM' },
-      { day: 'Thu', time: '2:00 PM' },
-      { day: 'Thu', time: '3:00 PM' },
-      { day: 'Thu', time: '4:00 PM' },
-      { day: 'Fri', time: '9:00 AM' },
-      { day: 'Fri', time: '10:00 AM' },
-      { day: 'Fri', time: '11:00 AM' },
-      { day: 'Fri', time: '12:00 PM' },
-      { day: 'Sat', time: '10:00 AM' },
-      { day: 'Sat', time: '11:00 AM' },
-      { day: 'Sat', time: '12:00 PM' },
-      { day: 'Sat', time: '1:00 PM' }
-    ] as TimeSlot[],
-    projects: [{
-      id: '1',
-      title: 'Campus Events Platform',
-      description: 'A platform for students to discover and RSVP to campus events.',
-      role: 'Project Lead',
-      status: 'active',
-      startDate: '2024-01-01',
-      tags: ['React', 'Node.js', 'MongoDB']
-    }, {
-      id: '2',
-      title: 'AI Study Assistant',
-      description: 'AI-powered tool that helps students study more effectively.',
-      role: 'Full Stack Developer',
-      status: 'active',
-      startDate: '2024-02-15',
-      tags: ['Python', 'TensorFlow', 'React']
-    }, {
-      id: '3',
-      title: 'Study Group Finder',
-      description: 'App that helps students find study groups for their courses.',
-      role: 'Frontend Developer',
-      status: 'completed',
-      startDate: '2023-09-01',
-      endDate: '2023-12-15',
-      tags: ['React', 'TypeScript', 'Firebase']
-    }, {
-      id: '4',
-      title: 'Campus Food Delivery',
-      description: 'On-demand food delivery service for campus students.',
-      role: 'Backend Developer',
-      status: 'completed',
-      startDate: '2023-06-01',
-      endDate: '2023-08-30',
-      tags: ['Node.js', 'Express', 'PostgreSQL']
-    }]
-  };
-
-  // Editable state
-  const [editedName, setEditedName] = useState(originalUser.name);
-  const [editedBio, setEditedBio] = useState(originalUser.bio);
-  const [editedUniversity, setEditedUniversity] = useState(originalUser.university);
-  const [editedMajor, setEditedMajor] = useState(originalUser.major);
-  const [editedGradYear, setEditedGradYear] = useState(originalUser.graduationYear);
-  const [editedLinkedin, setEditedLinkedin] = useState(originalUser.links.linkedin);
-  const [editedGithub, setEditedGithub] = useState(originalUser.links.github);
-  const [editedPortfolio, setEditedPortfolio] = useState(originalUser.links.portfolio);
-  const [editedInterests, setEditedInterests] = useState<string[]>(originalUser.interests);
-  const [editedAvailability, setEditedAvailability] = useState<TimeSlot[]>(originalUser.availability);
+  // Editable state - initialized from user data
+  const [editedFirstName, setEditedFirstName] = useState('');
+  const [editedLastName, setEditedLastName] = useState('');
+  const [editedPreferredName, setEditedPreferredName] = useState('');
+  const [editedBio, setEditedBio] = useState('');
+  const [editedUniversity, setEditedUniversity] = useState('');
+  const [editedMajor, setEditedMajor] = useState('');
+  const [editedGradYear, setEditedGradYear] = useState('');
+  const [editedLinkedin, setEditedLinkedin] = useState('');
+  const [editedGithub, setEditedGithub] = useState('');
+  const [editedPortfolio, setEditedPortfolio] = useState('');
+  const [editedInterests, setEditedInterests] = useState<string[]>([]);
   const [newInterest, setNewInterest] = useState('');
 
-  // Use original data for display
-  const user = originalUser;
+  // Initialize form fields when user data loads
+  useEffect(() => {
+    if (user) {
+      setEditedFirstName(user.firstName || '');
+      setEditedLastName(user.lastName || '');
+      setEditedPreferredName(user.preferredName || '');
+      setEditedBio(user.bio || '');
+      setEditedUniversity(user.university || '');
+      setEditedMajor(user.major || '');
+      setEditedGradYear(user.graduationYear?.toString() || '');
+      setEditedLinkedin(user.professionalLinks?.linkedin || '');
+      setEditedGithub(user.professionalLinks?.github || '');
+      setEditedPortfolio(user.professionalLinks?.portfolio || '');
+      setEditedInterests(user.interests || []);
+    }
+  }, [user]);
 
-  const handleEditProfile = () => {
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/login');
+    }
+  }, [user, authLoading, navigate]);
+
+  const handleEditProfile = async () => {
     if (isEditMode) {
       // Save all changes
-      console.log('Saving all profile changes:', {
-        name: editedName,
-        bio: editedBio,
-        university: editedUniversity,
-        major: editedMajor,
-        graduationYear: editedGradYear,
-        linkedin: editedLinkedin,
-        github: editedGithub,
-        portfolio: editedPortfolio,
-        interests: editedInterests,
-        availability: editedAvailability
-      });
-      // In a real app, you would make an API call here to save all changes
-      alert('Profile updated successfully!');
+      try {
+        setSaving(true);
+        await updateUserProfile({
+          firstName: editedFirstName,
+          lastName: editedLastName,
+          preferredName: editedPreferredName || undefined,
+          bio: editedBio || undefined,
+          university: editedUniversity,
+          major: editedMajor,
+          graduationYear: editedGradYear ? parseInt(editedGradYear) : undefined,
+          professionalLinks: {
+            linkedin: editedLinkedin || undefined,
+            github: editedGithub || undefined,
+            portfolio: editedPortfolio || undefined,
+          },
+          interests: editedInterests,
+        });
+        alert('Profile updated successfully!');
+      } catch (error: any) {
+        alert(`Failed to update profile: ${error.message}`);
+      } finally {
+        setSaving(false);
+      }
     }
     setIsEditMode(!isEditMode);
   };
 
   const handleCancel = () => {
-    // Reset all edited values to original
-    setEditedName(originalUser.name);
-    setEditedBio(originalUser.bio);
-    setEditedUniversity(originalUser.university);
-    setEditedMajor(originalUser.major);
-    setEditedGradYear(originalUser.graduationYear);
-    setEditedLinkedin(originalUser.links.linkedin);
-    setEditedGithub(originalUser.links.github);
-    setEditedPortfolio(originalUser.links.portfolio);
-    setEditedInterests(originalUser.interests);
-    setEditedAvailability(originalUser.availability);
+    // Reset all edited values to current user data
+    if (user) {
+      setEditedFirstName(user.firstName || '');
+      setEditedLastName(user.lastName || '');
+      setEditedPreferredName(user.preferredName || '');
+      setEditedBio(user.bio || '');
+      setEditedUniversity(user.university || '');
+      setEditedMajor(user.major || '');
+      setEditedGradYear(user.graduationYear?.toString() || '');
+      setEditedLinkedin(user.professionalLinks?.linkedin || '');
+      setEditedGithub(user.professionalLinks?.github || '');
+      setEditedPortfolio(user.professionalLinks?.portfolio || '');
+      setEditedInterests(user.interests || []);
+    }
     setIsEditMode(false);
   };
 
@@ -183,9 +125,22 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  const activeProjects = user.projects.filter(p => p.status === 'active');
-  const completedProjects = user.projects.filter(p => p.status === 'completed');
-  return <div className="min-h-screen page-background-gradient">
+  // Show loading state
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const displayName = user.preferredName || `${user.firstName} ${user.lastName}`;
+
+  return (
+    <div className="min-h-screen page-background-gradient">
       <header className="bg-white border-b border-slate-200 py-4 px-6">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center">
@@ -201,13 +156,16 @@ const ProfilePage: React.FC = () => {
             </Link>
             <button
               onClick={handleEditProfile}
+              disabled={saving}
               className={`flex items-center text-sm px-4 py-2 rounded-full font-medium transition-all cursor-pointer ${
                 isEditMode
                   ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:shadow-lg'
                   : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
-              }`}
+              } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              {isEditMode ? (
+              {saving ? (
+                <>Saving...</>
+              ) : isEditMode ? (
                 <>
                   <CheckIcon className="h-4 w-4 mr-1" />
                   Save Changes
@@ -219,7 +177,7 @@ const ProfilePage: React.FC = () => {
                 </>
               )}
             </button>
-            {isEditMode && (
+            {isEditMode && !saving && (
               <button
                 onClick={handleCancel}
                 className="flex items-center text-sm bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-full font-medium hover:bg-slate-50 transition-all cursor-pointer ml-2"
@@ -235,16 +193,36 @@ const ProfilePage: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden mb-6">
           <div className="p-6 sm:p-8">
             <div className="flex flex-col sm:flex-row items-start sm:items-center">
-              <img src={user.profilePicture} alt={user.name} className="w-24 h-24 rounded-full mb-4 sm:mb-0 sm:mr-6" />
+              <img
+                src={user.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=f97316&color=fff&size=200`}
+                alt={displayName}
+                className="w-24 h-24 rounded-full mb-4 sm:mb-0 sm:mr-6"
+              />
               <div className="flex-1">
                 {isEditMode ? (
                   <div className="space-y-3 mb-3">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={editedFirstName}
+                        onChange={(e) => setEditedFirstName(e.target.value)}
+                        className="flex-1 text-xl font-bold px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                        placeholder="First Name"
+                      />
+                      <input
+                        type="text"
+                        value={editedLastName}
+                        onChange={(e) => setEditedLastName(e.target.value)}
+                        className="flex-1 text-xl font-bold px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                        placeholder="Last Name"
+                      />
+                    </div>
                     <input
                       type="text"
-                      value={editedName}
-                      onChange={(e) => setEditedName(e.target.value)}
-                      className="w-full text-2xl font-bold px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
-                      placeholder="Name"
+                      value={editedPreferredName}
+                      onChange={(e) => setEditedPreferredName(e.target.value)}
+                      className="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                      placeholder="Preferred Name (optional)"
                     />
                     <div className="flex gap-2 flex-wrap">
                       <input
@@ -272,10 +250,11 @@ const ProfilePage: React.FC = () => {
                   </div>
                 ) : (
                   <>
-                    <h2 className="text-2xl font-bold mb-1">{user.name}</h2>
+                    <h2 className="text-2xl font-bold mb-1">{displayName}</h2>
                     <p className="text-slate-600 mb-3">
-                      {user.major} @ {user.university} • Class of{' '}
-                      {user.graduationYear}
+                      {user.major} @ {user.university}
+                      {user.graduationYear && ` • Class of ${user.graduationYear}`}
+                      {user.isAlumni && ' (Alumni)'}
                     </p>
                   </>
                 )}
@@ -314,9 +293,9 @@ const ProfilePage: React.FC = () => {
                   </div>
                 ) : (
                   <div className="flex flex-wrap gap-2">
-                    {user.links.linkedin ? (
+                    {user.professionalLinks?.linkedin && (
                       <a
-                        href={user.links.linkedin}
+                        href={user.professionalLinks.linkedin}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center text-xs bg-blue-50 text-blue-700 px-3 py-1 rounded-full hover:bg-blue-100 transition-colors cursor-pointer"
@@ -324,18 +303,10 @@ const ProfilePage: React.FC = () => {
                         <LinkedinIcon className="h-3 w-3 mr-1" />
                         LinkedIn
                       </a>
-                    ) : (
-                      <button
-                        disabled
-                        className="flex items-center text-xs bg-slate-100 text-slate-400 px-3 py-1 rounded-full cursor-not-allowed"
-                      >
-                        <LinkedinIcon className="h-3 w-3 mr-1" />
-                        Add LinkedIn
-                      </button>
                     )}
-                    {user.links.github ? (
+                    {user.professionalLinks?.github && (
                       <a
-                        href={user.links.github}
+                        href={user.professionalLinks.github}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center text-xs bg-slate-800 text-white px-3 py-1 rounded-full hover:bg-slate-900 transition-colors cursor-pointer"
@@ -343,18 +314,10 @@ const ProfilePage: React.FC = () => {
                         <GithubIcon className="h-3 w-3 mr-1" />
                         GitHub
                       </a>
-                    ) : (
-                      <button
-                        disabled
-                        className="flex items-center text-xs bg-slate-100 text-slate-400 px-3 py-1 rounded-full cursor-not-allowed"
-                      >
-                        <GithubIcon className="h-3 w-3 mr-1" />
-                        Add GitHub
-                      </button>
                     )}
-                    {user.links.portfolio ? (
+                    {user.professionalLinks?.portfolio && (
                       <a
-                        href={user.links.portfolio}
+                        href={user.professionalLinks.portfolio}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center text-xs bg-purple-50 text-purple-700 px-3 py-1 rounded-full hover:bg-purple-100 transition-colors cursor-pointer"
@@ -362,37 +325,6 @@ const ProfilePage: React.FC = () => {
                         <ExternalLinkIcon className="h-3 w-3 mr-1" />
                         Portfolio
                       </a>
-                    ) : (
-                      <button
-                        disabled
-                        className="flex items-center text-xs bg-slate-100 text-slate-400 px-3 py-1 rounded-full cursor-not-allowed"
-                      >
-                        <ExternalLinkIcon className="h-3 w-3 mr-1" />
-                        Add Portfolio
-                      </button>
-                    )}
-                    {user.links.resume ? (
-                      <a
-                        href={user.links.resume.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center text-xs bg-orange-50 text-orange-700 px-3 py-1 rounded-full hover:bg-orange-100 transition-colors cursor-pointer"
-                      >
-                        <FileTextIcon className="h-3 w-3 mr-1" />
-                        Resume
-                      </a>
-                    ) : (
-                      <label className="flex items-center text-xs bg-slate-100 text-slate-400 px-3 py-1 rounded-full hover:bg-slate-200 transition-colors cursor-pointer">
-                        <UploadIcon className="h-3 w-3 mr-1" />
-                        {uploadingResume ? 'Uploading...' : 'Upload Resume'}
-                        <input
-                          type="file"
-                          accept=".pdf,.doc,.docx"
-                          onChange={handleResumeUpload}
-                          className="hidden"
-                          disabled={uploadingResume}
-                        />
-                      </label>
                     )}
                     {showUploadSuccess && (
                       <span className="flex items-center text-xs bg-green-50 text-green-700 px-3 py-1 rounded-full">
@@ -414,7 +346,7 @@ const ProfilePage: React.FC = () => {
                   placeholder="Tell us about yourself..."
                 />
               ) : (
-                <p className="text-slate-700">{user.bio}</p>
+                <p className="text-slate-700">{user.bio || 'No bio added yet.'}</p>
               )}
             </div>
           </div>
@@ -423,98 +355,85 @@ const ProfilePage: React.FC = () => {
           <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
             <div className="p-6">
               <h3 className="font-bold mb-4">Skills</h3>
-              <div
-                className="space-y-4 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100 hover:scrollbar-thumb-slate-400"
-                style={{
-                  scrollbarWidth: 'thin',
-                  scrollbarColor: '#cbd5e1 #f1f5f9'
-                }}
-              >
-                {Object.entries(user.skills).map(([skill, level]) => <div key={skill}>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-sm font-medium">{skill}</span>
-                      <span className="text-sm text-slate-500">{level}/10</span>
+              <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+                {user.skills && Object.keys(user.skills).length > 0 ? (
+                  Object.entries(user.skills).map(([skill, level]) => (
+                    <div key={skill}>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm font-medium capitalize">{skill}</span>
+                        <span className="text-sm text-slate-500">{level}/10</span>
+                      </div>
+                      <div className="w-full bg-slate-200 rounded-full h-2">
+                        <div
+                          className="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full"
+                          style={{ width: `${(level / 10) * 100}%` }}
+                        ></div>
+                      </div>
                     </div>
-                    <div className="w-full bg-slate-200 rounded-full h-2">
-                      <div className="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full" style={{
-                    width: `${level / 10 * 100}%`
-                  }}></div>
-                    </div>
-                  </div>)}
+                  ))
+                ) : (
+                  <p className="text-slate-500 text-sm">No skills added yet.</p>
+                )}
               </div>
             </div>
           </div>
           <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
             <div className="p-6">
-              <h3 className="font-bold mb-4">Interests & Availability</h3>
-              <div
-                className="max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100 hover:scrollbar-thumb-slate-400"
-                style={{
-                  scrollbarWidth: 'thin',
-                  scrollbarColor: '#cbd5e1 #f1f5f9'
-                }}
-              >
-                {/* Availability Calendar */}
-                <div className="mb-6">
-                  <AvailabilityCalendar
-                    selectedSlots={isEditMode ? editedAvailability : user.availability}
-                    onChange={isEditMode ? setEditedAvailability : undefined}
-                    editable={isEditMode}
-                  />
-                </div>
-
-                {/* Interests */}
-                <div>
-                  <h4 className="text-sm font-semibold mb-3 text-slate-700">Interests</h4>
-                  {isEditMode ? (
-                    <div className="space-y-3">
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        {editedInterests.map((interest, index) => (
-                          <span key={index} className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-sm flex items-center gap-2">
-                            {interest}
-                            <button
-                              onClick={() => handleRemoveInterest(interest)}
-                              className="text-red-500 hover:text-red-700 font-bold"
-                              type="button"
-                            >
-                              ×
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={newInterest}
-                          onChange={(e) => setNewInterest(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && handleAddInterest()}
-                          className="flex-1 text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
-                          placeholder="Add new interest..."
-                        />
-                        <button
-                          onClick={handleAddInterest}
-                          type="button"
-                          className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors"
-                        >
-                          Add
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-wrap gap-2">
-                      {user.interests.map((interest, index) => (
-                        <span key={index} className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-sm">
+              <h3 className="font-bold mb-4">Interests</h3>
+              <div className="max-h-[400px] overflow-y-auto pr-2">
+                {isEditMode ? (
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {editedInterests.map((interest, index) => (
+                        <span key={index} className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-sm flex items-center gap-2">
                           {interest}
+                          <button
+                            onClick={() => handleRemoveInterest(interest)}
+                            className="text-red-500 hover:text-red-700 font-bold"
+                            type="button"
+                          >
+                            ×
+                          </button>
                         </span>
                       ))}
                     </div>
-                  )}
-                </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newInterest}
+                        onChange={(e) => setNewInterest(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddInterest())}
+                        className="flex-1 text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                        placeholder="Add new interest..."
+                      />
+                      <button
+                        onClick={handleAddInterest}
+                        type="button"
+                        className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {user.interests && user.interests.length > 0 ? (
+                      user.interests.map((interest, index) => (
+                        <span key={index} className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-sm">
+                          {interest}
+                        </span>
+                      ))
+                    ) : (
+                      <p className="text-slate-500 text-sm">No interests added yet.</p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
-        {/* Project Tabs */}
+
+        {/* Projects section - Can be populated later */}
         <div className="mt-6 bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
           <div className="p-6">
             <div className="flex justify-between items-center mb-4">
@@ -523,135 +442,20 @@ const ProfilePage: React.FC = () => {
                 View all
               </Link>
             </div>
-
-            {/* Tab Navigation */}
-            <div className="flex border-b border-slate-200 mb-6">
-              <button
-                onClick={() => setActiveProjectTab('active')}
-                className={`flex-1 py-3 text-sm font-medium transition-colors relative cursor-pointer ${
-                  activeProjectTab === 'active'
-                    ? 'text-orange-500 border-b-2 border-orange-500'
-                    : 'text-slate-600 hover:text-slate-800'
-                }`}
+            <div className="text-center py-12 text-slate-500">
+              <p className="mb-2">No projects yet</p>
+              <Link
+                to="/dashboard"
+                className="text-sm text-orange-500 hover:text-orange-600 font-medium cursor-pointer"
               >
-                Active Projects
-                <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700">
-                  {activeProjects.length}
-                </span>
-              </button>
-              <button
-                onClick={() => setActiveProjectTab('completed')}
-                className={`flex-1 py-3 text-sm font-medium transition-colors relative cursor-pointer ${
-                  activeProjectTab === 'completed'
-                    ? 'text-orange-500 border-b-2 border-orange-500'
-                    : 'text-slate-600 hover:text-slate-800'
-                }`}
-              >
-                Completed Projects
-                <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700">
-                  {completedProjects.length}
-                </span>
-              </button>
-            </div>
-
-            {/* Tab Content */}
-            <div className="space-y-4">
-              {activeProjectTab === 'active' && (
-                <>
-                  {activeProjects.length > 0 ? (
-                    activeProjects.map(project => (
-                      <Link
-                        key={project.id}
-                        to={`/project/${project.id}`}
-                        className="block border border-slate-200 rounded-lg p-4 hover:border-orange-300 hover:shadow-md transition-all cursor-pointer"
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <h4 className="font-bold text-slate-800 hover:text-orange-600">
-                            {project.title}
-                          </h4>
-                          <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">
-                            In Progress
-                          </span>
-                        </div>
-                        <p className="text-sm text-slate-700 mb-3">
-                          {project.description}
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <p className="text-xs text-slate-500">Role: {project.role}</p>
-                          <div className="flex flex-wrap gap-1">
-                            {project.tags.slice(0, 3).map((tag, idx) => (
-                              <span key={idx} className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded">
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      </Link>
-                    ))
-                  ) : (
-                    <div className="text-center py-12 text-slate-500">
-                      <p className="mb-2">No active projects yet</p>
-                      <Link
-                        to="/dashboard"
-                        className="text-sm text-orange-500 hover:text-orange-600 font-medium cursor-pointer"
-                      >
-                        Explore projects to join
-                      </Link>
-                    </div>
-                  )}
-                </>
-              )}
-
-              {activeProjectTab === 'completed' && (
-                <>
-                  {completedProjects.length > 0 ? (
-                    completedProjects.map(project => (
-                      <Link
-                        key={project.id}
-                        to={`/project/${project.id}`}
-                        className="block border border-slate-200 rounded-lg p-4 hover:border-green-300 hover:shadow-md transition-all cursor-pointer"
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <h4 className="font-bold text-slate-800 hover:text-orange-600">
-                            {project.title}
-                          </h4>
-                          <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">
-                            Completed
-                          </span>
-                        </div>
-                        <p className="text-sm text-slate-700 mb-3">
-                          {project.description}
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-xs text-slate-500">Role: {project.role}</p>
-                            {project.endDate && (
-                              <p className="text-xs text-slate-400 mt-1">
-                                Completed: {new Date(project.endDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex flex-wrap gap-1">
-                            {project.tags.slice(0, 3).map((tag, idx) => (
-                              <span key={idx} className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded">
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      </Link>
-                    ))
-                  ) : (
-                    <div className="text-center py-12 text-slate-500">
-                      <p>No completed projects yet</p>
-                    </div>
-                  )}
-                </>
-              )}
+                Explore projects to join
+              </Link>
             </div>
           </div>
         </div>
       </main>
-    </div>;
+    </div>
+  );
 };
+
 export default ProfilePage;

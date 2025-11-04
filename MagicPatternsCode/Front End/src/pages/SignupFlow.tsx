@@ -2,40 +2,75 @@ import React, { useState } from 'react';
 import { Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon, ArrowRightIcon, LinkedinIcon, GithubIcon, CameraIcon, UploadIcon, XIcon, FileTextIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useSignupContext } from '../context/SignupContext';
 import AvailabilityCalendar, { TimeSlot } from '../components/shared/AvailabilityCalendar';
+
 const SignupEmail: React.FC = () => {
-  const [email, setEmail] = useState('');
+  const { formData, updateFormData } = useSignupContext();
+  const [email, setEmail] = useState(formData.email || '');
+  const [password, setPassword] = useState(formData.password || '');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
-  const {
-    signup
-  } = useAuth();
   const navigate = useNavigate();
+
   const validateEmail = (email: string) => {
     const trimmedEmail = email.trim().toLowerCase();
     return trimmedEmail.endsWith('.edu');
   };
+
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newEmail = e.target.value;
     setEmail(newEmail);
-    // Clear error when user starts typing again
     if (error) setError('');
   };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value);
+    if (error) setError('');
+  };
+
+  const handleConfirmPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setConfirmPassword(e.target.value);
+    if (error) setError('');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedEmail = email.trim();
+
     if (!trimmedEmail) {
       setError('Please enter your email address');
       return;
     }
+
     if (!validateEmail(trimmedEmail)) {
       setError('Only academic email addresses ending with .edu are accepted');
       return;
     }
+
+    if (!password) {
+      setError('Please enter a password');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
     try {
-      await signup(trimmedEmail);
+      // Save email and password to context
+      updateFormData({ email: trimmedEmail, password });
+      // Proceed to next step
       navigate('/signup/profile');
-    } catch (err) {
-      setError('An error occurred. Please try again.');
+    } catch (err: any) {
+      console.error('Navigation error:', err);
+      setError(err.message || 'An error occurred. Please try again.');
     }
   };
   return <div>
@@ -49,12 +84,56 @@ const SignupEmail: React.FC = () => {
           <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">
             Academic Email
           </label>
-          <input id="email" type="email" className={`w-full px-4 py-3 rounded-lg border ${error ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-slate-300 focus:ring-orange-500 focus:border-orange-500'} outline-none transition-all`} placeholder="your.name@university.edu" value={email} onChange={handleEmailChange} required />
-          {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+          <input
+            id="email"
+            type="email"
+            className={`w-full px-4 py-3 rounded-lg border ${error ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-slate-300 focus:ring-orange-500 focus:border-orange-500'} outline-none transition-all`}
+            placeholder="your.name@university.edu"
+            value={email}
+            onChange={handleEmailChange}
+            required
+          />
           <p className="mt-2 text-xs text-slate-500">
             Only .edu email addresses are accepted
           </p>
         </div>
+
+        <div className="mb-4">
+          <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">
+            Password
+          </label>
+          <input
+            id="password"
+            type="password"
+            className={`w-full px-4 py-3 rounded-lg border ${error ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-slate-300 focus:ring-orange-500 focus:border-orange-500'} outline-none transition-all`}
+            placeholder="Enter a secure password"
+            value={password}
+            onChange={handlePasswordChange}
+            required
+            minLength={6}
+          />
+          <p className="mt-2 text-xs text-slate-500">
+            At least 6 characters
+          </p>
+        </div>
+
+        <div className="mb-4">
+          <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-700 mb-1">
+            Confirm Password
+          </label>
+          <input
+            id="confirmPassword"
+            type="password"
+            className={`w-full px-4 py-3 rounded-lg border ${error ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-slate-300 focus:ring-orange-500 focus:border-orange-500'} outline-none transition-all`}
+            placeholder="Re-enter your password"
+            value={confirmPassword}
+            onChange={handleConfirmPasswordChange}
+            required
+          />
+        </div>
+
+        {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+
         <button type="submit" className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all">
           Continue
         </button>
@@ -68,6 +147,7 @@ const SignupEmail: React.FC = () => {
     </div>;
 };
 const SignupProfile: React.FC = () => {
+  const { updateFormData } = useSignupContext();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -77,9 +157,6 @@ const SignupProfile: React.FC = () => {
   const [profilePicturePreview, setProfilePicturePreview] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState('');
 
-  const {
-    updateUserProfile
-  } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,9 +202,13 @@ const SignupProfile: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you would upload the profile picture here
-    // For now, we'll just pass the form data
-    updateUserProfile({ ...formData, profilePicture: profilePicturePreview });
+    // Save profile data to SignupContext
+    updateFormData({
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      preferredName: formData.preferredName,
+      profilePicture: profilePicture || undefined
+    });
     navigate('/signup/links');
   };
   return <div>
@@ -787,12 +868,16 @@ const USC_SCHOOLS_MAJORS: Record<string, string[]> = {
 };
 
 const SignupEducation: React.FC = () => {
+  const { formData: signupFormData } = useSignupContext();
+  const { signup } = useAuth();
   const [school, setSchool] = useState('');
   const [major, setMajor] = useState('');
   const [customMajor, setCustomMajor] = useState('');
   const [graduationYear, setGraduationYear] = useState('');
   const [isAlumni, setIsAlumni] = useState(false);
   const [availableMajors, setAvailableMajors] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const navigate = useNavigate();
 
@@ -807,35 +892,68 @@ const SignupEducation: React.FC = () => {
     }
   }, [school]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
 
     // Validation
     if (!school) {
-      alert('Please select your school/college');
+      setError('Please select your school/college');
       return;
     }
     if (!major) {
-      alert('Please select your major');
+      setError('Please select your major');
       return;
     }
     if (major === 'Other' && !customMajor.trim()) {
-      alert('Please specify your major');
+      setError('Please specify your major');
       return;
     }
     if (!graduationYear) {
-      alert('Please select your graduation year');
+      setError('Please select your graduation year');
       return;
     }
 
-    // Save data and navigate
-    console.log({
-      school,
-      major: major === 'Other' ? customMajor : major,
-      graduationYear,
-      isAlumni
-    });
-    navigate('/dashboard');
+    // Check if we have email and password from earlier steps
+    if (!signupFormData.email || !signupFormData.password) {
+      setError('Missing email or password. Please start over.');
+      navigate('/signup');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Prepare signup data with all collected information
+      const signupData = {
+        email: signupFormData.email,
+        password: signupFormData.password,
+        firstName: signupFormData.firstName || '',
+        lastName: signupFormData.lastName || '',
+        preferredName: signupFormData.preferredName,
+        university: school,
+        major: major === 'Other' ? customMajor : major,
+        graduationYear: parseInt(graduationYear),
+        isAlumni,
+        bio: signupFormData.bio,
+        skills: signupFormData.skills,
+        professionalLinks: {
+          linkedin: signupFormData.linkedin,
+          github: signupFormData.github,
+          portfolio: signupFormData.portfolio,
+        },
+      };
+
+      // Call the signup API
+      await signup(signupData);
+
+      // Success! Redirect to dashboard
+      navigate('/dashboard');
+    } catch (err: any) {
+      console.error('Signup error:', err);
+      setError(err.message || 'Failed to create account. Please try again.');
+      setLoading(false);
+    }
   };
   return <div>
       <h2 className="text-2xl font-bold mb-6">Education Information</h2>
@@ -938,15 +1056,56 @@ const SignupEducation: React.FC = () => {
           </label>
         </div>
 
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-600">{error}</p>
+          </div>
+        )}
+
         <button
           type="submit"
-          className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all"
+          disabled={loading}
+          className={`w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-          Complete Signup
+          {loading ? 'Creating Account...' : 'Complete Signup'}
         </button>
       </form>
     </div>;
 };
+const BackButton: React.FC = () => {
+  const location = window.location.pathname;
+  const navigate = useNavigate();
+
+  const getBackPath = () => {
+    if (location === '/signup' || location === '/signup/') {
+      return '/';
+    } else if (location === '/signup/profile') {
+      return '/signup';
+    } else if (location === '/signup/links') {
+      return '/signup/profile';
+    } else if (location === '/signup/bio') {
+      return '/signup/links';
+    } else if (location === '/signup/education') {
+      return '/signup/bio';
+    }
+    return '/';
+  };
+
+  const handleBack = () => {
+    navigate(getBackPath());
+  };
+
+  return (
+    <button
+      onClick={handleBack}
+      className="flex items-center text-slate-600 mb-8 hover:text-orange-500 transition-colors"
+    >
+      <ArrowLeftIcon className="h-5 w-5 mr-2" />
+      Back
+    </button>
+  );
+};
+
 const SignupFlow: React.FC = () => {
   return <div className="min-h-screen auth-page-background flex">
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-orange-500 to-red-500 relative overflow-hidden">
@@ -995,10 +1154,7 @@ const SignupFlow: React.FC = () => {
       </div>
       <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-8">
         <div className="w-full max-w-md">
-          <Link to="/" className="flex items-center text-slate-600 mb-8 hover:text-orange-500 transition-colors">
-            <ArrowLeftIcon className="h-5 w-5 mr-2" />
-            Back to home
-          </Link>
+          <BackButton />
           <Routes>
             <Route path="/" element={<SignupEmail />} />
             <Route path="/profile" element={<SignupProfile />} />

@@ -8,6 +8,8 @@ import ProfilePage from './pages/ProfilePage';
 import ProjectDetailsPage from './pages/ProjectDetailsPage';
 import MyProjectsPageNew from './pages/MyProjectsPageNew';
 import { AuthProvider } from './context/AuthContext';
+import { SignupProvider } from './context/SignupContext';
+
 export function App() {
   return <AuthProvider>
       <BrowserRouter>
@@ -15,7 +17,7 @@ export function App() {
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup/*" element={<SignupFlow />} />
+            <Route path="/signup/*" element={<SignupProvider><SignupFlow /></SignupProvider>} />
             <Route path="/dashboard/*" element={<Dashboard />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/project/:id" element={<ProjectDetailsPage />} />

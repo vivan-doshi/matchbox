@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
-import { Routes, Route, NavLink, useLocation, Link } from 'react-router-dom';
-import { HomeIcon, MessageSquareIcon, UserIcon, PlusIcon, FolderIcon, MenuIcon, XIcon, BellIcon } from 'lucide-react';
+import { Routes, Route, NavLink, useLocation, Link, useNavigate } from 'react-router-dom';
+import { HomeIcon, MessageSquareIcon, UserIcon, PlusIcon, FolderIcon, MenuIcon, XIcon, BellIcon, LogOutIcon } from 'lucide-react';
 import HomePage from '../components/dashboard/HomePage';
 import ChatPage from '../components/dashboard/ChatPage';
 import CreateProjectModal from '../components/dashboard/CreateProjectModal';
+import { useAuth } from '../context/AuthContext';
 
 const Dashboard: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [newProject, setNewProject] = useState<any>(null);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
 
   const getTitle = () => {
     const path = location.pathname;
@@ -20,6 +23,13 @@ const Dashboard: React.FC = () => {
   // Close sidebar when navigation link is clicked
   const handleNavClick = () => {
     setIsSidebarOpen(false);
+  };
+
+  // Handle sign out
+  const handleSignOut = () => {
+    logout();
+    setIsSidebarOpen(false);
+    navigate('/login');
   };
 
   // Handle new project creation
@@ -188,6 +198,17 @@ const Dashboard: React.FC = () => {
               <BellIcon className="h-5 w-5 mr-3" />
               <span>Notifications</span>
             </NavLink>
+          </div>
+
+          {/* Sign Out Button */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white border-opacity-20">
+            <button
+              onClick={handleSignOut}
+              className="flex items-center w-full px-4 py-3 rounded-lg text-white text-opacity-90 hover:bg-white hover:bg-opacity-10 transition-all"
+            >
+              <LogOutIcon className="h-5 w-5 mr-3" />
+              <span>Sign Out</span>
+            </button>
           </div>
         </nav>
       </div>

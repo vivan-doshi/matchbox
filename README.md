@@ -1,85 +1,111 @@
-# Matchbox 🔥
+# MATCHBOX 📦
 
-App for MOR 531 - Students can meet other like-minded people who want to work on projects
+A student project team matching platform that connects university students with complementary skills for collaborative projects.
 
-## Tech Stack
-
-### Frontend (Web)
-- Next.js 14+ with TypeScript
-- Tailwind CSS
-- Shadcn/ui components
-- React Hook Form + Zod validation
-
-### Backend
-- Node.js + Express + TypeScript
-- MongoDB + Mongoose
-- JWT Authentication
-- bcrypt for password hashing
-
-### Future Mobile
-- React Native with Expo (iOS)
-
-## Project Structure
+## 📁 Project Structure
 
 ```
 matchbox/
-├── client/          # Next.js frontend
-├── server/          # Express backend
-└── mobile/          # React Native (coming soon)
+├── MagicPatternsCode/      # Frontend (React + Vite)
+│   └── Front End/          # Main frontend application
+│       ├── src/
+│       │   ├── components/
+│       │   ├── pages/
+│       │   ├── context/
+│       │   └── App.tsx
+│       ├── package.json
+│       └── vite.config.ts
+│
+└── backend/                # Backend API (Node.js + Express + TypeScript)
+    ├── src/
+    │   ├── models/         # MongoDB models
+    │   ├── controllers/    # Request handlers
+    │   ├── routes/         # API routes
+    │   ├── middleware/     # Auth & error handling
+    │   ├── config/         # Database config
+    │   └── server.ts       # Entry point
+    ├── package.json
+    └── README.md           # Backend documentation
 ```
 
-## Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+ 
-- MongoDB (local or Atlas)
+- Node.js v18+
+- MongoDB v6+
 - npm or yarn
 
-### Installation
-
-1. Clone the repository
+### 1. Clone the Repository
 ```bash
-git clone <your-repo-url>
+git clone <repository-url>
 cd matchbox
 ```
 
-2. Install dependencies for all workspaces
+### 2. Setup Backend
 ```bash
-npm run install:all
-```
-
-3. Set up environment variables
-- Copy `.env.example` to `.env` in both client and server directories
-- Fill in your configuration values
-
-4. Run the development servers
-```bash
+cd backend
+npm install
+cp .env.example .env
+# Edit .env with your MongoDB URI and JWT secret
 npm run dev
 ```
 
-This will start:
-- Frontend: http://localhost:3000
-- Backend: http://localhost:5000
+Backend runs on `http://localhost:5000`
 
-## Development
+### 3. Setup Frontend
+```bash
+cd "MagicPatternsCode/Front End"
+npm install
+npm run dev
+```
 
-- `npm run dev` - Run both client and server
-- `npm run dev:client` - Run only frontend
-- `npm run dev:server` - Run only backend
+Frontend runs on `http://localhost:5173`
 
-## Features (Planned)
+## 📖 Documentation
 
-- [ ] User authentication (signup/login)
-- [ ] Student profile creation
-- [ ] Project interests and skills tagging
-- [ ] Matching algorithm
-- [ ] Chat/messaging system
-- [ ] Project collaboration tools
+- **Backend API Documentation**: See [backend/README.md](backend/README.md)
+- **API Reference**: See [backend/API_REFERENCE.md](backend/API_REFERENCE.md)
+- **Quick Start Guide**: See [backend/QUICKSTART.md](backend/QUICKSTART.md)
+- **Project Structure**: See [backend/STRUCTURE.md](backend/STRUCTURE.md)
 
-## Contributing
+## 🎯 Features
 
-This is a course project for MOR 531.
+- ✅ User authentication with .edu email validation
+- ✅ Profile management with skills rating
+- ✅ Project creation and management
+- ✅ Team role-based applications
+- ✅ Dual-approval matching system ("BOXED")
+- ✅ Direct messaging and group chats
+- ✅ Smart recommendations
+- ✅ Availability calendar
+- ✅ Resume/profile uploads
 
-## License
+## 🛠️ Tech Stack
+
+### Frontend
+- React 18.3.1
+- TypeScript 5.5.4
+- Vite 5.2.0
+- React Router DOM 6.26.2
+- Tailwind CSS 3.4.17
+- Lucide React (icons)
+
+### Backend
+- Node.js with TypeScript
+- Express.js
+- MongoDB with Mongoose
+- JWT Authentication
+- bcrypt for password hashing
+- Helmet for security
+
+## 👥 Team
+
+MOR 531 Project Team
+
+## 📝 License
 
 MIT
+
+---
+
+**Built with ❤️ for student collaboration**

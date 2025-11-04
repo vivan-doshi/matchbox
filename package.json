@@ -1,26 +1,23 @@
 {
-  "name": "matchbox",
+  "name": "matchbox-fullstack",
   "version": "1.0.0",
-  "description": "App for MOR 531 - Students can meet other like minded people who want to work on projects",
+  "description": "MATCHBOX - Student Project Team Matching Platform (Full Stack)",
   "private": true,
-  "workspaces": [
-    "client",
-    "server"
-  ],
   "scripts": {
-    "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
-    "dev:client": "npm run dev --workspace=client",
-    "dev:server": "npm run dev --workspace=server",
-    "install:all": "npm install && npm install --workspace=client && npm install --workspace=server"
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd \"MagicPatternsCode/Front End\" && npm run dev",
+    "build": "npm run build:backend && npm run build:frontend",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd \"MagicPatternsCode/Front End\" && npm run build",
+    "install:all": "npm install && cd backend && npm install && cd ../\"MagicPatternsCode/Front End\" && npm install",
+    "clean": "rm -rf node_modules backend/node_modules \"MagicPatternsCode/Front End/node_modules\""
   },
-  "keywords": [
-    "matchmaking",
-    "students",
-    "projects"
-  ],
-  "author": "",
-  "license": "MIT",
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   }
 }

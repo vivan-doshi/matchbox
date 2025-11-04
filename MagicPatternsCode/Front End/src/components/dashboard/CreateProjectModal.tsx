@@ -1,10 +1,16 @@
 import React, { useState } from 'react';
 import { XIcon, PlusIcon, TrashIcon } from 'lucide-react';
+import apiClient from '../../utils/apiClient';
+import type { Project } from '../../types/api';
+
 interface CreateProjectModalProps {
   onClose: () => void;
+  onProjectCreated?: (project: Project) => void;
 }
+
 const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
-  onClose
+  onClose,
+  onProjectCreated
 }) => {
   const [formData, setFormData] = useState({
     title: '',
@@ -15,6 +21,8 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
       description: ''
     }]
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
       ...formData,
@@ -69,11 +77,45 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
       roles: newRoles
     });
   };
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, this would send the data to the backend
-    console.log(formData);
-    onClose();
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Filter out empty tags and prepare roles
+      const filteredTags = formData.tags.filter(tag => tag.trim() !== '');
+      const filteredRoles = formData.roles.filter(role => role.title.trim() !== '');
+
+      if (filteredRoles.length === 0) {
+        setError('Please add at least one role');
+        setLoading(false);
+        return;
+      }
+
+      // Create project via API
+      const response = await apiClient.createProject({
+        title: formData.title,
+        description: formData.description,
+        tags: filteredTags,
+        roles: filteredRoles,
+      });
+
+      console.log('Project created successfully:', response.data);
+
+      // Notify parent component
+      if (onProjectCreated && response.data) {
+        onProjectCreated(response.data);
+      }
+
+      // Close modal
+      onClose();
+    } catch (err: any) {
+      console.error('Error creating project:', err);
+      setError(err.response?.data?.message || 'Failed to create project. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
   return <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
@@ -145,14 +187,27 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
                 </button>
               </div>
             </div>
+
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
           </form>
         </div>
         <div className="p-6 border-t border-slate-200 flex justify-end space-x-3">
-          <button onClick={onClose} className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 transition-colors">
+          <button onClick={onClose} disabled={loading} className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
             Cancel
           </button>
-          <button onClick={handleSubmit} className="px-4 py-2 rounded-lg bg-gradient-to-r from-orange-500 to-red-500 text-white font-medium hover:shadow-md transition-all">
-            Create Project
+          <button onClick={handleSubmit} disabled={loading} className="px-4 py-2 rounded-lg bg-gradient-to-r from-orange-500 to-red-500 text-white font-medium hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center">
+            {loading ? (
+              <>
+                <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Creating...
+              </>
+            ) : (
+              'Create Project'
+            )}
           </button>
         </div>
       </div>
