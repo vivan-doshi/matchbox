@@ -3,3 +3,42 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 /* DO NOT DELETE THESE TAILWIND IMPORTS, OTHERWISE THE STYLING WILL NOT RENDER AT ALL */
+
+/* Matchbox Brand - Accent Background Colors */
+:root {
+  /* Primary accent colors */
+  --accent-orange: #FF6B35;
+  --accent-red: #EF4444;
+
+  /* Subtle background tints for brand consistency */
+  --bg-accent-lightest: #FFF9F7;
+  --bg-accent-light: #FFF5F0;
+  --bg-accent-subtle: rgba(255, 107, 53, 0.03);
+  --bg-accent-gradient: linear-gradient(to bottom, #FFFFFF, #FFF5F0);
+
+  /* Card and container backgrounds */
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #FFFBF9;
+}
+
+/* Global page background with subtle accent */
+.page-background {
+  background: var(--bg-accent-light);
+  transition: background-color 0.3s ease;
+}
+
+/* Subtle gradient background for authenticated pages only */
+/* Uses exact colors from "New Project" button: from-orange-500 (#f97316) to-red-500 (#ef4444) */
+.page-background-gradient {
+  background: linear-gradient(135deg,
+    rgba(249, 115, 22, 0.03) 0%,    /* orange-500 at 3% opacity */
+    rgba(239, 68, 68, 0.03) 100%);   /* red-500 at 3% opacity */
+  background-color: #FFFFFF;
+  transition: background 0.3s ease;
+}
+
+/* Auth pages background (Landing, Signup) - clean white */
+.auth-page-background {
+  background: #FFFFFF;
+  transition: background-color 0.3s ease;
+}

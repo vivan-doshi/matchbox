@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { SearchIcon, FilterIcon, CheckIcon, XIcon } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { SearchIcon, ChevronDownIcon } from 'lucide-react';
 import ProjectCard from './ProjectCard';
+
 const SAMPLE_PROJECTS = [{
   id: '1',
   title: 'AI-powered Study Assistant',
@@ -87,44 +87,130 @@ const SAMPLE_PROJECTS = [{
     profilePic: 'https://i.pravatar.cc/150?img=13'
   }
 }];
-const FilterButton: React.FC<{
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}> = ({
-  label,
-  active,
-  onClick
-}) => <button className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${active ? 'bg-orange-100 text-orange-700 border border-orange-200' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'}`} onClick={onClick}>
-    {label}
-  </button>;
-const HomePage: React.FC = () => {
+
+interface HomePageProps {
+  onProjectCreated?: (project: any) => void;
+  newProject?: any;
+}
+
+const HomePage: React.FC<HomePageProps> = ({ newProject }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeFilters, setActiveFilters] = useState<string[]>([]);
-  const toggleFilter = (filter: string) => {
-    if (activeFilters.includes(filter)) {
-      setActiveFilters(activeFilters.filter(f => f !== filter));
-    } else {
-      setActiveFilters([...activeFilters, filter]);
+  const [filterCategory, setFilterCategory] = useState('All Projects');
+  const [sortOption, setSortOption] = useState('Most Recent');
+  const [projects, setProjects] = useState(SAMPLE_PROJECTS);
+  const [newProjectId, setNewProjectId] = useState<string | null>(null);
+
+  // Handle new project addition with animation and persistence
+  useEffect(() => {
+    if (newProject && newProject.id) {
+      // Check if project already exists to prevent duplicates
+      setProjects((prevProjects) => {
+        const exists = prevProjects.some(p => p.id === newProject.id);
+        if (exists) {
+          console.log('Project already exists, skipping duplicate:', newProject.id);
+          return prevProjects;
+        }
+
+        console.log('Adding new project to list:', newProject.id);
+        return [newProject, ...prevProjects];
+      });
+
+      setNewProjectId(newProject.id);
+
+      // Remove "new" highlight after 3 seconds (but keep the project in the list)
+      const timer = setTimeout(() => {
+        console.log('Removing NEW badge from project:', newProject.id);
+        setNewProjectId(null);
+      }, 3000);
+
+      return () => clearTimeout(timer);
     }
-  };
-  return <div>
+  }, [newProject]);
+
+  return (
+    <div>
+      {/* Enhanced Search Bar with Inline Filter and Sort Dropdowns */}
       <div className="mb-6">
-        <div className="relative mb-4">
-          <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-5 w-5" />
-          <input type="text" placeholder="Search projects..." className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-        </div>
-        <div className="flex items-center space-x-3 overflow-x-auto pb-2 scrollbar-hide">
-          <FilterButton label="All Projects" active={activeFilters.length === 0} onClick={() => setActiveFilters([])} />
-          <FilterButton label="Tech" active={activeFilters.includes('Tech')} onClick={() => toggleFilter('Tech')} />
-          <FilterButton label="Design" active={activeFilters.includes('Design')} onClick={() => toggleFilter('Design')} />
-          <FilterButton label="Business" active={activeFilters.includes('Business')} onClick={() => toggleFilter('Business')} />
-          <FilterButton label="Case Competitions" active={activeFilters.includes('Case Competitions')} onClick={() => toggleFilter('Case Competitions')} />
+        <div className="flex items-center gap-3 w-full">
+          {/* Search Input */}
+          <div className="relative flex-1">
+            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-5 w-5" />
+            <input
+              type="text"
+              placeholder="Search projects..."
+              className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          {/* Filter Dropdown */}
+          <div className="relative">
+            <select
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+              className="appearance-none pl-4 pr-10 py-3 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all cursor-pointer text-sm font-medium text-slate-700 hover:bg-slate-50"
+              aria-label="Filter projects by category"
+            >
+              <option value="All Projects">All Projects</option>
+              <option value="Tech">Tech</option>
+              <option value="Design">Design</option>
+              <option value="Business">Business</option>
+              <option value="Marketing">Marketing</option>
+              <option value="Case Competitions">Case Competitions</option>
+              <option value="Hackathons">Hackathons</option>
+            </select>
+            <ChevronDownIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4 pointer-events-none" />
+          </div>
+
+          {/* Sort Dropdown */}
+          <div className="relative">
+            <select
+              value={sortOption}
+              onChange={(e) => setSortOption(e.target.value)}
+              className="appearance-none pl-4 pr-10 py-3 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all cursor-pointer text-sm font-medium text-slate-700 hover:bg-slate-50"
+              aria-label="Sort projects"
+            >
+              <option value="Most Recent">Most Recent</option>
+              <option value="Most Recommended">Most Recommended</option>
+              <option value="Short Duration">Short Duration</option>
+              <option value="Long Duration">Long Duration</option>
+              <option value="Deadline Soon">Deadline Soon</option>
+            </select>
+            <ChevronDownIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4 pointer-events-none" />
+          </div>
         </div>
       </div>
-      <div className="space-y-6">
-        {SAMPLE_PROJECTS.map(project => <ProjectCard key={project.id} project={project} />)}
+
+      {/* 2-Column Grid Layout for Project Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {projects.map((project) => (
+          <ProjectCard
+            key={project.id}
+            project={project}
+            isNew={newProjectId === project.id}
+          />
+        ))}
       </div>
-    </div>;
+
+      <style>{`
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-slideDown {
+          animation: slideDown 0.5s ease-out;
+        }
+      `}</style>
+    </div>
+  );
 };
+
 export default HomePage;
