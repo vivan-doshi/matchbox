@@ -151,7 +151,7 @@ const MyProjectsPage: React.FC = () => {
       [projectId]: tab
     });
   };
-  return <div className="min-h-screen bg-slate-50">
+  return <div className="min-h-screen page-background-gradient">
       <header className="bg-white border-b border-slate-200 py-4 px-6">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center">
