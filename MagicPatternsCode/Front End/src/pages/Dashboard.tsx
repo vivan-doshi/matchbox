@@ -1,25 +1,60 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Routes, Route, NavLink, useLocation, Link } from 'react-router-dom';
-import { HomeIcon, MessageSquareIcon, UserIcon, PlusIcon, FolderIcon, MenuIcon, XIcon, BellIcon } from 'lucide-react';
+import { HomeIcon, MessageSquareIcon, UserIcon, PlusIcon, FolderIcon, MenuIcon, XIcon, BellIcon, UsersIcon } from 'lucide-react';
 import HomePage from '../components/dashboard/HomePage';
 import ChatPage from '../components/dashboard/ChatPage';
 import CreateProjectModal from '../components/dashboard/CreateProjectModal';
+import DiscoverPeoplePage from '../pages/DiscoverPeoplePage';
+import NotificationDropdown from '../components/notifications/NotificationDropdown';
 
 const Dashboard: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [newProject, setNewProject] = useState<any>(null);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(2); // Mock unread count
   const location = useLocation();
+  const notificationRef = useRef<HTMLDivElement>(null);
 
   const getTitle = () => {
     const path = location.pathname;
     if (path.includes('/dashboard/chat')) return 'Messages';
+    if (path.includes('/dashboard/discover')) return 'Discover People';
     return 'Home';
   };
 
   // Close sidebar when navigation link is clicked
   const handleNavClick = () => {
     setIsSidebarOpen(false);
+  };
+
+  // Close notification dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setShowNotifications(false);
+      }
+    };
+
+    if (showNotifications) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showNotifications]);
+
+  // Fetch unread count (in production, this would be an API call)
+  const fetchUnreadCount = () => {
+    // Mock implementation
+    // In production: const response = await api.get('/api/notifications/unread-count');
+    // setUnreadCount(response.data.count);
+  };
+
+  const handleNotificationRead = () => {
+    // Refresh unread count after marking notifications as read
+    setUnreadCount(prev => Math.max(0, prev - 1));
   };
 
   // Handle new project creation
@@ -55,10 +90,34 @@ const Dashboard: React.FC = () => {
             <h1 className="text-xl font-bold">{getTitle()}</h1>
           </div>
 
-          <div className="flex items-center">
+          <div className="flex items-center gap-3">
+            {/* Notification Icon */}
+            <div className="relative" ref={notificationRef}>
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="relative p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                aria-label="Notifications"
+              >
+                <BellIcon className="h-5 w-5 text-slate-700" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-sm">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Notification Dropdown */}
+              {showNotifications && (
+                <NotificationDropdown
+                  onClose={() => setShowNotifications(false)}
+                  onNotificationRead={handleNotificationRead}
+                />
+              )}
+            </div>
+
             <Link
               to="/my-projects"
-              className="flex items-center bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-slate-50 transition-all mr-2"
+              className="flex items-center bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-slate-50 transition-all"
             >
               <FolderIcon className="h-4 w-4 mr-1" />
               My Projects
@@ -130,6 +189,21 @@ const Dashboard: React.FC = () => {
             </NavLink>
 
             <NavLink
+              to="/dashboard/discover"
+              onClick={handleNavClick}
+              className={({ isActive }) =>
+                `flex items-center px-4 py-3 rounded-lg transition-all ${
+                  isActive
+                    ? 'bg-white bg-opacity-20 text-white font-semibold'
+                    : 'text-white text-opacity-90 hover:bg-white hover:bg-opacity-10'
+                }`
+              }
+            >
+              <UsersIcon className="h-5 w-5 mr-3" />
+              <span>Discover People</span>
+            </NavLink>
+
+            <NavLink
               to="/my-projects"
               onClick={handleNavClick}
               className={({ isActive }) =>
@@ -173,21 +247,6 @@ const Dashboard: React.FC = () => {
               <MessageSquareIcon className="h-5 w-5 mr-3" />
               <span>Chat</span>
             </NavLink>
-
-            <NavLink
-              to="/notifications"
-              onClick={handleNavClick}
-              className={({ isActive }) =>
-                `flex items-center px-4 py-3 rounded-lg transition-all ${
-                  isActive
-                    ? 'bg-white bg-opacity-20 text-white font-semibold'
-                    : 'text-white text-opacity-90 hover:bg-white hover:bg-opacity-10'
-                }`
-              }
-            >
-              <BellIcon className="h-5 w-5 mr-3" />
-              <span>Notifications</span>
-            </NavLink>
           </div>
         </nav>
       </div>
@@ -196,6 +255,7 @@ const Dashboard: React.FC = () => {
       <main className="flex-1 container mx-auto p-6 mb-0">
         <Routes>
           <Route path="/" element={<HomePage newProject={newProject} />} />
+          <Route path="/discover" element={<DiscoverPeoplePage />} />
           <Route path="/chat" element={<ChatPage />} />
         </Routes>
       </main>
