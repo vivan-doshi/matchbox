@@ -59,6 +59,9 @@ export interface User {
   skills: UserSkills;
   professionalLinks: ProfessionalLinks;
   interests: string[];
+  weeklyAvailability?: {
+    hoursPerWeek: number;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -87,6 +90,9 @@ export interface SignupRequest {
   skills?: Partial<UserSkills>;
   professionalLinks?: ProfessionalLinks;
   interests?: string[];
+  weeklyAvailability?: {
+    hoursPerWeek: number;
+  };
 }
 
 export interface AuthResponse {

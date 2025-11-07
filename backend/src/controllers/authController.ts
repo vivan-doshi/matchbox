@@ -51,6 +51,8 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       bio,
       skills,
       professionalLinks,
+      interests,
+      weeklyAvailability,
     } = req.body;
 
     // Check if user exists
@@ -78,6 +80,8 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       bio,
       skills,
       professionalLinks,
+      interests: interests || [],
+      weeklyAvailability: weeklyAvailability || { hoursPerWeek: 0 },
     });
 
     const token = generateToken(user._id.toString());

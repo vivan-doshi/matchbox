@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon, LinkedinIcon, GithubIcon, ExternalLinkIcon, EditIcon, FolderIcon, FileTextIcon, UploadIcon, CheckIcon, XIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import AvailabilityCalendar, { TimeSlot } from '../components/shared/AvailabilityCalendar';
 
 const ProfilePage: React.FC = () => {
   const { user: authUser, updateUserProfile, loading: authLoading } = useAuth();
@@ -40,7 +39,7 @@ const ProfilePage: React.FC = () => {
       Research: authUser.skills.research,
     },
     interests: authUser.interests || [],
-    availability: [] as TimeSlot[], // TODO: Add availability from user data
+    weeklyAvailability: authUser.weeklyAvailability || { hoursPerWeek: 0 },
     projects: [] as any[] // Mock empty projects for now - TODO: Fetch user's actual projects
   } : {
     name: 'Loading...',
@@ -52,7 +51,7 @@ const ProfilePage: React.FC = () => {
     links: { linkedin: '', github: '', portfolio: '', resume: { url: '', filename: '', uploadedAt: '' } },
     skills: {},
     interests: [],
-    availability: [] as TimeSlot[],
+    weeklyAvailability: { hoursPerWeek: 0 },
     projects: [] as any[]
   };
 
@@ -66,7 +65,7 @@ const ProfilePage: React.FC = () => {
   const [editedGithub, setEditedGithub] = useState(originalUser.links.github);
   const [editedPortfolio, setEditedPortfolio] = useState(originalUser.links.portfolio);
   const [editedInterests, setEditedInterests] = useState<string[]>(originalUser.interests);
-  const [editedAvailability, setEditedAvailability] = useState<TimeSlot[]>(originalUser.availability);
+  const [editedHoursPerWeek, setEditedHoursPerWeek] = useState<number>(originalUser.weeklyAvailability.hoursPerWeek);
   const [newInterest, setNewInterest] = useState('');
 
   // Update editable state when user data changes
@@ -81,7 +80,7 @@ const ProfilePage: React.FC = () => {
       setEditedGithub(originalUser.links.github);
       setEditedPortfolio(originalUser.links.portfolio);
       setEditedInterests(originalUser.interests);
-      setEditedAvailability(originalUser.availability);
+      setEditedHoursPerWeek(originalUser.weeklyAvailability.hoursPerWeek);
     }
   }, [authUser]);
 
@@ -124,6 +123,9 @@ const ProfilePage: React.FC = () => {
             portfolio: editedPortfolio || undefined,
           },
           interests: editedInterests,
+          weeklyAvailability: {
+            hoursPerWeek: editedHoursPerWeek
+          },
         });
         setIsEditMode(false);
       } catch (error) {
@@ -148,7 +150,7 @@ const ProfilePage: React.FC = () => {
     setEditedGithub(originalUser.links.github);
     setEditedPortfolio(originalUser.links.portfolio);
     setEditedInterests(originalUser.interests);
-    setEditedAvailability(originalUser.availability);
+    setEditedHoursPerWeek(originalUser.weeklyAvailability.hoursPerWeek);
     setIsEditMode(false);
   };
 
@@ -448,13 +450,53 @@ const ProfilePage: React.FC = () => {
                   scrollbarColor: '#cbd5e1 #f1f5f9'
                 }}
               >
-                {/* Availability Calendar */}
+                {/* Weekly Availability */}
                 <div className="mb-6">
-                  <AvailabilityCalendar
-                    selectedSlots={isEditMode ? editedAvailability : user.availability}
-                    onChange={isEditMode ? setEditedAvailability : undefined}
-                    editable={isEditMode}
-                  />
+                  <h4 className="text-sm font-semibold mb-3 text-slate-700">Weekly Availability</h4>
+                  {isEditMode ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="number"
+                          min="0"
+                          max="168"
+                          value={editedHoursPerWeek}
+                          onChange={(e) => setEditedHoursPerWeek(parseInt(e.target.value) || 0)}
+                          className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                          placeholder="Hours per week"
+                        />
+                        <span className="text-sm text-slate-600 font-medium">hours/week</span>
+                      </div>
+                      <div className="flex gap-2 flex-wrap">
+                        {[5, 10, 15, 20].map(hours => (
+                          <button
+                            key={hours}
+                            type="button"
+                            onClick={() => setEditedHoursPerWeek(hours)}
+                            className={`px-3 py-1 text-xs rounded-md border transition-all ${
+                              editedHoursPerWeek === hours
+                                ? 'bg-orange-500 text-white border-orange-500'
+                                : 'bg-white text-slate-700 border-slate-300 hover:border-orange-300 hover:bg-orange-50'
+                            }`}
+                          >
+                            {hours} hrs
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-lg">
+                      <div className="flex flex-col items-center justify-center px-4 py-2 bg-white rounded-lg border-2 border-orange-500">
+                        <span className="text-3xl font-bold text-orange-500">
+                          {user.weeklyAvailability.hoursPerWeek}
+                        </span>
+                        <span className="text-xs text-slate-600 font-medium">hours/week</span>
+                      </div>
+                      <p className="text-sm text-slate-600">
+                        Available for {user.weeklyAvailability.hoursPerWeek} hours of collaboration per week
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Interests */}

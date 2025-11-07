@@ -309,12 +309,13 @@ const SignupProfile: React.FC = () => {
     </div>;
 };
 const SignupLinks: React.FC = () => {
+  const { formData: signupFormData, updateFormData } = useSignupContext();
   const [formData, setFormData] = useState({
-    linkedin: '',
-    github: '',
-    medium: ''
+    linkedin: signupFormData.linkedin || '',
+    github: signupFormData.github || '',
+    portfolio: signupFormData.portfolio || ''
   });
-  const [resume, setResume] = useState<File | null>(null);
+  const [resume, setResume] = useState<File | null>(signupFormData.resume || null);
   const [resumeError, setResumeError] = useState('');
   const navigate = useNavigate();
 
@@ -354,7 +355,13 @@ const SignupLinks: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Saving links and resume:', { formData, resume: resume?.name });
+    // Save links and resume to context
+    updateFormData({
+      linkedin: formData.linkedin,
+      github: formData.github,
+      portfolio: formData.portfolio,
+      resume
+    });
     navigate('/signup/bio');
   };
   return <div>
@@ -386,10 +393,10 @@ const SignupLinks: React.FC = () => {
           </div>
         </div>
         <div className="mb-4">
-          <label htmlFor="medium" className="block text-sm font-medium text-slate-700 mb-1">
-            Medium or Portfolio
+          <label htmlFor="portfolio" className="block text-sm font-medium text-slate-700 mb-1">
+            Portfolio Website
           </label>
-          <input id="medium" name="medium" type="url" className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all" placeholder="https://medium.com/@username" value={formData.medium} onChange={handleChange} />
+          <input id="portfolio" name="portfolio" type="url" className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all" placeholder="https://yourportfolio.com" value={formData.portfolio} onChange={handleChange} />
         </div>
 
         {/* Resume Upload Section */}
@@ -475,13 +482,14 @@ interface UserSkill {
 }
 
 const SignupBio: React.FC = () => {
-  const [bio, setBio] = useState('');
-  const [interests, setInterests] = useState<string[]>([]);
+  const { formData, updateFormData } = useSignupContext();
+  const [bio, setBio] = useState(formData.bio || '');
+  const [interests, setInterests] = useState<string[]>(formData.interests || []);
   const [phase, setPhase] = useState<'selecting' | 'proficiency'>('selecting');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSkillNames, setSelectedSkillNames] = useState<string[]>([]);
   const [userSkills, setUserSkills] = useState<UserSkill[]>([]);
-  const [availabilitySlots, setAvailabilitySlots] = useState<TimeSlot[]>([]);
+  const [hoursPerWeek, setHoursPerWeek] = useState(formData.weeklyAvailability?.hoursPerWeek || 10);
   const navigate = useNavigate();
 
   // Toggle interest selection
@@ -541,11 +549,84 @@ const SignupBio: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Save data
-    console.log('Bio:', bio);
-    console.log('Interests:', interests);
-    console.log('Skills:', userSkills);
-    console.log('Availability:', availabilitySlots);
+
+    // Convert skills from {name, proficiency} array to backend format {programming: number, design: number, ...}
+    // Map proficiency levels to numbers
+    const proficiencyToNumber = {
+      'Beginner': 3,
+      'Intermediate': 5,
+      'Fluent': 7,
+      'Expert': 10
+    };
+
+    // Initialize skills object with all categories at 0
+    const skillsObject: {
+      programming: number;
+      design: number;
+      marketing: number;
+      writing: number;
+      research: number;
+    } = {
+      programming: 0,
+      design: 0,
+      marketing: 0,
+      writing: 0,
+      research: 0
+    };
+
+    // Map each user skill to a category and take the highest proficiency in each category
+    userSkills.forEach(skill => {
+      const proficiencyValue = proficiencyToNumber[skill.proficiency];
+      const skillLower = skill.name.toLowerCase();
+
+      // Programming skills
+      if (skillLower.includes('javascript') || skillLower.includes('python') || skillLower.includes('java') ||
+          skillLower.includes('c++') || skillLower.includes('typescript') || skillLower.includes('programming') ||
+          skillLower.includes('go') || skillLower.includes('rust') || skillLower.includes('php') || skillLower.includes('swift') ||
+          skillLower.includes('kotlin') || skillLower.includes('react') || skillLower.includes('vue') || skillLower.includes('angular') ||
+          skillLower.includes('node') || skillLower.includes('html') || skillLower.includes('css') || skillLower.includes('next') ||
+          skillLower.includes('express') || skillLower.includes('django') || skillLower.includes('flask') || skillLower.includes('sql') ||
+          skillLower.includes('docker') || skillLower.includes('kubernetes') || skillLower.includes('aws') || skillLower.includes('azure') ||
+          skillLower.includes('gcp') || skillLower.includes('devops') || skillLower.includes('mobile') || skillLower.includes('ios') ||
+          skillLower.includes('android') || skillLower.includes('flutter') || skillLower.includes('react native')) {
+        skillsObject.programming = Math.max(skillsObject.programming, proficiencyValue);
+      }
+
+      // Design skills
+      if (skillLower.includes('design') || skillLower.includes('figma') || skillLower.includes('adobe') ||
+          skillLower.includes('sketch') || skillLower.includes('ux') || skillLower.includes('ui') ||
+          skillLower.includes('prototype') || skillLower.includes('graphic')) {
+        skillsObject.design = Math.max(skillsObject.design, proficiencyValue);
+      }
+
+      // Marketing skills
+      if (skillLower.includes('marketing') || skillLower.includes('business') || skillLower.includes('strategy') ||
+          skillLower.includes('management')) {
+        skillsObject.marketing = Math.max(skillsObject.marketing, proficiencyValue);
+      }
+
+      // Writing skills
+      if (skillLower.includes('writing') || skillLower.includes('content') || skillLower.includes('copywriting')) {
+        skillsObject.writing = Math.max(skillsObject.writing, proficiencyValue);
+      }
+
+      // Research skills
+      if (skillLower.includes('research') || skillLower.includes('data') || skillLower.includes('analysis') ||
+          skillLower.includes('machine learning') || skillLower.includes('tensorflow') || skillLower.includes('pytorch')) {
+        skillsObject.research = Math.max(skillsObject.research, proficiencyValue);
+      }
+    });
+
+    // Save all data to context
+    updateFormData({
+      bio,
+      interests,
+      skills: skillsObject,
+      weeklyAvailability: {
+        hoursPerWeek
+      }
+    });
+
     navigate('/signup/education');
   };
 
@@ -806,13 +887,77 @@ const SignupBio: React.FC = () => {
           )}
         </div>
 
-        {/* Availability Calendar Section */}
-        <div className="mb-6 p-6 bg-white border border-slate-200 rounded-lg">
-          <AvailabilityCalendar
-            selectedSlots={availabilitySlots}
-            onChange={setAvailabilitySlots}
-            editable={true}
-          />
+        {/* Weekly Availability Section */}
+        <div className="mb-6">
+          <h3 className="text-sm font-medium text-slate-700 mb-3">
+            Weekly Availability
+          </h3>
+          <p className="text-sm text-slate-500 mb-4">
+            How many hours per week can you dedicate to projects?
+          </p>
+
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <input
+                type="number"
+                min="0"
+                max="168"
+                value={hoursPerWeek}
+                onChange={(e) => setHoursPerWeek(parseInt(e.target.value) || 0)}
+                className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                placeholder="e.g., 10"
+              />
+            </div>
+            <span className="text-sm text-slate-600 font-medium">hours/week</span>
+          </div>
+
+          {/* Quick selection buttons */}
+          <div className="flex gap-2 mt-3 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setHoursPerWeek(5)}
+              className={`px-3 py-1.5 text-sm rounded-md border transition-all ${
+                hoursPerWeek === 5
+                  ? 'bg-orange-500 text-white border-orange-500'
+                  : 'bg-white text-slate-700 border-slate-300 hover:border-orange-300 hover:bg-orange-50'
+              }`}
+            >
+              5 hrs
+            </button>
+            <button
+              type="button"
+              onClick={() => setHoursPerWeek(10)}
+              className={`px-3 py-1.5 text-sm rounded-md border transition-all ${
+                hoursPerWeek === 10
+                  ? 'bg-orange-500 text-white border-orange-500'
+                  : 'bg-white text-slate-700 border-slate-300 hover:border-orange-300 hover:bg-orange-50'
+              }`}
+            >
+              10 hrs
+            </button>
+            <button
+              type="button"
+              onClick={() => setHoursPerWeek(15)}
+              className={`px-3 py-1.5 text-sm rounded-md border transition-all ${
+                hoursPerWeek === 15
+                  ? 'bg-orange-500 text-white border-orange-500'
+                  : 'bg-white text-slate-700 border-slate-300 hover:border-orange-300 hover:bg-orange-50'
+              }`}
+            >
+              15 hrs
+            </button>
+            <button
+              type="button"
+              onClick={() => setHoursPerWeek(20)}
+              className={`px-3 py-1.5 text-sm rounded-md border transition-all ${
+                hoursPerWeek === 20
+                  ? 'bg-orange-500 text-white border-orange-500'
+                  : 'bg-white text-slate-700 border-slate-300 hover:border-orange-300 hover:bg-orange-50'
+              }`}
+            >
+              20 hrs
+            </button>
+          </div>
         </div>
 
         <button
@@ -954,6 +1099,8 @@ const SignupEducation: React.FC = () => {
         isAlumni,
         bio: signupFormData.bio,
         skills: signupFormData.skills,
+        interests: signupFormData.interests,
+        weeklyAvailability: signupFormData.weeklyAvailability,
         professionalLinks: {
           linkedin: signupFormData.linkedin,
           github: signupFormData.github,

@@ -26,6 +26,9 @@ export interface IUser extends Document {
     portfolio?: string;
   };
   interests: string[];
+  weeklyAvailability?: {
+    hoursPerWeek: number;
+  };
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -93,6 +96,9 @@ const UserSchema: Schema = new Schema(
       portfolio: String,
     },
     interests: [String],
+    weeklyAvailability: {
+      hoursPerWeek: { type: Number, min: 0, max: 168, default: 0 },
+    },
   },
   {
     timestamps: true,

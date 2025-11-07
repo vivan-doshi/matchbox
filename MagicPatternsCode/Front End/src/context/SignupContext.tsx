@@ -26,13 +26,16 @@ type SignupFormData = {
     writing: number;
     research: number;
   };
+  interests?: string[];
+  weeklyAvailability?: {
+    hoursPerWeek: number;
+  };
 
-  // Step 5: Education & Availability
+  // Step 5: Education
   university: string;
   major: string;
   graduationYear?: number;
   isAlumni: boolean;
-  availability?: any;
 };
 
 type SignupContextType = {
@@ -52,6 +55,10 @@ export const SignupProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       writing: 0,
       research: 0,
     },
+    interests: [],
+    weeklyAvailability: {
+      hoursPerWeek: 0,
+    },
     isAlumni: false,
   });
 
@@ -67,6 +74,10 @@ export const SignupProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         marketing: 0,
         writing: 0,
         research: 0,
+      },
+      interests: [],
+      weeklyAvailability: {
+        hoursPerWeek: 0,
       },
       isAlumni: false,
     });
