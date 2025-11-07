@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeftIcon, LinkedinIcon, GithubIcon, ExternalLinkIcon, EditIcon, FolderIcon, UploadIcon, CheckIcon, XIcon, Loader2Icon } from 'lucide-react';
+import { ArrowLeftIcon, LinkedinIcon, GithubIcon, ExternalLinkIcon, EditIcon, FolderIcon, FileTextIcon, UploadIcon, CheckIcon, XIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import AvailabilityCalendar, { TimeSlot } from '../components/shared/AvailabilityCalendar';
 
 const ProfilePage: React.FC = () => {
-  const { user, updateUserProfile, loading: authLoading } = useAuth();
+  const { user: authUser, updateUserProfile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   const [isEditMode, setIsEditMode] = useState(false);
@@ -13,54 +14,107 @@ const ProfilePage: React.FC = () => {
   const [showUploadSuccess, setShowUploadSuccess] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Editable state - initialized from user data
-  const [editedFirstName, setEditedFirstName] = useState('');
-  const [editedLastName, setEditedLastName] = useState('');
-  const [editedPreferredName, setEditedPreferredName] = useState('');
-  const [editedBio, setEditedBio] = useState('');
-  const [editedUniversity, setEditedUniversity] = useState('');
-  const [editedMajor, setEditedMajor] = useState('');
-  const [editedGradYear, setEditedGradYear] = useState('');
-  const [editedLinkedin, setEditedLinkedin] = useState('');
-  const [editedGithub, setEditedGithub] = useState('');
-  const [editedPortfolio, setEditedPortfolio] = useState('');
-  const [editedInterests, setEditedInterests] = useState<string[]>([]);
+  // Transform auth user data to match original structure
+  const originalUser = authUser ? {
+    name: authUser.preferredName || `${authUser.firstName} ${authUser.lastName}`,
+    university: authUser.university,
+    major: authUser.major,
+    graduationYear: authUser.graduationYear?.toString() || 'N/A',
+    bio: authUser.bio || '',
+    profilePicture: authUser.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(authUser.firstName + ' ' + authUser.lastName)}&size=300&background=f97316&color=fff`,
+    links: {
+      linkedin: authUser.professionalLinks?.linkedin || '',
+      github: authUser.professionalLinks?.github || '',
+      portfolio: authUser.professionalLinks?.portfolio || '',
+      resume: {
+        url: '',
+        filename: '',
+        uploadedAt: ''
+      }
+    },
+    skills: {
+      Programming: authUser.skills.programming,
+      Design: authUser.skills.design,
+      Marketing: authUser.skills.marketing,
+      Writing: authUser.skills.writing,
+      Research: authUser.skills.research,
+    },
+    interests: authUser.interests || [],
+    availability: [] as TimeSlot[], // TODO: Add availability from user data
+    projects: [] as any[] // Mock empty projects for now - TODO: Fetch user's actual projects
+  } : {
+    name: 'Loading...',
+    university: '',
+    major: '',
+    graduationYear: '',
+    bio: '',
+    profilePicture: '',
+    links: { linkedin: '', github: '', portfolio: '', resume: { url: '', filename: '', uploadedAt: '' } },
+    skills: {},
+    interests: [],
+    availability: [] as TimeSlot[],
+    projects: [] as any[]
+  };
+
+  // Editable state
+  const [editedName, setEditedName] = useState(originalUser.name);
+  const [editedBio, setEditedBio] = useState(originalUser.bio);
+  const [editedUniversity, setEditedUniversity] = useState(originalUser.university);
+  const [editedMajor, setEditedMajor] = useState(originalUser.major);
+  const [editedGradYear, setEditedGradYear] = useState(originalUser.graduationYear);
+  const [editedLinkedin, setEditedLinkedin] = useState(originalUser.links.linkedin);
+  const [editedGithub, setEditedGithub] = useState(originalUser.links.github);
+  const [editedPortfolio, setEditedPortfolio] = useState(originalUser.links.portfolio);
+  const [editedInterests, setEditedInterests] = useState<string[]>(originalUser.interests);
+  const [editedAvailability, setEditedAvailability] = useState<TimeSlot[]>(originalUser.availability);
   const [newInterest, setNewInterest] = useState('');
 
-  // Initialize form fields when user data loads
+  // Update editable state when user data changes
   useEffect(() => {
-    if (user) {
-      setEditedFirstName(user.firstName || '');
-      setEditedLastName(user.lastName || '');
-      setEditedPreferredName(user.preferredName || '');
-      setEditedBio(user.bio || '');
-      setEditedUniversity(user.university || '');
-      setEditedMajor(user.major || '');
-      setEditedGradYear(user.graduationYear?.toString() || '');
-      setEditedLinkedin(user.professionalLinks?.linkedin || '');
-      setEditedGithub(user.professionalLinks?.github || '');
-      setEditedPortfolio(user.professionalLinks?.portfolio || '');
-      setEditedInterests(user.interests || []);
+    if (authUser) {
+      setEditedName(originalUser.name);
+      setEditedBio(originalUser.bio);
+      setEditedUniversity(originalUser.university);
+      setEditedMajor(originalUser.major);
+      setEditedGradYear(originalUser.graduationYear);
+      setEditedLinkedin(originalUser.links.linkedin);
+      setEditedGithub(originalUser.links.github);
+      setEditedPortfolio(originalUser.links.portfolio);
+      setEditedInterests(originalUser.interests);
+      setEditedAvailability(originalUser.availability);
     }
-  }, [user]);
+  }, [authUser]);
 
   // Redirect if not authenticated
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (!authLoading && !authUser) {
       navigate('/login');
     }
-  }, [authLoading, user, navigate]);
+  }, [authLoading, authUser, navigate]);
+
+  // Use original data for display
+  const user = originalUser;
+
+  // Show loading if still fetching auth
+  if (authLoading || !authUser) {
+    return <div className="min-h-screen page-background-gradient flex items-center justify-center">
+      <div className="text-slate-600">Loading profile...</div>
+    </div>;
+  }
 
   const handleEditProfile = async () => {
     if (isEditMode) {
-      // Save all changes
       try {
         setSaving(true);
+        // Parse name into first and last
+        const nameParts = editedName.trim().split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+
         await updateUserProfile({
-          firstName: editedFirstName,
-          lastName: editedLastName,
-          preferredName: editedPreferredName || undefined,
-          bio: editedBio || undefined,
+          firstName,
+          lastName,
+          bio: editedBio,
           university: editedUniversity,
           major: editedMajor,
           graduationYear: editedGradYear ? parseInt(editedGradYear) : undefined,
@@ -85,19 +139,16 @@ const ProfilePage: React.FC = () => {
 
   const handleCancel = () => {
     // Reset all edited values to original
-    if (user) {
-      setEditedFirstName(user.firstName || '');
-      setEditedLastName(user.lastName || '');
-      setEditedPreferredName(user.preferredName || '');
-      setEditedBio(user.bio || '');
-      setEditedUniversity(user.university || '');
-      setEditedMajor(user.major || '');
-      setEditedGradYear(user.graduationYear?.toString() || '');
-      setEditedLinkedin(user.professionalLinks?.linkedin || '');
-      setEditedGithub(user.professionalLinks?.github || '');
-      setEditedPortfolio(user.professionalLinks?.portfolio || '');
-      setEditedInterests(user.interests || []);
-    }
+    setEditedName(originalUser.name);
+    setEditedBio(originalUser.bio);
+    setEditedUniversity(originalUser.university);
+    setEditedMajor(originalUser.major);
+    setEditedGradYear(originalUser.graduationYear);
+    setEditedLinkedin(originalUser.links.linkedin);
+    setEditedGithub(originalUser.links.github);
+    setEditedPortfolio(originalUser.links.portfolio);
+    setEditedInterests(originalUser.interests);
+    setEditedAvailability(originalUser.availability);
     setIsEditMode(false);
   };
 
@@ -116,7 +167,7 @@ const ProfilePage: React.FC = () => {
     const file = e.target.files?.[0];
     if (file) {
       setUploadingResume(true);
-      // Simulate upload - in real app, upload to server
+      // Simulate upload
       setTimeout(() => {
         setUploadingResume(false);
         setShowUploadSuccess(true);
@@ -126,48 +177,9 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  // Show loading state
-  if (authLoading || !user) {
-    return (
-      <div className="min-h-screen page-background-gradient flex items-center justify-center">
-        <div className="text-center">
-          <Loader2Icon className="h-12 w-12 text-orange-500 animate-spin mx-auto mb-4" />
-          <p className="text-slate-600">Loading profile...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Display name logic
-  const displayName = user.preferredName || `${user.firstName} ${user.lastName}`;
-
-  // Convert skills object to proficiency format for display
-  const skillsArray = [
-    { name: 'Programming', level: user.skills.programming },
-    { name: 'Design', level: user.skills.design },
-    { name: 'Marketing', level: user.skills.marketing },
-    { name: 'Writing', level: user.skills.writing },
-    { name: 'Research', level: user.skills.research },
-  ].filter(skill => skill.level > 0);
-
-  // Mock projects for now - in real app, fetch from API
-  const mockProjects = [
-    {
-      id: '1',
-      title: 'Campus Events Platform',
-      description: 'A platform for students to discover and RSVP to campus events.',
-      role: 'Project Lead',
-      status: 'active',
-      startDate: '2024-01-01',
-      tags: ['React', 'Node.js', 'MongoDB']
-    },
-  ];
-
-  const activeProjects = mockProjects.filter(p => p.status === 'active');
-  const completedProjects = mockProjects.filter(p => p.status === 'completed');
-
-  return (
-    <div className="min-h-screen page-background-gradient">
+  const activeProjects = user.projects.filter(p => p.status === 'active');
+  const completedProjects = user.projects.filter(p => p.status === 'completed');
+  return <div className="min-h-screen page-background-gradient">
       <header className="bg-white border-b border-slate-200 py-4 px-6">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center">
@@ -181,410 +193,459 @@ const ProfilePage: React.FC = () => {
               <FolderIcon className="h-4 w-4 mr-1" />
               My Projects
             </Link>
-            {isEditMode ? (
-              <>
-                <button
-                  onClick={handleCancel}
-                  className="flex items-center text-sm text-slate-700 px-4 py-2 rounded-full font-medium hover:bg-slate-100 transition-all mr-2"
-                  disabled={saving}
-                >
-                  <XIcon className="h-4 w-4 mr-1" />
-                  Cancel
-                </button>
-                <button
-                  onClick={handleEditProfile}
-                  className="flex items-center text-sm bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-full font-medium hover:shadow-lg transition-all"
-                  disabled={saving}
-                >
-                  {saving ? (
-                    <>
-                      <Loader2Icon className="h-4 w-4 mr-1 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <CheckIcon className="h-4 w-4 mr-1" />
-                      Save Changes
-                    </>
-                  )}
-                </button>
-              </>
-            ) : (
+            <button
+              onClick={handleEditProfile}
+              className={`flex items-center text-sm px-4 py-2 rounded-full font-medium transition-all cursor-pointer ${
+                isEditMode
+                  ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:shadow-lg'
+                  : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              {isEditMode ? (
+                <>
+                  <CheckIcon className="h-4 w-4 mr-1" />
+                  Save Changes
+                </>
+              ) : (
+                <>
+                  <EditIcon className="h-4 w-4 mr-1" />
+                  Edit Profile
+                </>
+              )}
+            </button>
+            {isEditMode && (
               <button
-                onClick={handleEditProfile}
-                className="flex items-center text-sm bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-full font-medium hover:shadow-lg transition-all"
+                onClick={handleCancel}
+                className="flex items-center text-sm bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-full font-medium hover:bg-slate-50 transition-all cursor-pointer ml-2"
               >
-                <EditIcon className="h-4 w-4 mr-1" />
-                Edit Profile
+                <XIcon className="h-4 w-4 mr-1" />
+                Cancel
               </button>
             )}
           </div>
         </div>
       </header>
-
       <main className="container mx-auto p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Profile Info */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Profile Picture Card */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-              <div className="text-center">
-                <div className="relative inline-block mb-4">
-                  <img
-                    src={user.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&size=200&background=f97316&color=fff`}
-                    alt={displayName}
-                    className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg"
-                  />
-                  {isEditMode && (
-                    <button className="absolute bottom-0 right-0 bg-gradient-to-r from-orange-500 to-red-500 text-white p-2 rounded-full shadow-lg hover:scale-110 transition-transform">
-                      <EditIcon className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-
+        <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden mb-6">
+          <div className="p-6 sm:p-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center">
+              <img src={user.profilePicture} alt={user.name} className="w-24 h-24 rounded-full mb-4 sm:mb-0 sm:mr-6" />
+              <div className="flex-1">
                 {isEditMode ? (
-                  <div className="space-y-3">
+                  <div className="space-y-3 mb-3">
                     <input
                       type="text"
-                      value={editedFirstName}
-                      onChange={(e) => setEditedFirstName(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-center font-bold text-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
-                      placeholder="First Name"
+                      value={editedName}
+                      onChange={(e) => setEditedName(e.target.value)}
+                      className="w-full text-2xl font-bold px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                      placeholder="Name"
                     />
-                    <input
-                      type="text"
-                      value={editedLastName}
-                      onChange={(e) => setEditedLastName(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-center font-bold text-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
-                      placeholder="Last Name"
-                    />
-                    <input
-                      type="text"
-                      value={editedPreferredName}
-                      onChange={(e) => setEditedPreferredName(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-center text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
-                      placeholder="Preferred Name (optional)"
-                    />
-                  </div>
-                ) : (
-                  <>
-                    <h2 className="text-2xl font-bold text-slate-900 mb-1">{displayName}</h2>
-                    {user.preferredName && user.preferredName !== `${user.firstName} ${user.lastName}` && (
-                      <p className="text-sm text-slate-600 mb-2">
-                        ({user.firstName} {user.lastName})
-                      </p>
-                    )}
-                  </>
-                )}
-
-                {isEditMode ? (
-                  <div className="space-y-2 mt-3">
-                    <input
-                      type="text"
-                      value={editedUniversity}
-                      onChange={(e) => setEditedUniversity(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-center text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
-                      placeholder="University"
-                    />
-                    <input
-                      type="text"
-                      value={editedMajor}
-                      onChange={(e) => setEditedMajor(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-center text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
-                      placeholder="Major"
-                    />
-                    <input
-                      type="number"
-                      value={editedGradYear}
-                      onChange={(e) => setEditedGradYear(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-center text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
-                      placeholder="Graduation Year"
-                    />
-                  </div>
-                ) : (
-                  <>
-                    <p className="text-slate-600 mb-1">{user.university}</p>
-                    <p className="text-slate-600 mb-2">{user.major} • Class of {user.graduationYear || 'N/A'}</p>
-                  </>
-                )}
-              </div>
-
-              {/* Professional Links */}
-              <div className="mt-6 pt-6 border-t border-slate-200">
-                <h3 className="text-sm font-semibold text-slate-700 mb-3">Professional Links</h3>
-                <div className="space-y-2">
-                  {isEditMode ? (
-                    <>
+                    <div className="flex gap-2 flex-wrap">
                       <input
-                        type="url"
+                        type="text"
+                        value={editedMajor}
+                        onChange={(e) => setEditedMajor(e.target.value)}
+                        className="flex-1 min-w-[150px] text-slate-600 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                        placeholder="Major"
+                      />
+                      <input
+                        type="text"
+                        value={editedUniversity}
+                        onChange={(e) => setEditedUniversity(e.target.value)}
+                        className="flex-1 min-w-[200px] text-slate-600 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                        placeholder="University"
+                      />
+                      <input
+                        type="text"
+                        value={editedGradYear}
+                        onChange={(e) => setEditedGradYear(e.target.value)}
+                        className="w-24 text-slate-600 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                        placeholder="Year"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <h2 className="text-2xl font-bold mb-1">{user.name}</h2>
+                    <p className="text-slate-600 mb-3">
+                      {user.major} @ {user.university} • Class of{' '}
+                      {user.graduationYear}
+                    </p>
+                  </>
+                )}
+                {isEditMode ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <LinkedinIcon className="h-4 w-4 text-blue-700" />
+                      <input
+                        type="text"
                         value={editedLinkedin}
                         onChange={(e) => setEditedLinkedin(e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                        className="flex-1 text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
                         placeholder="LinkedIn URL"
                       />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <GithubIcon className="h-4 w-4 text-slate-800" />
                       <input
-                        type="url"
+                        type="text"
                         value={editedGithub}
                         onChange={(e) => setEditedGithub(e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                        className="flex-1 text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
                         placeholder="GitHub URL"
                       />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <ExternalLinkIcon className="h-4 w-4 text-purple-700" />
                       <input
-                        type="url"
+                        type="text"
                         value={editedPortfolio}
                         onChange={(e) => setEditedPortfolio(e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                        className="flex-1 text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
                         placeholder="Portfolio URL"
                       />
-                    </>
-                  ) : (
-                    <>
-                      {user.professionalLinks?.linkedin && (
-                        <a
-                          href={user.professionalLinks.linkedin}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center text-sm text-blue-600 hover:text-blue-700 transition-colors"
-                        >
-                          <LinkedinIcon className="h-4 w-4 mr-2" />
-                          LinkedIn
-                          <ExternalLinkIcon className="h-3 w-3 ml-1" />
-                        </a>
-                      )}
-                      {user.professionalLinks?.github && (
-                        <a
-                          href={user.professionalLinks.github}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center text-sm text-slate-700 hover:text-slate-900 transition-colors"
-                        >
-                          <GithubIcon className="h-4 w-4 mr-2" />
-                          GitHub
-                          <ExternalLinkIcon className="h-3 w-3 ml-1" />
-                        </a>
-                      )}
-                      {user.professionalLinks?.portfolio && (
-                        <a
-                          href={user.professionalLinks.portfolio}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center text-sm text-orange-600 hover:text-orange-700 transition-colors"
-                        >
-                          <ExternalLinkIcon className="h-4 w-4 mr-2" />
-                          Portfolio
-                        </a>
-                      )}
-                      {!user.professionalLinks?.linkedin && !user.professionalLinks?.github && !user.professionalLinks?.portfolio && (
-                        <p className="text-sm text-slate-500 italic">No links added yet</p>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Resume Section */}
-              <div className="mt-6 pt-6 border-t border-slate-200">
-                <h3 className="text-sm font-semibold text-slate-700 mb-3">Resume</h3>
-                <div className="relative">
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx"
-                    onChange={handleResumeUpload}
-                    className="hidden"
-                    id="resume-upload"
-                  />
-                  <label
-                    htmlFor="resume-upload"
-                    className={`flex items-center justify-center px-4 py-3 border-2 border-dashed rounded-lg cursor-pointer transition-all ${
-                      uploadingResume
-                        ? 'border-orange-300 bg-orange-50'
-                        : 'border-slate-300 hover:border-orange-500 hover:bg-orange-50'
-                    }`}
-                  >
-                    {uploadingResume ? (
-                      <Loader2Icon className="h-5 w-5 text-orange-500 animate-spin mr-2" />
-                    ) : (
-                      <UploadIcon className="h-5 w-5 text-slate-500 mr-2" />
-                    )}
-                    <span className="text-sm text-slate-700">
-                      {uploadingResume ? 'Uploading...' : 'Upload Resume'}
-                    </span>
-                  </label>
-                  {showUploadSuccess && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-green-50 bg-opacity-95 rounded-lg">
-                      <div className="flex items-center text-green-700">
-                        <CheckIcon className="h-5 w-5 mr-2" />
-                        <span className="text-sm font-medium">Uploaded!</span>
-                      </div>
                     </div>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {user.links.linkedin ? (
+                      <a
+                        href={user.links.linkedin}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center text-xs bg-blue-50 text-blue-700 px-3 py-1 rounded-full hover:bg-blue-100 transition-colors cursor-pointer"
+                      >
+                        <LinkedinIcon className="h-3 w-3 mr-1" />
+                        LinkedIn
+                      </a>
+                    ) : (
+                      <button
+                        disabled
+                        className="flex items-center text-xs bg-slate-100 text-slate-400 px-3 py-1 rounded-full cursor-not-allowed"
+                      >
+                        <LinkedinIcon className="h-3 w-3 mr-1" />
+                        Add LinkedIn
+                      </button>
+                    )}
+                    {user.links.github ? (
+                      <a
+                        href={user.links.github}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center text-xs bg-slate-800 text-white px-3 py-1 rounded-full hover:bg-slate-900 transition-colors cursor-pointer"
+                      >
+                        <GithubIcon className="h-3 w-3 mr-1" />
+                        GitHub
+                      </a>
+                    ) : (
+                      <button
+                        disabled
+                        className="flex items-center text-xs bg-slate-100 text-slate-400 px-3 py-1 rounded-full cursor-not-allowed"
+                      >
+                        <GithubIcon className="h-3 w-3 mr-1" />
+                        Add GitHub
+                      </button>
+                    )}
+                    {user.links.portfolio ? (
+                      <a
+                        href={user.links.portfolio}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center text-xs bg-purple-50 text-purple-700 px-3 py-1 rounded-full hover:bg-purple-100 transition-colors cursor-pointer"
+                      >
+                        <ExternalLinkIcon className="h-3 w-3 mr-1" />
+                        Portfolio
+                      </a>
+                    ) : (
+                      <button
+                        disabled
+                        className="flex items-center text-xs bg-slate-100 text-slate-400 px-3 py-1 rounded-full cursor-not-allowed"
+                      >
+                        <ExternalLinkIcon className="h-3 w-3 mr-1" />
+                        Add Portfolio
+                      </button>
+                    )}
+                    {user.links.resume ? (
+                      <a
+                        href={user.links.resume.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center text-xs bg-orange-50 text-orange-700 px-3 py-1 rounded-full hover:bg-orange-100 transition-colors cursor-pointer"
+                      >
+                        <FileTextIcon className="h-3 w-3 mr-1" />
+                        Resume
+                      </a>
+                    ) : (
+                      <label className="flex items-center text-xs bg-slate-100 text-slate-400 px-3 py-1 rounded-full hover:bg-slate-200 transition-colors cursor-pointer">
+                        <UploadIcon className="h-3 w-3 mr-1" />
+                        {uploadingResume ? 'Uploading...' : 'Upload Resume'}
+                        <input
+                          type="file"
+                          accept=".pdf,.doc,.docx"
+                          onChange={handleResumeUpload}
+                          className="hidden"
+                          disabled={uploadingResume}
+                        />
+                      </label>
+                    )}
+                    {showUploadSuccess && (
+                      <span className="flex items-center text-xs bg-green-50 text-green-700 px-3 py-1 rounded-full">
+                        <CheckIcon className="h-3 w-3 mr-1" />
+                        Uploaded!
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
-          </div>
-
-          {/* Right Column - Details */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Bio Section */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-              <h3 className="text-lg font-semibold text-slate-900 mb-3">About Me</h3>
+            <div className="mt-8">
+              <h3 className="font-bold mb-3">About</h3>
               {isEditMode ? (
                 <textarea
                   value={editedBio}
                   onChange={(e) => setEditedBio(e.target.value)}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none resize-none"
-                  rows={4}
-                  placeholder="Tell us about yourself, your interests, and what you're looking for in a project..."
+                  className="w-full text-slate-700 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none min-h-[100px]"
+                  placeholder="Tell us about yourself..."
                 />
               ) : (
-                <p className="text-slate-700 leading-relaxed">
-                  {user.bio || 'No bio added yet. Click "Edit Profile" to add one!'}
-                </p>
+                <p className="text-slate-700">{user.bio}</p>
               )}
             </div>
-
-            {/* Skills Section */}
-            {skillsArray.length > 0 && (
-              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                <h3 className="text-lg font-semibold text-slate-900 mb-4">Skills</h3>
-                <div className="space-y-4">
-                  {skillsArray.map((skill) => (
-                    <div key={skill.name}>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium text-slate-700">{skill.name}</span>
-                        <span className="text-xs text-slate-500">{skill.level}/10</span>
-                      </div>
-                      <div className="w-full bg-slate-200 rounded-full h-2">
-                        <div
-                          className="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full transition-all"
-                          style={{ width: `${(skill.level / 10) * 100}%` }}
-                        />
-                      </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+            <div className="p-6">
+              <h3 className="font-bold mb-4">Skills</h3>
+              <div
+                className="space-y-4 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100 hover:scrollbar-thumb-slate-400"
+                style={{
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: '#cbd5e1 #f1f5f9'
+                }}
+              >
+                {Object.entries(user.skills).map(([skill, level]) => <div key={skill}>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm font-medium">{skill}</span>
+                      <span className="text-sm text-slate-500">{level}/10</span>
                     </div>
-                  ))}
-                </div>
+                    <div className="w-full bg-slate-200 rounded-full h-2">
+                      <div className="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full" style={{
+                    width: `${level / 10 * 100}%`
+                  }}></div>
+                    </div>
+                  </div>)}
               </div>
-            )}
-
-            {/* Interests Section */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-              <h3 className="text-lg font-semibold text-slate-900 mb-3">Interests</h3>
-              <div className="flex flex-wrap gap-2 mb-3">
-                {(isEditMode ? editedInterests : user.interests).map((interest, index) => (
-                  <span
-                    key={index}
-                    className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium flex items-center"
-                  >
-                    {interest}
-                    {isEditMode && (
-                      <button
-                        onClick={() => handleRemoveInterest(interest)}
-                        className="ml-2 text-orange-500 hover:text-orange-700"
-                      >
-                        <XIcon className="h-3 w-3" />
-                      </button>
-                    )}
-                  </span>
-                ))}
-                {(isEditMode ? editedInterests : user.interests).length === 0 && (
-                  <p className="text-sm text-slate-500 italic">No interests added yet</p>
-                )}
-              </div>
-              {isEditMode && (
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={newInterest}
-                    onChange={(e) => setNewInterest(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddInterest()}
-                    className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
-                    placeholder="Add an interest..."
-                  />
-                  <button
-                    onClick={handleAddInterest}
-                    className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg text-sm font-medium hover:shadow-lg transition-all"
-                  >
-                    Add
-                  </button>
-                </div>
-              )}
             </div>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+            <div className="p-6">
+              <h3 className="font-bold mb-4">Interests & Availability</h3>
+              <div
+                className="max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100 hover:scrollbar-thumb-slate-400"
+                style={{
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: '#cbd5e1 #f1f5f9'
+                }}
+              >
+                {/* Availability Calendar */}
+                <div className="mb-6">
+                  <AvailabilityCalendar
+                    selectedSlots={isEditMode ? editedAvailability : user.availability}
+                    onChange={isEditMode ? setEditedAvailability : undefined}
+                    editable={isEditMode}
+                  />
+                </div>
 
-            {/* Projects Section */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-slate-900">Projects</h3>
-                <Link
-                  to="/my-projects"
-                  className="text-sm text-orange-600 hover:text-orange-700 font-medium"
-                >
-                  View All
-                </Link>
-              </div>
-
-              {/* Tabs */}
-              <div className="flex gap-4 mb-4 border-b border-slate-200">
-                <button
-                  onClick={() => setActiveProjectTab('active')}
-                  className={`pb-2 text-sm font-medium transition-colors ${
-                    activeProjectTab === 'active'
-                      ? 'text-orange-600 border-b-2 border-orange-600'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  Active ({activeProjects.length})
-                </button>
-                <button
-                  onClick={() => setActiveProjectTab('completed')}
-                  className={`pb-2 text-sm font-medium transition-colors ${
-                    activeProjectTab === 'completed'
-                      ? 'text-orange-600 border-b-2 border-orange-600'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  Completed ({completedProjects.length})
-                </button>
-              </div>
-
-              {/* Project List */}
-              <div className="space-y-4">
-                {(activeProjectTab === 'active' ? activeProjects : completedProjects).length === 0 ? (
-                  <p className="text-sm text-slate-500 italic text-center py-8">
-                    No {activeProjectTab} projects yet
-                  </p>
-                ) : (
-                  (activeProjectTab === 'active' ? activeProjects : completedProjects).map((project) => (
-                    <div
-                      key={project.id}
-                      className="border border-slate-200 rounded-lg p-4 hover:border-orange-300 transition-colors"
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-semibold text-slate-900">{project.title}</h4>
-                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">
-                          {project.role}
-                        </span>
-                      </div>
-                      <p className="text-sm text-slate-600 mb-3">{project.description}</p>
-                      <div className="flex flex-wrap gap-2">
-                        {project.tags.map((tag, index) => (
-                          <span
-                            key={index}
-                            className="text-xs bg-slate-100 text-slate-700 px-2 py-1 rounded"
-                          >
-                            {tag}
+                {/* Interests */}
+                <div>
+                  <h4 className="text-sm font-semibold mb-3 text-slate-700">Interests</h4>
+                  {isEditMode ? (
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {editedInterests.map((interest, index) => (
+                          <span key={index} className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-sm flex items-center gap-2">
+                            {interest}
+                            <button
+                              onClick={() => handleRemoveInterest(interest)}
+                              className="text-red-500 hover:text-red-700 font-bold"
+                              type="button"
+                            >
+                              ×
+                            </button>
                           </span>
                         ))}
                       </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={newInterest}
+                          onChange={(e) => setNewInterest(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleAddInterest()}
+                          className="flex-1 text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                          placeholder="Add new interest..."
+                        />
+                        <button
+                          onClick={handleAddInterest}
+                          type="button"
+                          className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors"
+                        >
+                          Add
+                        </button>
+                      </div>
                     </div>
-                  ))
-                )}
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {user.interests.map((interest, index) => (
+                        <span key={index} className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-sm">
+                          {interest}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </main>
-    </div>
-  );
-};
+        {/* Project Tabs */}
+        <div className="mt-6 bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold">My Projects</h3>
+              <Link to="/my-projects" className="text-sm text-orange-500 hover:text-orange-600 font-medium cursor-pointer">
+                View all
+              </Link>
+            </div>
 
+            {/* Tab Navigation */}
+            <div className="flex border-b border-slate-200 mb-6">
+              <button
+                onClick={() => setActiveProjectTab('active')}
+                className={`flex-1 py-3 text-sm font-medium transition-colors relative cursor-pointer ${
+                  activeProjectTab === 'active'
+                    ? 'text-orange-500 border-b-2 border-orange-500'
+                    : 'text-slate-600 hover:text-slate-800'
+                }`}
+              >
+                Active Projects
+                <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700">
+                  {activeProjects.length}
+                </span>
+              </button>
+              <button
+                onClick={() => setActiveProjectTab('completed')}
+                className={`flex-1 py-3 text-sm font-medium transition-colors relative cursor-pointer ${
+                  activeProjectTab === 'completed'
+                    ? 'text-orange-500 border-b-2 border-orange-500'
+                    : 'text-slate-600 hover:text-slate-800'
+                }`}
+              >
+                Completed Projects
+                <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700">
+                  {completedProjects.length}
+                </span>
+              </button>
+            </div>
+
+            {/* Tab Content */}
+            <div className="space-y-4">
+              {activeProjectTab === 'active' && (
+                <>
+                  {activeProjects.length > 0 ? (
+                    activeProjects.map(project => (
+                      <Link
+                        key={project.id}
+                        to={`/project/${project.id}`}
+                        className="block border border-slate-200 rounded-lg p-4 hover:border-orange-300 hover:shadow-md transition-all cursor-pointer"
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="font-bold text-slate-800 hover:text-orange-600">
+                            {project.title}
+                          </h4>
+                          <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">
+                            In Progress
+                          </span>
+                        </div>
+                        <p className="text-sm text-slate-700 mb-3">
+                          {project.description}
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-slate-500">Role: {project.role}</p>
+                          <div className="flex flex-wrap gap-1">
+                            {project.tags.slice(0, 3).map((tag, idx) => (
+                              <span key={idx} className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </Link>
+                    ))
+                  ) : (
+                    <div className="text-center py-12 text-slate-500">
+                      <p className="mb-2">No active projects yet</p>
+                      <Link
+                        to="/dashboard"
+                        className="text-sm text-orange-500 hover:text-orange-600 font-medium cursor-pointer"
+                      >
+                        Explore projects to join
+                      </Link>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {activeProjectTab === 'completed' && (
+                <>
+                  {completedProjects.length > 0 ? (
+                    completedProjects.map(project => (
+                      <Link
+                        key={project.id}
+                        to={`/project/${project.id}`}
+                        className="block border border-slate-200 rounded-lg p-4 hover:border-green-300 hover:shadow-md transition-all cursor-pointer"
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="font-bold text-slate-800 hover:text-orange-600">
+                            {project.title}
+                          </h4>
+                          <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">
+                            Completed
+                          </span>
+                        </div>
+                        <p className="text-sm text-slate-700 mb-3">
+                          {project.description}
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-xs text-slate-500">Role: {project.role}</p>
+                            {project.endDate && (
+                              <p className="text-xs text-slate-400 mt-1">
+                                Completed: {new Date(project.endDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {project.tags.slice(0, 3).map((tag, idx) => (
+                              <span key={idx} className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </Link>
+                    ))
+                  ) : (
+                    <div className="text-center py-12 text-slate-500">
+                      <p>No completed projects yet</p>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>;
+};
 export default ProfilePage;
