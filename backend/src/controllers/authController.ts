@@ -3,6 +3,36 @@ import User from '../models/User';
 import { generateToken } from '../utils/generateToken';
 import { AuthRequest } from '../middleware/auth';
 
+// @desc    Check if email exists
+// @route   POST /api/auth/check-email
+// @access  Public
+export const checkEmail = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      res.status(400).json({
+        success: false,
+        message: 'Email is required',
+      });
+      return;
+    }
+
+    const userExists = await User.findOne({ email: email.toLowerCase() });
+
+    res.status(200).json({
+      success: true,
+      exists: !!userExists,
+      message: userExists ? 'Email is already in use' : 'Email is available',
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
 // @desc    Register user
 // @route   POST /api/auth/signup
 // @access  Public

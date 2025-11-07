@@ -3,6 +3,7 @@ import { Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon, ArrowRightIcon, LinkedinIcon, GithubIcon, CameraIcon, UploadIcon, XIcon, FileTextIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSignupContext } from '../context/SignupContext';
+import apiClient from '../utils/apiClient';
 import AvailabilityCalendar, { TimeSlot } from '../components/shared/AvailabilityCalendar';
 
 const SignupEmail: React.FC = () => {
@@ -11,6 +12,7 @@ const SignupEmail: React.FC = () => {
   const [password, setPassword] = useState(formData.password || '');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [checking, setChecking] = useState(false);
   const navigate = useNavigate();
 
   const validateEmail = (email: string) => {
@@ -36,7 +38,7 @@ const SignupEmail: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmedEmail = email.trim();
+    const trimmedEmail = email.trim().toLowerCase();
 
     if (!trimmedEmail) {
       setError('Please enter your email address');
@@ -64,13 +66,24 @@ const SignupEmail: React.FC = () => {
     }
 
     try {
+      // Check if email already exists
+      setChecking(true);
+      const response = await apiClient.checkEmail(trimmedEmail);
+      setChecking(false);
+
+      if (response.data?.exists) {
+        setError('This email is already in use. Please use a different email or log in.');
+        return;
+      }
+
       // Save email and password to context
       updateFormData({ email: trimmedEmail, password });
       // Proceed to next step
       navigate('/signup/profile');
     } catch (err: any) {
-      console.error('Navigation error:', err);
-      setError(err.message || 'An error occurred. Please try again.');
+      setChecking(false);
+      console.error('Email check error:', err);
+      setError(err.response?.data?.message || 'An error occurred. Please try again.');
     }
   };
   return <div>
@@ -134,8 +147,12 @@ const SignupEmail: React.FC = () => {
 
         {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
-        <button type="submit" className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all">
-          Continue
+        <button
+          type="submit"
+          disabled={checking}
+          className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {checking ? 'Checking email...' : 'Continue'}
         </button>
       </form>
       <p className="mt-6 text-center text-sm text-slate-600">

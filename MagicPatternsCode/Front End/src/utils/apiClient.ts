@@ -82,6 +82,11 @@ class ApiClient {
 
   // ============= AUTH ENDPOINTS =============
 
+  async checkEmail(email: string): Promise<ApiResponse<{ exists: boolean }>> {
+    const response = await this.client.post<ApiResponse<{ exists: boolean }>>('/auth/check-email', { email });
+    return response.data;
+  }
+
   async signup(data: SignupRequest): Promise<AuthResponse> {
     const response = await this.client.post<AuthResponse>('/auth/signup', data);
     if (response.data.token) {
