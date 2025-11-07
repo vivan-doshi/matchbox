@@ -63,6 +63,7 @@ export const updateUserProfile = async (
       professionalLinks,
       interests,
       profilePicture,
+      weeklyAvailability,
     } = req.body;
 
     const user = await User.findByIdAndUpdate(
@@ -80,6 +81,7 @@ export const updateUserProfile = async (
         professionalLinks,
         interests,
         profilePicture,
+        weeklyAvailability,
       },
       {
         new: true,

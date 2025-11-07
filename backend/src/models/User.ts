@@ -13,13 +13,10 @@ export interface IUser extends Document {
   isAlumni: boolean;
   bio?: string;
   profilePicture?: string;
-  skills: {
-    programming: number;
-    design: number;
-    marketing: number;
-    writing: number;
-    research: number;
-  };
+  skills: Array<{
+    name: string;
+    proficiency: 'Beginner' | 'Intermediate' | 'Fluent' | 'Expert';
+  }>;
   professionalLinks: {
     linkedin?: string;
     github?: string;
@@ -83,13 +80,16 @@ const UserSchema: Schema = new Schema(
       type: String,
       default: 'https://api.dicebear.com/7.x/avataaars/svg',
     },
-    skills: {
-      programming: { type: Number, min: 0, max: 10, default: 0 },
-      design: { type: Number, min: 0, max: 10, default: 0 },
-      marketing: { type: Number, min: 0, max: 10, default: 0 },
-      writing: { type: Number, min: 0, max: 10, default: 0 },
-      research: { type: Number, min: 0, max: 10, default: 0 },
-    },
+    skills: [
+      {
+        name: { type: String, required: true },
+        proficiency: {
+          type: String,
+          enum: ['Beginner', 'Intermediate', 'Fluent', 'Expert'],
+          required: true,
+        },
+      },
+    ],
     professionalLinks: {
       linkedin: String,
       github: String,

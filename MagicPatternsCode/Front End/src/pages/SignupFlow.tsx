@@ -550,78 +550,11 @@ const SignupBio: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Convert skills from {name, proficiency} array to backend format {programming: number, design: number, ...}
-    // Map proficiency levels to numbers
-    const proficiencyToNumber = {
-      'Beginner': 3,
-      'Intermediate': 5,
-      'Fluent': 7,
-      'Expert': 10
-    };
-
-    // Initialize skills object with all categories at 0
-    const skillsObject: {
-      programming: number;
-      design: number;
-      marketing: number;
-      writing: number;
-      research: number;
-    } = {
-      programming: 0,
-      design: 0,
-      marketing: 0,
-      writing: 0,
-      research: 0
-    };
-
-    // Map each user skill to a category and take the highest proficiency in each category
-    userSkills.forEach(skill => {
-      const proficiencyValue = proficiencyToNumber[skill.proficiency];
-      const skillLower = skill.name.toLowerCase();
-
-      // Programming skills
-      if (skillLower.includes('javascript') || skillLower.includes('python') || skillLower.includes('java') ||
-          skillLower.includes('c++') || skillLower.includes('typescript') || skillLower.includes('programming') ||
-          skillLower.includes('go') || skillLower.includes('rust') || skillLower.includes('php') || skillLower.includes('swift') ||
-          skillLower.includes('kotlin') || skillLower.includes('react') || skillLower.includes('vue') || skillLower.includes('angular') ||
-          skillLower.includes('node') || skillLower.includes('html') || skillLower.includes('css') || skillLower.includes('next') ||
-          skillLower.includes('express') || skillLower.includes('django') || skillLower.includes('flask') || skillLower.includes('sql') ||
-          skillLower.includes('docker') || skillLower.includes('kubernetes') || skillLower.includes('aws') || skillLower.includes('azure') ||
-          skillLower.includes('gcp') || skillLower.includes('devops') || skillLower.includes('mobile') || skillLower.includes('ios') ||
-          skillLower.includes('android') || skillLower.includes('flutter') || skillLower.includes('react native')) {
-        skillsObject.programming = Math.max(skillsObject.programming, proficiencyValue);
-      }
-
-      // Design skills
-      if (skillLower.includes('design') || skillLower.includes('figma') || skillLower.includes('adobe') ||
-          skillLower.includes('sketch') || skillLower.includes('ux') || skillLower.includes('ui') ||
-          skillLower.includes('prototype') || skillLower.includes('graphic')) {
-        skillsObject.design = Math.max(skillsObject.design, proficiencyValue);
-      }
-
-      // Marketing skills
-      if (skillLower.includes('marketing') || skillLower.includes('business') || skillLower.includes('strategy') ||
-          skillLower.includes('management')) {
-        skillsObject.marketing = Math.max(skillsObject.marketing, proficiencyValue);
-      }
-
-      // Writing skills
-      if (skillLower.includes('writing') || skillLower.includes('content') || skillLower.includes('copywriting')) {
-        skillsObject.writing = Math.max(skillsObject.writing, proficiencyValue);
-      }
-
-      // Research skills
-      if (skillLower.includes('research') || skillLower.includes('data') || skillLower.includes('analysis') ||
-          skillLower.includes('machine learning') || skillLower.includes('tensorflow') || skillLower.includes('pytorch')) {
-        skillsObject.research = Math.max(skillsObject.research, proficiencyValue);
-      }
-    });
-
-    // Save all data to context
+    // Save all data to context with skills in original array format
     updateFormData({
       bio,
       interests,
-      skills: skillsObject,
+      skills: userSkills,
       weeklyAvailability: {
         hoursPerWeek
       }

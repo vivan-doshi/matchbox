@@ -31,13 +31,7 @@ const ProfilePage: React.FC = () => {
         uploadedAt: ''
       }
     },
-    skills: {
-      Programming: authUser.skills.programming,
-      Design: authUser.skills.design,
-      Marketing: authUser.skills.marketing,
-      Writing: authUser.skills.writing,
-      Research: authUser.skills.research,
-    },
+    skills: authUser.skills || [],
     interests: authUser.interests || [],
     weeklyAvailability: authUser.weeklyAvailability || { hoursPerWeek: 0 },
     projects: [] as any[] // Mock empty projects for now - TODO: Fetch user's actual projects
@@ -49,7 +43,7 @@ const ProfilePage: React.FC = () => {
     bio: '',
     profilePicture: '',
     links: { linkedin: '', github: '', portfolio: '', resume: { url: '', filename: '', uploadedAt: '' } },
-    skills: {},
+    skills: [],
     interests: [],
     weeklyAvailability: { hoursPerWeek: 0 },
     projects: [] as any[]
@@ -66,7 +60,10 @@ const ProfilePage: React.FC = () => {
   const [editedPortfolio, setEditedPortfolio] = useState(originalUser.links.portfolio);
   const [editedInterests, setEditedInterests] = useState<string[]>(originalUser.interests);
   const [editedHoursPerWeek, setEditedHoursPerWeek] = useState<number>(originalUser.weeklyAvailability.hoursPerWeek);
+  const [editedSkills, setEditedSkills] = useState<Array<{name: string; proficiency: 'Beginner' | 'Intermediate' | 'Fluent' | 'Expert'}>>(originalUser.skills);
   const [newInterest, setNewInterest] = useState('');
+  const [newSkillName, setNewSkillName] = useState('');
+  const [newSkillProficiency, setNewSkillProficiency] = useState<'Beginner' | 'Intermediate' | 'Fluent' | 'Expert'>('Beginner');
 
   // Update editable state when user data changes
   useEffect(() => {
@@ -81,6 +78,7 @@ const ProfilePage: React.FC = () => {
       setEditedPortfolio(originalUser.links.portfolio);
       setEditedInterests(originalUser.interests);
       setEditedHoursPerWeek(originalUser.weeklyAvailability.hoursPerWeek);
+      setEditedSkills(originalUser.skills);
     }
   }, [authUser]);
 
@@ -126,6 +124,7 @@ const ProfilePage: React.FC = () => {
           weeklyAvailability: {
             hoursPerWeek: editedHoursPerWeek
           },
+          skills: editedSkills,
         });
         setIsEditMode(false);
       } catch (error) {
@@ -151,6 +150,7 @@ const ProfilePage: React.FC = () => {
     setEditedPortfolio(originalUser.links.portfolio);
     setEditedInterests(originalUser.interests);
     setEditedHoursPerWeek(originalUser.weeklyAvailability.hoursPerWeek);
+    setEditedSkills(originalUser.skills);
     setIsEditMode(false);
   };
 
@@ -420,23 +420,148 @@ const ProfilePage: React.FC = () => {
             <div className="p-6">
               <h3 className="font-bold mb-4">Skills</h3>
               <div
-                className="space-y-4 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100 hover:scrollbar-thumb-slate-400"
+                className="space-y-3 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100 hover:scrollbar-thumb-slate-400"
                 style={{
                   scrollbarWidth: 'thin',
                   scrollbarColor: '#cbd5e1 #f1f5f9'
                 }}
               >
-                {Object.entries(user.skills).map(([skill, level]) => <div key={skill}>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-sm font-medium">{skill}</span>
-                      <span className="text-sm text-slate-500">{level}/10</span>
+                {isEditMode ? (
+                  <div className="space-y-3">
+                    {/* Existing Skills with Proficiency Selector */}
+                    {editedSkills.length > 0 && (
+                      <div className="space-y-3 mb-4">
+                        {editedSkills.map((skill, index) => {
+                          const proficiencyLevels: ('Beginner' | 'Intermediate' | 'Fluent' | 'Expert')[] = ['Beginner', 'Intermediate', 'Fluent', 'Expert'];
+                          const currentLevelIndex = proficiencyLevels.indexOf(skill.proficiency);
+
+                          return (
+                            <div key={index} className="border border-slate-200 rounded-lg p-4 bg-white">
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-3">
+                                  <h4 className="text-sm font-semibold text-slate-800">{skill.name}</h4>
+                                  <span className="text-xs text-slate-500">
+                                    {currentLevelIndex + 1}/4
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditedSkills(editedSkills.filter((_, i) => i !== index))}
+                                  className="text-xs text-red-600 hover:text-red-700 font-medium px-3 py-1 hover:bg-red-50 rounded transition-colors"
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                              <div className="flex gap-2">
+                                {proficiencyLevels.map((level) => (
+                                  <button
+                                    key={level}
+                                    type="button"
+                                    onClick={() => {
+                                      const newSkills = [...editedSkills];
+                                      newSkills[index] = { ...skill, proficiency: level };
+                                      setEditedSkills(newSkills);
+                                    }}
+                                    className={`flex-1 px-3 py-2 text-xs font-medium rounded-md border transition-all ${
+                                      skill.proficiency === level
+                                        ? 'bg-orange-500 text-white border-orange-500'
+                                        : 'bg-white text-slate-700 border-slate-300 hover:border-orange-300 hover:bg-orange-50'
+                                    }`}
+                                  >
+                                    {level}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Add New Skill */}
+                    <div className="border-2 border-dashed border-slate-300 rounded-lg p-4">
+                      <h4 className="text-sm font-semibold text-slate-700 mb-3">Add New Skill</h4>
+                      <div className="space-y-3">
+                        <input
+                          type="text"
+                          placeholder="Skill name (e.g., JavaScript, Python)"
+                          value={newSkillName}
+                          onChange={(e) => setNewSkillName(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-sm"
+                        />
+                        <div className="flex gap-2">
+                          {(['Beginner', 'Intermediate', 'Fluent', 'Expert'] as const).map((level) => (
+                            <button
+                              key={level}
+                              type="button"
+                              onClick={() => setNewSkillProficiency(level)}
+                              className={`flex-1 px-3 py-2 text-xs font-medium rounded-md border transition-all ${
+                                newSkillProficiency === level
+                                  ? 'bg-orange-500 text-white border-orange-500'
+                                  : 'bg-white text-slate-700 border-slate-300 hover:border-orange-300 hover:bg-orange-50'
+                              }`}
+                            >
+                              {level}
+                            </button>
+                          ))}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (newSkillName.trim()) {
+                              setEditedSkills([...editedSkills, { name: newSkillName.trim(), proficiency: newSkillProficiency }]);
+                              setNewSkillName('');
+                              setNewSkillProficiency('Beginner');
+                            }
+                          }}
+                          className="w-full px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm font-medium"
+                        >
+                          Add Skill
+                        </button>
+                      </div>
                     </div>
-                    <div className="w-full bg-slate-200 rounded-full h-2">
-                      <div className="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full" style={{
-                    width: `${level / 10 * 100}%`
-                  }}></div>
-                    </div>
-                  </div>)}
+                  </div>
+                ) : (
+                  <>
+                    {user.skills.length > 0 ? (
+                      <div className="space-y-3">
+                        {user.skills.map((skill, index) => {
+                          const proficiencyLevels: ('Beginner' | 'Intermediate' | 'Fluent' | 'Expert')[] = ['Beginner', 'Intermediate', 'Fluent', 'Expert'];
+                          const currentLevelIndex = proficiencyLevels.indexOf(skill.proficiency);
+
+                          return (
+                            <div key={index} className="border border-slate-200 rounded-lg p-4 bg-white">
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-3">
+                                  <h4 className="text-sm font-semibold text-slate-800">{skill.name}</h4>
+                                  <span className="text-xs text-slate-500">
+                                    {currentLevelIndex + 1}/4
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                {proficiencyLevels.map((level) => (
+                                  <div
+                                    key={level}
+                                    className={`flex-1 px-3 py-2 text-xs font-medium rounded-md border text-center ${
+                                      skill.proficiency === level
+                                        ? 'bg-orange-500 text-white border-orange-500'
+                                        : 'bg-white text-slate-400 border-slate-200'
+                                    }`}
+                                  >
+                                    {level}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-500">No skills added yet</p>
+                    )}
+                  </>
+                )}
               </div>
             </div>
           </div>

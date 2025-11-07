@@ -30,12 +30,9 @@ export interface PaginatedResponse<T> {
 }
 
 // ============= USER TYPES =============
-export interface UserSkills {
-  programming: number;
-  design: number;
-  marketing: number;
-  writing: number;
-  research: number;
+export interface UserSkill {
+  name: string;
+  proficiency: 'Beginner' | 'Intermediate' | 'Fluent' | 'Expert';
 }
 
 export interface ProfessionalLinks {
@@ -56,7 +53,7 @@ export interface User {
   isAlumni: boolean;
   bio?: string;
   profilePicture?: string;
-  skills: UserSkills;
+  skills: UserSkill[];
   professionalLinks: ProfessionalLinks;
   interests: string[];
   weeklyAvailability?: {
@@ -87,7 +84,7 @@ export interface SignupRequest {
   graduationYear?: number;
   isAlumni?: boolean;
   bio?: string;
-  skills?: Partial<UserSkills>;
+  skills?: UserSkill[];
   professionalLinks?: ProfessionalLinks;
   interests?: string[];
   weeklyAvailability?: {

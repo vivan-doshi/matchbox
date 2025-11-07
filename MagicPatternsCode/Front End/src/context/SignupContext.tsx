@@ -19,13 +19,10 @@ type SignupFormData = {
 
   // Step 4: Bio & Skills
   bio?: string;
-  skills?: {
-    programming: number;
-    design: number;
-    marketing: number;
-    writing: number;
-    research: number;
-  };
+  skills?: Array<{
+    name: string;
+    proficiency: 'Beginner' | 'Intermediate' | 'Fluent' | 'Expert';
+  }>;
   interests?: string[];
   weeklyAvailability?: {
     hoursPerWeek: number;
@@ -48,13 +45,7 @@ const SignupContext = createContext<SignupContextType | undefined>(undefined);
 
 export const SignupProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [formData, setFormData] = useState<Partial<SignupFormData>>({
-    skills: {
-      programming: 0,
-      design: 0,
-      marketing: 0,
-      writing: 0,
-      research: 0,
-    },
+    skills: [],
     interests: [],
     weeklyAvailability: {
       hoursPerWeek: 0,
@@ -68,13 +59,7 @@ export const SignupProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const resetFormData = () => {
     setFormData({
-      skills: {
-        programming: 0,
-        design: 0,
-        marketing: 0,
-        writing: 0,
-        research: 0,
-      },
+      skills: [],
       interests: [],
       weeklyAvailability: {
         hoursPerWeek: 0,
