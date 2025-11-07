@@ -1,5 +1,5 @@
-import React, { useState, Component } from 'react';
-import { SendIcon, CheckIcon, UsersIcon, PlusIcon, XIcon, MessageSquareIcon, UserPlusIcon } from 'lucide-react';
+import React, { useState } from 'react';
+import { SendIcon, CheckIcon, UsersIcon, XIcon, MessageSquareIcon } from 'lucide-react';
 type Chat = {
   id: string;
   user: {
@@ -82,6 +82,28 @@ const SAMPLE_CHATS: Chat[] = [{
     byThem: true
   }
 }];
+// Add Request type for incoming message requests and project join requests
+type Request = {
+  id: string;
+  type: 'message' | 'project_join';
+  user: {
+    id: string;
+    name: string;
+    avatar: string;
+    university: string;
+    role?: string;
+  };
+  message?: {
+    text: string;
+    time: string;
+  };
+  project?: {
+    id: string;
+    name: string;
+    requestedRole: string;
+  };
+};
+
 // Add sample groups
 type Group = {
   id: string;
@@ -98,6 +120,51 @@ type Group = {
     sender: string;
   };
 };
+const SAMPLE_REQUESTS: Request[] = [{
+  id: 'r1',
+  type: 'message',
+  user: {
+    id: '105',
+    name: 'Sarah Johnson',
+    avatar: 'https://i.pravatar.cc/150?img=25',
+    university: 'Berkeley',
+    role: 'Frontend Developer'
+  },
+  message: {
+    text: "Hi! I saw your project and would love to collaborate!",
+    time: '1 hour ago'
+  }
+}, {
+  id: 'r2',
+  type: 'project_join',
+  user: {
+    id: '106',
+    name: 'Mike Chen',
+    avatar: 'https://i.pravatar.cc/150?img=26',
+    university: 'UCLA',
+    role: 'Data Scientist'
+  },
+  project: {
+    id: 'p1',
+    name: 'AI Study Assistant',
+    requestedRole: 'ML Engineer'
+  }
+}, {
+  id: 'r3',
+  type: 'message',
+  user: {
+    id: '107',
+    name: 'Emma Davis',
+    avatar: 'https://i.pravatar.cc/150?img=27',
+    university: 'Columbia',
+    role: 'Product Designer'
+  },
+  message: {
+    text: "Your hackathon experience looks amazing! Want to team up?",
+    time: '3 hours ago'
+  }
+}];
+
 const SAMPLE_GROUPS: Group[] = [{
   id: 'g1',
   name: 'AI Study Assistant Team',
@@ -142,12 +209,10 @@ const ChatItem: React.FC<{
   chat: Chat;
   active: boolean;
   onClick: () => void;
-  onApprove: () => void;
 }> = ({
   chat,
   active,
-  onClick,
-  onApprove
+  onClick
 }) => {
   return <div className={`p-4 rounded-lg cursor-pointer transition-all ${active ? 'bg-orange-50' : 'hover:bg-slate-50'}`} onClick={onClick}>
       <div className="flex items-center">
@@ -176,22 +241,6 @@ const ChatItem: React.FC<{
           </div>
         </div>
       </div>
-      {!chat.matched && <div className="mt-3 flex items-center">
-          <button className={`flex-1 py-1.5 rounded-l-md text-xs font-medium ${chat.approved.byMe ? 'bg-orange-500 text-white' : 'bg-white border border-orange-200 text-orange-500'}`} onClick={e => {
-        e.stopPropagation();
-        onApprove();
-      }}>
-            {chat.approved.byMe && <CheckIcon className="h-3 w-3 inline mr-1" />}
-            Approve
-          </button>
-          <button className={`flex-1 py-1.5 rounded-r-md text-xs font-medium ${chat.approved.byThem ? 'bg-blue-500 text-white' : 'bg-white border border-blue-200 text-blue-500'}`} disabled>
-            {chat.approved.byThem && <CheckIcon className="h-3 w-3 inline mr-1" />}
-            They Approve
-          </button>
-        </div>}
-      {chat.matched && <div className="mt-3 py-1.5 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-medium rounded-md text-center">
-          BOXED! 🎉
-        </div>}
     </div>;
 };
 const GroupItem: React.FC<{
@@ -225,6 +274,77 @@ const GroupItem: React.FC<{
             <span className="text-xs text-slate-500 ml-2">
               {group.members.length} members
             </span>
+          </div>
+        </div>
+      </div>
+    </div>;
+};
+
+const RequestItem: React.FC<{
+  request: Request;
+  onApprove: () => void;
+  onDecline: () => void;
+}> = ({
+  request,
+  onApprove,
+  onDecline
+}) => {
+  return <div className="p-4 rounded-lg border border-slate-200 hover:bg-slate-50 transition-all mb-3">
+      <div className="flex items-start">
+        <div className="relative">
+          <img src={request.user.avatar} alt={request.user.name} className="w-12 h-12 rounded-full" />
+        </div>
+        <div className="ml-3 flex-1">
+          <div className="flex justify-between items-start mb-1">
+            <div>
+              <h3 className="font-bold text-sm">{request.user.name}</h3>
+              <div className="flex items-center mt-0.5">
+                <span className="text-xs text-slate-500 mr-2">
+                  {request.user.university}
+                </span>
+                {request.user.role && <span className="text-xs px-2 py-0.5 bg-slate-100 rounded-full">
+                    {request.user.role}
+                  </span>}
+              </div>
+            </div>
+          </div>
+
+          {request.type === 'message' && request.message && (
+            <div className="mt-2 mb-3">
+              <p className="text-sm text-slate-700 line-clamp-2">{request.message.text}</p>
+              <span className="text-xs text-slate-400 mt-1">{request.message.time}</span>
+            </div>
+          )}
+
+          {request.type === 'project_join' && request.project && (
+            <div className="mt-2 mb-3 bg-orange-50 p-2 rounded-md">
+              <p className="text-xs text-slate-600">Requesting to join:</p>
+              <p className="text-sm font-medium text-slate-800">{request.project.name}</p>
+              <p className="text-xs text-slate-600">as {request.project.requestedRole}</p>
+            </div>
+          )}
+
+          <div className="flex space-x-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onApprove();
+              }}
+              className="flex-1 py-2 px-4 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-medium rounded-md hover:shadow-md transition-all"
+            >
+              <CheckIcon className="h-3 w-3 inline mr-1" />
+              Approve
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDecline();
+              }}
+              className="flex-1 py-2 px-4 border border-slate-300 text-slate-700 text-xs font-medium rounded-md hover:bg-slate-50 transition-all"
+            >
+              <XIcon className="h-3 w-3 inline mr-1" />
+              Decline
+            </button>
           </div>
         </div>
       </div>
@@ -296,13 +416,14 @@ const SAMPLE_MESSAGES: Record<string, Message[]> = {
   }]
 };
 const ChatPage: React.FC = () => {
-  const [selectedChat, setSelectedChat] = useState<string | null>('2');
+  const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState('');
   const [chats, setChats] = useState(SAMPLE_CHATS);
   const [groups, setGroups] = useState(SAMPLE_GROUPS);
+  const [requests, setRequests] = useState(SAMPLE_REQUESTS);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [showFillPositions, setShowFillPositions] = useState(false);
-  const [activeTab, setActiveTab] = useState<'direct' | 'groups'>('direct');
+  const [activeTab, setActiveTab] = useState<'direct' | 'groups' | 'requests'>('direct');
   const boxedConnections = chats.filter(chat => chat.matched);
   const activeChat = selectedChat && selectedChat.startsWith('g') ? null : chats.find(chat => chat.id === selectedChat);
   const activeGroup = selectedChat && selectedChat.startsWith('g') ? groups.find(group => group.id === selectedChat) : null;
@@ -313,23 +434,49 @@ const ChatPage: React.FC = () => {
     // In a real app, this would send the message to the backend
     setNewMessage('');
   };
-  const handleApprove = (chatId: string) => {
-    setChats(chats.map(chat => {
-      if (chat.id === chatId) {
-        // If both approve, it's a match
-        const willBeMatched = chat.approved.byThem && !chat.approved.byMe;
-        return {
-          ...chat,
-          approved: {
-            ...chat.approved,
-            byMe: true
-          },
-          matched: willBeMatched
-        };
+
+  const handleApproveRequest = (requestId: string) => {
+    const request = requests.find(r => r.id === requestId);
+    if (!request) return;
+
+    // Remove from requests
+    setRequests(requests.filter(r => r.id !== requestId));
+
+    // Add to direct messages (create a new chat)
+    const newChat: Chat = {
+      id: `chat_${Date.now()}`,
+      user: request.user,
+      lastMessage: request.message ? {
+        text: request.message.text,
+        time: request.message.time,
+        read: true,
+        sentByMe: false
+      } : {
+        text: request.type === 'project_join' ? `Approved for ${request.project?.requestedRole} role` : 'Request approved',
+        time: 'Just now',
+        read: true,
+        sentByMe: true
+      },
+      matched: false,
+      approved: {
+        byMe: false,
+        byThem: false
       }
-      return chat;
-    }));
+    };
+
+    setChats([newChat, ...chats]);
+
+    // Switch to direct messages tab and select the new chat
+    setActiveTab('direct');
+    setSelectedChat(newChat.id);
   };
+
+  const handleDeclineRequest = (requestId: string) => {
+    // Remove from requests
+    setRequests(requests.filter(r => r.id !== requestId));
+    // In a real app, this would send a decline notification to the backend
+  };
+
   const createGroup = (groupName: string, selectedMembers: string[]) => {
     if (!groupName.trim() || selectedMembers.length === 0) return;
     const newGroup: Group = {
@@ -358,9 +505,6 @@ const ChatPage: React.FC = () => {
           <div className="flex justify-between items-center">
             <h2 className="font-bold">Messages</h2>
             <div className="flex space-x-2">
-              <button onClick={() => setShowFillPositions(true)} className="p-1.5 bg-white border border-slate-200 rounded-md text-slate-600 hover:bg-slate-50 transition-colors" title="Fill Positions">
-                <UserPlusIcon className="h-4 w-4" />
-              </button>
               <button onClick={() => setShowCreateGroup(true)} className="p-1.5 bg-white border border-slate-200 rounded-md text-slate-600 hover:bg-slate-50 transition-colors" title="Create Group">
                 <UsersIcon className="h-4 w-4" />
               </button>
@@ -373,16 +517,43 @@ const ChatPage: React.FC = () => {
             <button className={`flex-1 py-2 text-sm font-medium ${activeTab === 'groups' ? 'text-orange-500 border-b-2 border-orange-500' : 'text-slate-600'}`} onClick={() => setActiveTab('groups')}>
               Groups
             </button>
+            <button className={`flex-1 py-2 text-sm font-medium relative ${activeTab === 'requests' ? 'text-orange-500 border-b-2 border-orange-500' : 'text-slate-600'}`} onClick={() => setActiveTab('requests')}>
+              Requests
+              {requests.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {requests.length}
+                </span>
+              )}
+            </button>
           </div>
         </div>
         <div className="overflow-y-auto h-[calc(100%-8rem)]">
-          {activeTab === 'direct' && chats.map(chat => <ChatItem key={chat.id} chat={chat} active={selectedChat === chat.id} onClick={() => setSelectedChat(chat.id)} onApprove={() => handleApprove(chat.id)} />)}
+          {activeTab === 'direct' && chats.map(chat => <ChatItem key={chat.id} chat={chat} active={selectedChat === chat.id} onClick={() => setSelectedChat(chat.id)} />)}
+
           {activeTab === 'groups' && groups.map(group => <GroupItem key={group.id} group={group} active={selectedChat === group.id} onClick={() => setSelectedChat(group.id)} />)}
           {activeTab === 'groups' && groups.length === 0 && <div className="p-4 text-center text-slate-500">
               <p>No groups yet</p>
               <button onClick={() => setShowCreateGroup(true)} className="mt-2 px-3 py-1 bg-orange-500 text-white rounded-md text-sm hover:bg-orange-600 transition-colors">
                 Create Group
               </button>
+            </div>}
+
+          {activeTab === 'requests' && <div className="p-3">
+              {requests.length > 0 ? (
+                requests.map(request => (
+                  <RequestItem
+                    key={request.id}
+                    request={request}
+                    onApprove={() => handleApproveRequest(request.id)}
+                    onDecline={() => handleDeclineRequest(request.id)}
+                  />
+                ))
+              ) : (
+                <div className="text-center text-slate-500 py-8">
+                  <p className="text-sm">No pending requests</p>
+                  <p className="text-xs mt-2 text-slate-400">New message and project join requests will appear here</p>
+                </div>
+              )}
             </div>}
         </div>
       </div>
@@ -401,9 +572,6 @@ const ChatPage: React.FC = () => {
                       </span>}
                   </div>
                 </div>
-                {activeChat.matched && <div className="ml-auto px-3 py-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-medium rounded-full">
-                    BOXED! 🎉
-                  </div>}
               </> : <>
                 <div className="bg-gradient-to-r from-orange-500 to-red-500 w-10 h-10 rounded-full flex items-center justify-center text-white font-bold mr-3">
                   {activeGroup!.name.slice(0, 2).toUpperCase()}
