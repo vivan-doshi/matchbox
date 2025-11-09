@@ -230,7 +230,7 @@ const Dashboard: React.FC = () => {
               }
             >
               <UserIcon className="h-5 w-5 mr-3" />
-              <span>Profile</span>
+              <span>My Profile</span>
             </NavLink>
 
             <NavLink

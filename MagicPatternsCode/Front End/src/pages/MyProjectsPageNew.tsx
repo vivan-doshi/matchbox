@@ -16,6 +16,7 @@ import {
   UserPlusIcon,
 } from 'lucide-react';
 import CreateProjectModal from '../components/dashboard/CreateProjectModal';
+import Navigation from '../components/Navigation';
 
 // Types
 interface User {
@@ -263,7 +264,6 @@ const MyProjectsPageNew: React.FC = () => {
   // State - allow multiple expanded projects
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
   const [projectTabs, setProjectTabs] = useState<Record<string, string>>({});
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Modal states
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -607,19 +607,14 @@ const MyProjectsPageNew: React.FC = () => {
 
   return (
     <div className="min-h-screen page-background-gradient">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 py-4 px-6">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center">
-            <button
-              onClick={() => setIsSidebarOpen(true)}
-              className="mr-3 p-2 rounded-lg hover:bg-slate-100 transition-colors"
-              aria-label="Open navigation menu"
-            >
-              <MenuIcon className="h-6 w-6 text-slate-700" />
-            </button>
-            <h1 className="text-xl font-bold">My Projects</h1>
-          </div>
+      <Navigation />
+      <div>
+        {/* Header */}
+        <header className="bg-white border-b border-slate-200 py-4 px-6">
+          <div className="container mx-auto flex justify-between items-center">
+            <div className="flex items-center">
+              <h1 className="text-xl font-bold">My Projects</h1>
+            </div>
 
           {activeMainTab === 'posted' && (
             <button
@@ -633,65 +628,7 @@ const MyProjectsPageNew: React.FC = () => {
         </div>
       </header>
 
-      {/* Slide-out Navigation Drawer */}
-      <div
-        className={`fixed inset-0 z-50 transition-opacity duration-300 ${
-          isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
-      >
-        <div
-          className="absolute inset-0 bg-black bg-opacity-50 transition-opacity"
-          onClick={() => setIsSidebarOpen(false)}
-          aria-hidden="true"
-        />
-        <nav
-          className={`absolute top-0 left-0 h-full w-64 bg-gradient-to-b from-orange-500 to-red-500 shadow-2xl transform transition-transform duration-300 ease-in-out ${
-            isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-          }`}
-        >
-          <div className="flex items-center justify-between p-6 border-b border-white border-opacity-20">
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center mr-2">
-                <span className="text-orange-500 font-bold text-sm">M</span>
-              </div>
-              <span className="text-white font-bold text-lg">Matchbox</span>
-            </div>
-            <button
-              onClick={() => setIsSidebarOpen(false)}
-              className="text-white hover:bg-white hover:bg-opacity-20 p-1 rounded transition-colors"
-              aria-label="Close menu"
-            >
-              <XIcon className="h-6 w-6" />
-            </button>
-          </div>
-
-          <div className="p-4 space-y-2">
-            <Link
-              to="/dashboard"
-              onClick={() => setIsSidebarOpen(false)}
-              className="flex items-center px-4 py-3 text-white hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
-            >
-              Home
-            </Link>
-            <Link
-              to="/my-projects"
-              onClick={() => setIsSidebarOpen(false)}
-              className="flex items-center px-4 py-3 text-white bg-white bg-opacity-20 rounded-lg transition-colors"
-            >
-              My Projects
-            </Link>
-            <Link
-              to="/profile"
-              onClick={() => setIsSidebarOpen(false)}
-              className="flex items-center px-4 py-3 text-white hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
-            >
-              Profile
-            </Link>
-          </div>
-        </nav>
-      </div>
-
-      {/* Main Tab Navigation */}
+        {/* Main Tab Navigation */}
       <div className="bg-white border-b border-slate-200">
         <div className="container mx-auto">
           <div className="flex">
@@ -1463,6 +1400,7 @@ const MyProjectsPageNew: React.FC = () => {
           onProjectCreated={handleProjectCreated}
         />
       )}
+      </div>
     </div>
   );
 };

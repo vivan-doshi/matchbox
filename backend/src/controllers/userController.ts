@@ -41,8 +41,14 @@ export const updateUserProfile = async (
   res: Response
 ): Promise<void> => {
   try {
+    console.log('[updateUserProfile] Starting profile update');
+    console.log('[updateUserProfile] User ID from params:', req.params.id);
+    console.log('[updateUserProfile] Authenticated user ID:', req.userId);
+    console.log('[updateUserProfile] Update data:', req.body);
+
     // Check if user is updating their own profile
     if (req.params.id !== req.userId) {
+      console.log('[updateUserProfile] Authorization failed - user mismatch');
       res.status(403).json({
         success: false,
         message: 'Not authorized to update this profile',
@@ -65,6 +71,8 @@ export const updateUserProfile = async (
       profilePicture,
       weeklyAvailability,
     } = req.body;
+
+    console.log('[updateUserProfile] Finding and updating user...');
 
     const user = await User.findByIdAndUpdate(
       req.params.id,
@@ -90,6 +98,7 @@ export const updateUserProfile = async (
     );
 
     if (!user) {
+      console.log('[updateUserProfile] User not found');
       res.status(404).json({
         success: false,
         message: 'User not found',
@@ -97,11 +106,15 @@ export const updateUserProfile = async (
       return;
     }
 
+    console.log('[updateUserProfile] Profile updated successfully');
     res.status(200).json({
       success: true,
       data: user,
     });
   } catch (error: any) {
+    console.error('[updateUserProfile] Error:', error);
+    console.error('[updateUserProfile] Error message:', error.message);
+    console.error('[updateUserProfile] Error stack:', error.stack);
     res.status(500).json({
       success: false,
       message: error.message || 'Server error',

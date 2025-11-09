@@ -12,12 +12,16 @@ export const getProjects = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { search, tags, status } = req.query;
+    const { search, tags, category, status } = req.query;
 
     let query: any = {};
 
     if (search) {
       query.$text = { $search: search as string };
+    }
+
+    if (category) {
+      query.category = category;
     }
 
     if (tags) {
@@ -87,13 +91,40 @@ export const createProject = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { title, description, tags, roles, startDate, deadline } = req.body;
+    const {
+      title,
+      description,
+      category,
+      tags,
+      timeCommitment,
+      duration,
+      roles,
+      creatorRole,
+      existingMembers,
+      startDate,
+      deadline
+    } = req.body;
+
+    console.log('[createProject] Creating project with data:', {
+      title,
+      category,
+      timeCommitment,
+      duration,
+      rolesCount: roles?.length,
+      creatorRole,
+      existingMembersCount: existingMembers?.length,
+    });
 
     const project = await Project.create({
       title,
       description,
+      category,
       tags,
+      timeCommitment,
+      duration,
       roles,
+      creatorRole,
+      existingMembers,
       startDate,
       deadline,
       creator: req.userId,
@@ -104,11 +135,14 @@ export const createProject = async (
       'firstName lastName preferredName university profilePicture'
     );
 
+    console.log('[createProject] Project created successfully:', populatedProject?._id);
+
     res.status(201).json({
       success: true,
       data: populatedProject,
     });
   } catch (error: any) {
+    console.error('[createProject] Error creating project:', error);
     res.status(500).json({
       success: false,
       message: error.message || 'Server error',
@@ -407,10 +441,14 @@ export const getProjectRecommendations = async (
       return;
     }
 
-    // Simple recommendation: find users with matching tags/skills
+    // Simple recommendation: find users with matching category/interests
+    const searchInterests = project.tags && project.tags.length > 0
+      ? project.tags
+      : [project.category];
+
     const users = await User.find({
       _id: { $ne: project.creator },
-      interests: { $in: project.tags },
+      interests: { $in: searchInterests },
     })
       .select('firstName lastName preferredName university profilePicture skills interests')
       .limit(10);

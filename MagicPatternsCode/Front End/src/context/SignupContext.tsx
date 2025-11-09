@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+
+const STORAGE_KEY = 'matchbox_signup_data';
 
 type SignupFormData = {
   // Step 1: Email
@@ -43,15 +45,46 @@ type SignupContextType = {
 
 const SignupContext = createContext<SignupContextType | undefined>(undefined);
 
-export const SignupProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [formData, setFormData] = useState<Partial<SignupFormData>>({
+// Load initial data from sessionStorage
+const loadFromStorage = (): Partial<SignupFormData> => {
+  try {
+    const stored = sessionStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      console.log('[SignupContext] Loaded data from sessionStorage:', parsed);
+      return parsed;
+    }
+  } catch (error) {
+    console.error('[SignupContext] Error loading from sessionStorage:', error);
+  }
+
+  return {
     skills: [],
     interests: [],
     weeklyAvailability: {
       hoursPerWeek: 0,
     },
     isAlumni: false,
-  });
+  };
+};
+
+export const SignupProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [formData, setFormData] = useState<Partial<SignupFormData>>(loadFromStorage);
+
+  // Save to sessionStorage whenever formData changes (excluding File objects)
+  useEffect(() => {
+    try {
+      // Create a copy of formData without File objects (they can't be serialized)
+      const dataToStore = { ...formData };
+      delete dataToStore.profilePicture;
+      delete dataToStore.resume;
+
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(dataToStore));
+      console.log('[SignupContext] Saved data to sessionStorage:', dataToStore);
+    } catch (error) {
+      console.error('[SignupContext] Error saving to sessionStorage:', error);
+    }
+  }, [formData]);
 
   const updateFormData = (data: Partial<SignupFormData>) => {
     setFormData(prev => ({ ...prev, ...data }));
@@ -66,6 +99,9 @@ export const SignupProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       },
       isAlumni: false,
     });
+    // Clear sessionStorage on reset
+    sessionStorage.removeItem(STORAGE_KEY);
+    console.log('[SignupContext] Cleared sessionStorage');
   };
 
   return (

@@ -121,14 +121,32 @@ export interface ProjectRole {
   user?: string; // User ID
 }
 
+export interface CreatorRole {
+  title: string;
+  responsibilities?: string;
+  expertise?: string;
+}
+
+export interface TeamMember {
+  name: string;
+  profileLink?: string;
+  role: string;
+  description?: string;
+}
+
 export interface Project {
   id: string;
   title: string;
   description: string;
   creator: string | User; // Can be populated
-  tags: string[];
+  category: string;
+  tags?: string[];
+  timeCommitment?: string;
+  duration?: number;
   status: 'Planning' | 'In Progress' | 'Completed';
   roles: ProjectRole[];
+  creatorRole?: CreatorRole;
+  existingMembers?: TeamMember[];
   startDate?: string;
   deadline?: string;
   githubRepo?: string;
@@ -140,8 +158,13 @@ export interface Project {
 export interface CreateProjectRequest {
   title: string;
   description: string;
-  tags: string[];
+  category: string;
+  tags?: string[];
+  timeCommitment?: string;
+  duration?: number;
   roles: Omit<ProjectRole, 'filled' | 'user'>[];
+  creatorRole?: CreatorRole;
+  existingMembers?: TeamMember[];
   startDate?: string;
   deadline?: string;
   githubRepo?: string;
@@ -154,6 +177,7 @@ export interface UpdateProjectRequest extends Partial<CreateProjectRequest> {
 
 export interface ProjectFilters extends PaginationParams {
   status?: 'Planning' | 'In Progress' | 'Completed';
+  category?: string;
   tags?: string[];
   search?: string;
   creatorId?: string;

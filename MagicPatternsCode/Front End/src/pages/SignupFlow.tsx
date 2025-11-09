@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeftIcon, ArrowRightIcon, LinkedinIcon, GithubIcon, CameraIcon, UploadIcon, XIcon, FileTextIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSignupContext } from '../context/SignupContext';
 import apiClient from '../utils/apiClient';
 import AvailabilityCalendar, { TimeSlot } from '../components/shared/AvailabilityCalendar';
+import EmailExistsModal from '../components/EmailExistsModal';
 
 const SignupEmail: React.FC = () => {
   const { formData, updateFormData } = useSignupContext();
@@ -13,7 +14,19 @@ const SignupEmail: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [checking, setChecking] = useState(false);
+  const [showEmailExistsModal, setShowEmailExistsModal] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Check for error passed from education page
+  React.useEffect(() => {
+    if (location.state?.error) {
+      setError(location.state.error);
+      setShowEmailExistsModal(true);
+      // Clear the state after showing the error
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, location.pathname, navigate]);
 
   const validateEmail = (email: string) => {
     const trimmedEmail = email.trim().toLowerCase();
@@ -72,7 +85,9 @@ const SignupEmail: React.FC = () => {
       setChecking(false);
 
       if (response.data?.exists) {
-        setError('This email is already in use. Please use a different email or log in.');
+        // Show modal and set error to prevent form submission
+        setError('An account with this email already exists. Please use a different email or log in.');
+        setShowEmailExistsModal(true);
         return;
       }
 
@@ -86,8 +101,19 @@ const SignupEmail: React.FC = () => {
       setError(err.response?.data?.message || 'An error occurred. Please try again.');
     }
   };
-  return <div>
-      <h2 className="text-2xl font-bold mb-6">Join MATCHBOX</h2>
+
+  return (
+    <>
+      <EmailExistsModal
+        isOpen={showEmailExistsModal}
+        onClose={() => {
+          setShowEmailExistsModal(false);
+          setError('');
+        }}
+        email={email}
+      />
+      <div>
+        <h2 className="text-2xl font-bold mb-6">Join MATCHBOX</h2>
       <p className="text-slate-600 mb-6">
         Enter your academic email to get started. MATCHBOX is exclusively for
         USC students and alumni.
@@ -161,8 +187,11 @@ const SignupEmail: React.FC = () => {
           Log in
         </Link>
       </p>
-    </div>;
+      </div>
+    </>
+  );
 };
+
 const SignupProfile: React.FC = () => {
   const { updateFormData } = useSignupContext();
   const [formData, setFormData] = useState({
@@ -360,7 +389,7 @@ const SignupLinks: React.FC = () => {
       linkedin: formData.linkedin,
       github: formData.github,
       portfolio: formData.portfolio,
-      resume
+      resume: resume || undefined
     });
     navigate('/signup/bio');
   };
@@ -563,13 +592,14 @@ const SignupBio: React.FC = () => {
     navigate('/signup/education');
   };
 
-  return <div className="max-h-[80vh] overflow-y-auto">
-      <h2 className="text-2xl font-bold mb-6">Tell Us About Yourself</h2>
-      <p className="text-slate-600 mb-6">
-        Share a bit about your background and select your skills.
-      </p>
-      <form onSubmit={handleSubmit}>
-        <div className="mb-6">
+  return <div className="max-h-[80vh] overflow-y-auto custom-scrollbar pr-6">
+      <div className="pr-2">
+        <h2 className="text-2xl font-bold mb-6">Tell Us About Yourself</h2>
+        <p className="text-slate-600 mb-6">
+          Share a bit about your background and select your skills.
+        </p>
+        <form onSubmit={handleSubmit} className="space-y-6">
+        <div>
           <label htmlFor="bio" className="block text-sm font-medium text-slate-700 mb-1">
             Bio
           </label>
@@ -577,7 +607,7 @@ const SignupBio: React.FC = () => {
         </div>
 
         {/* Interests Section */}
-        <div className="mb-6">
+        <div>
           <h3 className="text-sm font-medium text-slate-700 mb-3">
             Your Interests
           </h3>
@@ -643,7 +673,7 @@ const SignupBio: React.FC = () => {
         </div>
 
         {/* Skills Section */}
-        <div className="mb-6">
+        <div>
           <h3 className="text-sm font-medium text-slate-700 mb-3">
             Your Skills
           </h3>
@@ -821,7 +851,7 @@ const SignupBio: React.FC = () => {
         </div>
 
         {/* Weekly Availability Section */}
-        <div className="mb-6">
+        <div>
           <h3 className="text-sm font-medium text-slate-700 mb-3">
             Weekly Availability
           </h3>
@@ -901,6 +931,7 @@ const SignupBio: React.FC = () => {
           Continue
         </button>
       </form>
+      </div>
     </div>;
 };
 // USC Schools and their majors
@@ -1048,6 +1079,13 @@ const SignupEducation: React.FC = () => {
       navigate('/dashboard');
     } catch (err: any) {
       console.error('Signup error:', err);
+
+      // If email already exists error, redirect back to signup page
+      if (err.message && err.message.toLowerCase().includes('already exists')) {
+        navigate('/signup', { state: { error: err.message } });
+        return;
+      }
+
       setError(err.message || 'Failed to create account. Please try again.');
       setLoading(false);
     }
@@ -1205,52 +1243,52 @@ const BackButton: React.FC = () => {
 
 const SignupFlow: React.FC = () => {
   return <div className="min-h-screen auth-page-background flex">
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-orange-500 to-red-500 relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-[30%] bg-gradient-to-br from-orange-500 to-red-500 relative overflow-hidden">
         <div className="absolute inset-0 bg-pattern opacity-10"></div>
-        <div className="flex flex-col justify-center items-center h-full text-white p-12">
-          <div className="w-16 h-16 bg-white bg-opacity-20 rounded-2xl flex items-center justify-center mb-6">
-            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center">
-              <span className="text-orange-500 font-bold text-xl">M</span>
+        <div className="flex flex-col justify-center items-center h-full text-white p-6">
+          <div className="w-12 h-12 bg-white bg-opacity-20 rounded-2xl flex items-center justify-center mb-4">
+            <div className="w-8 h-8 bg-white rounded-xl flex items-center justify-center">
+              <span className="text-orange-500 font-bold text-lg">M</span>
             </div>
           </div>
-          <h1 className="text-4xl font-bold mb-4">MATCHBOX</h1>
-          <p className="text-xl mb-8 text-center max-w-md">
+          <h1 className="text-2xl font-bold mb-3">MATCHBOX</h1>
+          <p className="text-sm mb-6 text-center">
             Connect with other Trojans for your next team project
           </p>
-          <div className="mt-12 space-y-6 w-full max-w-md">
-            <div className="bg-white bg-opacity-10 p-6 rounded-xl">
-              <div className="flex items-center mb-4">
-                <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center">
-                  <span className="text-orange-500 font-bold">JD</span>
+          <div className="mt-6 space-y-3 w-full">
+            <div className="bg-white bg-opacity-10 p-4 rounded-xl">
+              <div className="flex items-center mb-2">
+                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center">
+                  <span className="text-orange-500 font-bold text-xs">JD</span>
                 </div>
-                <div className="ml-4">
-                  <h3 className="font-bold">John Doe</h3>
-                  <p className="text-sm opacity-80">Business Administration, '24</p>
+                <div className="ml-2">
+                  <h3 className="font-bold text-sm">John Doe</h3>
+                  <p className="text-xs opacity-80">Business '24</p>
                 </div>
               </div>
-              <p className="text-sm">
-                "Matchbox helped me find the perfect team for a recent consulting case competition. We ended up winning 1st place!"
+              <p className="text-xs leading-relaxed">
+                "Matchbox helped me find the perfect team. We won 1st place!"
               </p>
             </div>
-            <div className="bg-white bg-opacity-10 p-6 rounded-xl">
-              <div className="flex items-center mb-4">
-                <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center">
-                  <span className="text-orange-500 font-bold">AS</span>
+            <div className="bg-white bg-opacity-10 p-4 rounded-xl">
+              <div className="flex items-center mb-2">
+                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center">
+                  <span className="text-orange-500 font-bold text-xs">AS</span>
                 </div>
-                <div className="ml-4">
-                  <h3 className="font-bold">Anna Smith</h3>
-                  <p className="text-sm opacity-80">MBA Student</p>
+                <div className="ml-2">
+                  <h3 className="font-bold text-sm">Anna Smith</h3>
+                  <p className="text-xs opacity-80">MBA Student</p>
                 </div>
               </div>
-              <p className="text-sm">
-                "As an MBA student, I was looking for Data Analytics students to bring my passion project to life. Matchbox made it super easy."
+              <p className="text-xs leading-relaxed">
+                "I found Data Analytics students to bring my project to life!"
               </p>
             </div>
           </div>
         </div>
       </div>
-      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-8">
-        <div className="w-full max-w-md">
+      <div className="w-full lg:w-[70%] flex flex-col items-center justify-center p-8">
+        <div className="w-full max-w-3xl">
           <BackButton />
           <Routes>
             <Route path="/" element={<SignupEmail />} />

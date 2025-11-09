@@ -92,19 +92,31 @@ export const AuthProvider: React.FC<{
   };
 
   const updateUserProfile = async (userData: Partial<User>) => {
+    console.log('[AuthContext] updateUserProfile called');
+    console.log('[AuthContext] Current user:', user);
+    console.log('[AuthContext] Update data:', userData);
+
     if (!user?.id) {
+      console.error('[AuthContext] No user logged in');
       throw new Error('No user logged in');
     }
 
     try {
+      console.log('[AuthContext] Calling apiClient.updateUser with ID:', user.id);
       const response = await apiClient.updateUser(user.id, userData);
+      console.log('[AuthContext] API response:', response);
 
       if (response.success && response.data) {
+        console.log('[AuthContext] Profile update successful, updating local state');
         setUser(response.data);
         localStorage.setItem('user', JSON.stringify(response.data));
+      } else {
+        console.warn('[AuthContext] Response success was false or no data returned');
       }
     } catch (error: any) {
-      console.error('Update profile error:', error);
+      console.error('[AuthContext] Update profile error:', error);
+      console.error('[AuthContext] Error response:', error.response);
+      console.error('[AuthContext] Error message:', error.message);
       const message = error.response?.data?.message || error.message || 'Profile update failed';
       throw new Error(message);
     }

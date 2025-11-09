@@ -9,6 +9,7 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
 } from 'lucide-react';
+import apiClient from '../../utils/apiClient';
 
 interface TeamMember {
   name: string;
@@ -25,7 +26,7 @@ interface Role {
 interface FormData {
   title: string;
   description: string;
-  tags: string[];
+  category: string;
   timeCommitment: string;
   duration: number;
   roles: Role[];
@@ -56,7 +57,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
   const [formData, setFormData] = useState<FormData>({
     title: '',
     description: '',
-    tags: [''],
+    category: '',
     timeCommitment: '',
     duration: 8, // Default to 8 weeks
     roles: [{ title: '', description: '' }],
@@ -80,7 +81,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
     const requiredFields = [
       formData.title,
       formData.description,
-      formData.tags.filter((t) => t.trim()).length > 0,
+      formData.category,
       formData.timeCommitment,
       formData.roles.filter((r) => r.title.trim()).length > 0,
       formData.creatorRole.title,
@@ -99,10 +100,8 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
         return value.trim().length < 20
           ? 'Description must be at least 20 characters'
           : '';
-      case 'tags':
-        return value.filter((t: string) => t.trim()).length === 0
-          ? 'At least one tag is required'
-          : '';
+      case 'category':
+        return !value ? 'Please select a category' : '';
       case 'timeCommitment':
         return !value ? 'Please select time commitment' : '';
       case 'roles':
@@ -139,22 +138,6 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
     if (errors[name]) {
       setErrors({ ...errors, [name]: '' });
     }
-  };
-
-  // Tag handlers
-  const handleTagChange = (index: number, value: string) => {
-    const newTags = [...formData.tags];
-    newTags[index] = value;
-    setFormData({ ...formData, tags: newTags });
-  };
-
-  const addTag = () => {
-    setFormData({ ...formData, tags: [...formData.tags, ''] });
-  };
-
-  const removeTag = (index: number) => {
-    const newTags = formData.tags.filter((_, i) => i !== index);
-    setFormData({ ...formData, tags: newTags.length > 0 ? newTags : [''] });
   };
 
   // Role handlers
@@ -215,7 +198,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
     const newErrors: Record<string, string> = {};
     newErrors.title = validateField('title', formData.title);
     newErrors.description = validateField('description', formData.description);
-    newErrors.tags = validateField('tags', formData.tags);
+    newErrors.category = validateField('category', formData.category);
     newErrors.timeCommitment = validateField('timeCommitment', formData.timeCommitment);
     newErrors.roles = validateField('roles', formData.roles);
     newErrors.creatorRole = validateField('creatorRole', formData.creatorRole);
@@ -228,7 +211,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
       setTouchedFields({
         title: true,
         description: true,
-        tags: true,
+        category: true,
         timeCommitment: true,
         roles: true,
         creatorRole: true,
@@ -238,43 +221,43 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
 
     setIsSubmitting(true);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      console.log('[CreateProjectModal] Submitting project to API...');
 
-    // Create project object with unique ID
-    const newProject = {
-      id: Date.now().toString(),
-      title: toTitleCase(formData.title),
-      description: formData.description,
-      tags: formData.tags.filter((t) => t.trim()),
-      timeCommitment: formData.timeCommitment,
-      duration: formData.duration,
-      roles: formData.roles
-        .filter((r) => r.title.trim())
-        .map((r) => ({ ...r, filled: false })),
-      creator: {
-        id: '999', // Mock creator ID
-        name: 'You', // This would come from auth context in real app
-        university: 'Your University',
-        profilePic: 'https://i.pravatar.cc/150?img=1',
-      },
-      creatorRole: formData.creatorRole,
-      existingMembers: formData.existingMembers.filter((m) => m.name.trim()),
-      createdAt: new Date().toISOString(),
-      isNew: true, // Flag for "New" badge
-    };
+      // Call real API
+      const response = await apiClient.createProject({
+        title: toTitleCase(formData.title),
+        description: formData.description,
+        category: formData.category,
+        timeCommitment: formData.timeCommitment,
+        duration: formData.duration,
+        roles: formData.roles
+          .filter((r) => r.title.trim())
+          .map((r) => ({ title: r.title, description: r.description })),
+        creatorRole: formData.creatorRole,
+        existingMembers: formData.existingMembers.filter((m) => m.name.trim()),
+      });
 
-    // Call parent callback to add project to list
-    if (onProjectCreated) {
-      onProjectCreated(newProject);
+      console.log('[CreateProjectModal] Project created successfully:', response.data);
+
+      // Call parent callback with the created project
+      if (onProjectCreated && response.data) {
+        onProjectCreated(response.data);
+      }
+
+      // Show success and close modal after delay
+      setTimeout(() => {
+        setIsSubmitting(false);
+        onClose();
+      }, 1500);
+    } catch (error: any) {
+      console.error('[CreateProjectModal] Error creating project:', error);
+      setIsSubmitting(false);
+      setErrors({
+        ...errors,
+        general: error.response?.data?.message || 'Failed to create project. Please try again.',
+      });
     }
-
-    setIsSubmitting(false);
-
-    // Show success and close modal after delay
-    setTimeout(() => {
-      onClose();
-    }, 1500);
   };
 
   const progress = calculateProgress();
@@ -382,51 +365,42 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
                 )}
               </div>
 
-              {/* Tags */}
+              {/* Category */}
               <div className="mb-5">
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Tags <span className="text-red-500">*</span>
-                  {touchedFields.tags &&
-                    !errors.tags &&
-                    formData.tags.filter((t) => t.trim()).length > 0 && (
-                      <CheckCircleIcon className="inline h-4 w-4 text-green-600 ml-2" />
-                    )}
+                <label htmlFor="category" className="block text-sm font-medium text-slate-700 mb-2">
+                  Category <span className="text-red-500">*</span>
+                  {touchedFields.category && !errors.category && formData.category && (
+                    <CheckCircleIcon className="inline h-4 w-4 text-green-600 ml-2" />
+                  )}
                 </label>
-                <div className="space-y-3">
-                  {formData.tags.map((tag, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        className="flex-1 px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
-                        placeholder="e.g., Web, Mobile, AI, React, Python, Sustainability, HealthTech, EdTech, Social Impact"
-                        value={tag}
-                        onChange={(e) => handleTagChange(index, e.target.value)}
-                      />
-                      {formData.tags.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeTag(index)}
-                          className="p-2 text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                          aria-label="Remove tag"
-                        >
-                          <TrashIcon className="h-5 w-5" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={addTag}
-                    className="flex items-center text-sm text-orange-500 hover:text-orange-600 font-medium transition-colors"
-                  >
-                    <PlusIcon className="h-4 w-4 mr-1" />
-                    Add Tag
-                  </button>
-                </div>
-                {errors.tags && touchedFields.tags && (
-                  <p className="mt-1 text-sm text-red-600">{errors.tags}</p>
+                <select
+                  id="category"
+                  name="category"
+                  className={`w-full px-4 py-3 rounded-lg border ${
+                    errors.category && touchedFields.category
+                      ? 'border-red-500 focus:ring-red-500'
+                      : 'border-slate-300 focus:ring-orange-500'
+                  } focus:ring-2 focus:border-transparent outline-none transition-all`}
+                  value={formData.category}
+                  onChange={(e) => {
+                    handleChange(e);
+                    console.log('[CreateProjectModal] Selected category:', e.target.value);
+                  }}
+                  onBlur={() => handleBlur('category')}
+                >
+                  <option value="">Select category</option>
+                  <option value="Tech">Tech</option>
+                  <option value="Design">Design</option>
+                  <option value="Business">Business</option>
+                  <option value="Marketing">Marketing</option>
+                  <option value="Case Competitions">Case Competitions</option>
+                  <option value="Hackathons">Hackathons</option>
+                </select>
+                {errors.category && touchedFields.category && (
+                  <p className="mt-1 text-sm text-red-600">{errors.category}</p>
                 )}
               </div>
+
             </div>
 
             {/* Section 2: Project Timeline */}

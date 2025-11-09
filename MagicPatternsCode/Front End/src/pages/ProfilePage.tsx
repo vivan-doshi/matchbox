@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon, LinkedinIcon, GithubIcon, ExternalLinkIcon, EditIcon, FolderIcon, FileTextIcon, UploadIcon, CheckIcon, XIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import Navigation from '../components/Navigation';
 
 const ProfilePage: React.FC = () => {
   const { user: authUser, updateUserProfile, loading: authLoading } = useAuth();
@@ -12,6 +13,7 @@ const ProfilePage: React.FC = () => {
   const [uploadingResume, setUploadingResume] = useState(false);
   const [showUploadSuccess, setShowUploadSuccess] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showResumePreview, setShowResumePreview] = useState(false);
 
   // Transform auth user data to match original structure
   const originalUser = authUser ? {
@@ -92,6 +94,18 @@ const ProfilePage: React.FC = () => {
   // Use original data for display
   const user = originalUser;
 
+  // Debug logging
+  useEffect(() => {
+    if (authUser) {
+      console.log('[ProfilePage] User data loaded:', {
+        email: authUser.email,
+        skillsCount: authUser.skills?.length || 0,
+        skills: authUser.skills,
+        interests: authUser.interests,
+      });
+    }
+  }, [authUser]);
+
   // Show loading if still fetching auth
   if (authLoading || !authUser) {
     return <div className="min-h-screen page-background-gradient flex items-center justify-center">
@@ -103,12 +117,14 @@ const ProfilePage: React.FC = () => {
     if (isEditMode) {
       try {
         setSaving(true);
+        console.log('[ProfilePage] Starting profile update...');
+
         // Parse name into first and last
         const nameParts = editedName.trim().split(' ');
         const firstName = nameParts[0] || '';
         const lastName = nameParts.slice(1).join(' ') || '';
 
-        await updateUserProfile({
+        const updateData = {
           firstName,
           lastName,
           bio: editedBio,
@@ -125,11 +141,23 @@ const ProfilePage: React.FC = () => {
             hoursPerWeek: editedHoursPerWeek
           },
           skills: editedSkills,
-        });
+        };
+
+        console.log('[ProfilePage] Update data:', updateData);
+        console.log('[ProfilePage] User ID:', authUser?.id);
+
+        await updateUserProfile(updateData);
+
+        console.log('[ProfilePage] Profile updated successfully');
         setIsEditMode(false);
-      } catch (error) {
-        console.error('Error updating profile:', error);
-        alert('Failed to update profile. Please try again.');
+      } catch (error: any) {
+        console.error('[ProfilePage] Error updating profile:', error);
+        console.error('[ProfilePage] Error details:', {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status
+        });
+        alert(`Failed to update profile: ${error.message || 'Please try again.'}`);
       } finally {
         setSaving(false);
       }
@@ -182,14 +210,13 @@ const ProfilePage: React.FC = () => {
   const activeProjects = user.projects.filter(p => p.status === 'active');
   const completedProjects = user.projects.filter(p => p.status === 'completed');
   return <div className="min-h-screen page-background-gradient">
-      <header className="bg-white border-b border-slate-200 py-4 px-6">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center">
-            <Link to="/dashboard" className="text-slate-600 hover:text-orange-500 transition-colors mr-4">
-              <ArrowLeftIcon className="h-5 w-5" />
-            </Link>
-            <h1 className="text-xl font-bold">Profile</h1>
-          </div>
+      <Navigation />
+      <div>
+        <header className="bg-white border-b border-slate-200 py-4 px-6">
+          <div className="container mx-auto flex justify-between items-center">
+            <div className="flex items-center">
+              <h1 className="text-xl font-bold">Profile</h1>
+            </div>
           <div className="flex items-center">
             <Link to="/my-projects" className="flex items-center text-sm bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-full font-medium hover:bg-slate-50 transition-all mr-2">
               <FolderIcon className="h-4 w-4 mr-1" />
@@ -197,11 +224,7 @@ const ProfilePage: React.FC = () => {
             </Link>
             <button
               onClick={handleEditProfile}
-              className={`flex items-center text-sm px-4 py-2 rounded-full font-medium transition-all cursor-pointer ${
-                isEditMode
-                  ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:shadow-lg'
-                  : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
-              }`}
+              className="flex items-center text-sm px-4 py-2 rounded-full font-medium transition-all cursor-pointer bg-gradient-to-r from-orange-500 to-red-500 text-white hover:shadow-lg"
             >
               {isEditMode ? (
                 <>
@@ -368,15 +391,13 @@ const ProfilePage: React.FC = () => {
                       </button>
                     )}
                     {user.links.resume ? (
-                      <a
-                        href={user.links.resume.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        onClick={() => setShowResumePreview(true)}
                         className="flex items-center text-xs bg-orange-50 text-orange-700 px-3 py-1 rounded-full hover:bg-orange-100 transition-colors cursor-pointer"
                       >
                         <FileTextIcon className="h-3 w-3 mr-1" />
                         Resume
-                      </a>
+                      </button>
                     ) : (
                       <label className="flex items-center text-xs bg-slate-100 text-slate-400 px-3 py-1 rounded-full hover:bg-slate-200 transition-colors cursor-pointer">
                         <UploadIcon className="h-3 w-3 mr-1" />
@@ -813,6 +834,45 @@ const ProfilePage: React.FC = () => {
           </div>
         </div>
       </main>
+
+      {/* Resume Preview Modal */}
+      {showResumePreview && user.links.resume && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setShowResumePreview(false)}>
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-slate-200">
+              <h3 className="text-lg font-semibold text-slate-900">Resume Preview</h3>
+              <div className="flex items-center gap-2">
+                <a
+                  href={user.links.resume.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center text-sm bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
+                >
+                  <ExternalLinkIcon className="h-4 w-4 mr-1" />
+                  Open in New Tab
+                </a>
+                <button
+                  onClick={() => setShowResumePreview(false)}
+                  className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  <XIcon className="h-5 w-5 text-slate-500" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body - PDF Viewer */}
+            <div className="flex-1 overflow-hidden">
+              <iframe
+                src={user.links.resume.url}
+                className="w-full h-full"
+                title="Resume Preview"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+      </div>
     </div>;
 };
 export default ProfilePage;

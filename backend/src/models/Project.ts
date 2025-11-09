@@ -7,13 +7,31 @@ export interface IRole {
   user?: Types.ObjectId;
 }
 
+export interface ICreatorRole {
+  title: string;
+  responsibilities?: string;
+  expertise?: string;
+}
+
+export interface ITeamMember {
+  name: string;
+  profileLink?: string;
+  role: string;
+  description?: string;
+}
+
 export interface IProject extends Document {
   title: string;
   description: string;
   creator: Types.ObjectId;
-  tags: string[];
+  category: string;
+  tags?: string[];
+  timeCommitment?: string;
+  duration?: number;
   status: 'Planning' | 'In Progress' | 'Completed';
   roles: IRole[];
+  creatorRole?: ICreatorRole;
+  existingMembers?: ITeamMember[];
   startDate?: Date;
   deadline?: Date;
   githubRepo?: string;
@@ -41,6 +59,28 @@ const RoleSchema = new Schema<IRole>({
   },
 });
 
+const CreatorRoleSchema = new Schema({
+  title: {
+    type: String,
+    required: true,
+  },
+  responsibilities: String,
+  expertise: String,
+});
+
+const TeamMemberSchema = new Schema({
+  name: {
+    type: String,
+    required: true,
+  },
+  profileLink: String,
+  role: {
+    type: String,
+    required: true,
+  },
+  description: String,
+});
+
 const ProjectSchema: Schema = new Schema(
   {
     title: {
@@ -57,18 +97,33 @@ const ProjectSchema: Schema = new Schema(
       ref: 'User',
       required: true,
     },
+    category: {
+      type: String,
+      required: [true, 'Category is required'],
+      enum: ['Tech', 'Design', 'Business', 'Marketing', 'Case Competitions', 'Hackathons'],
+    },
     tags: [
       {
         type: String,
         trim: true,
       },
     ],
+    timeCommitment: {
+      type: String,
+    },
+    duration: {
+      type: Number,
+      min: 1,
+      max: 52,
+    },
     status: {
       type: String,
       enum: ['Planning', 'In Progress', 'Completed'],
       default: 'Planning',
     },
     roles: [RoleSchema],
+    creatorRole: CreatorRoleSchema,
+    existingMembers: [TeamMemberSchema],
     startDate: {
       type: Date,
     },
@@ -88,6 +143,6 @@ const ProjectSchema: Schema = new Schema(
 );
 
 // Index for search
-ProjectSchema.index({ title: 'text', description: 'text', tags: 'text' });
+ProjectSchema.index({ title: 'text', description: 'text', category: 'text', tags: 'text' });
 
 export default mongoose.model<IProject>('Project', ProjectSchema);
