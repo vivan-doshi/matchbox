@@ -42,3 +42,8 @@ coverage/
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# MongoDB
+mongodb/
+*.tgz
+*.tar.gz
