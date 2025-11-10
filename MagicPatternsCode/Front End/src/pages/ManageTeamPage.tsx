@@ -1,0 +1,511 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import {
+  ArrowLeftIcon,
+  XIcon,
+  UserPlusIcon,
+  UserMinusIcon,
+  MailIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  AlertCircleIcon,
+  SearchIcon,
+} from 'lucide-react';
+import apiClient from '../utils/apiClient';
+import { Project } from '../types/api';
+import Navigation from '../components/Navigation';
+
+interface TeamMember {
+  id: string;
+  name: string;
+  email?: string;
+  university: string;
+  profilePic: string;
+  role: string;
+  status: string;
+  joinedAt: string;
+}
+
+interface Application {
+  id: string;
+  user: {
+    id: string;
+    name: string;
+    email?: string;
+    university: string;
+    profilePic: string;
+  };
+  role: string;
+  message: string;
+  status: 'Pending' | 'Accepted' | 'Rejected';
+  createdAt: string;
+}
+
+const ManageTeamPage: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [project, setProject] = useState<Project | null>(null);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [activeTab, setActiveTab] = useState<'team' | 'applications'>('team');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [processingApp, setProcessingApp] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchProjectData();
+  }, [id]);
+
+  const fetchProjectData = async () => {
+    if (!id) return;
+
+    try {
+      setLoading(true);
+
+      // Fetch project details
+      const projectResponse = await apiClient.getProjectById(id);
+
+      if (projectResponse.success && projectResponse.data) {
+        const proj = projectResponse.data;
+        setProject(proj);
+
+        // Extract team members from filled roles
+        const members: TeamMember[] = proj.roles
+          .filter((role) => role.filled && role.user)
+          .map((role) => {
+            const user = typeof role.user === 'object' ? role.user : null;
+            return {
+              id: user?.id || '',
+              name: user?.preferredName || `${user?.firstName} ${user?.lastName}` || 'Unknown',
+              email: user?.email,
+              university: user?.university || '',
+              profilePic: user?.profilePicture || `https://ui-avatars.com/api/?name=${user?.firstName}+${user?.lastName}`,
+              role: role.title,
+              status: 'Active',
+              joinedAt: new Date(proj.createdAt).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              }),
+            };
+          });
+
+        setTeamMembers(members);
+
+        // TODO: Fetch applications when the endpoint is ready
+        // For now, using mock data
+        setApplications([]);
+      }
+    } catch (error: any) {
+      console.error('Error fetching project data:', error);
+      alert('Failed to load project data');
+      navigate('/my-projects');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAcceptApplication = async (applicationId: string) => {
+    try {
+      setProcessingApp(applicationId);
+
+      // TODO: Replace with actual API call when endpoint is ready
+      // await apiClient.acceptApplication(applicationId);
+
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Update application status
+      setApplications((prev) =>
+        prev.map((app) =>
+          app.id === applicationId ? { ...app, status: 'Accepted' as const } : app
+        )
+      );
+
+      alert('Application accepted! The user has been added to the team.');
+      fetchProjectData(); // Refresh data
+    } catch (error: any) {
+      console.error('Error accepting application:', error);
+      alert('Failed to accept application: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setProcessingApp(null);
+    }
+  };
+
+  const handleRejectApplication = async (applicationId: string) => {
+    try {
+      setProcessingApp(applicationId);
+
+      // TODO: Replace with actual API call when endpoint is ready
+      // await apiClient.rejectApplication(applicationId);
+
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Update application status
+      setApplications((prev) =>
+        prev.map((app) =>
+          app.id === applicationId ? { ...app, status: 'Rejected' as const } : app
+        )
+      );
+
+      alert('Application rejected.');
+    } catch (error: any) {
+      console.error('Error rejecting application:', error);
+      alert('Failed to reject application: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setProcessingApp(null);
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string, memberName: string) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to remove ${memberName} from the team?\n\nThis will:\n- Remove them from their assigned role\n- Make the role available for new applicants\n- Notify the member about the removal`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      // TODO: Replace with actual API call when endpoint is ready
+      // await apiClient.removeTeamMember(id, memberId);
+
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      setTeamMembers((prev) => prev.filter((member) => member.id !== memberId));
+      alert(`${memberName} has been removed from the team.`);
+      fetchProjectData(); // Refresh data
+    } catch (error: any) {
+      console.error('Error removing team member:', error);
+      alert('Failed to remove team member: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const handleMessageMember = (memberId: string) => {
+    // TODO: Implement messaging functionality
+    console.log('Message member:', memberId);
+    alert('Messaging feature coming soon!');
+  };
+
+  const filteredTeamMembers = teamMembers.filter((member) =>
+    member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    member.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    member.university.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const pendingApplications = applications.filter((app) => app.status === 'Pending');
+  const processedApplications = applications.filter((app) => app.status !== 'Pending');
+
+  if (loading) {
+    return (
+      <div className="min-h-screen page-background-gradient flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-orange-500 border-r-transparent"></div>
+          <p className="mt-4 text-slate-600">Loading team data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!project) {
+    return (
+      <div className="min-h-screen page-background-gradient flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">Project not found</p>
+          <button
+            onClick={() => navigate('/my-projects')}
+            className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+          >
+            Back to My Projects
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen page-background-gradient">
+      <Navigation />
+
+      <div className="container mx-auto px-6 py-8">
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => navigate(`/project/${id}`)}
+                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <ArrowLeftIcon className="h-5 w-5 text-slate-600" />
+              </button>
+              <div>
+                <h1 className="text-2xl font-bold">Manage Team</h1>
+                <p className="text-sm text-slate-600 mt-1">{project.title}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => navigate(`/project/${id}`)}
+              className="text-slate-500 hover:text-slate-700"
+            >
+              <XIcon className="h-6 w-6" />
+            </button>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="bg-white rounded-lg shadow-sm border border-slate-100 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-600">Team Members</p>
+                  <p className="text-2xl font-bold text-slate-900">{teamMembers.length}</p>
+                </div>
+                <div className="bg-blue-100 p-3 rounded-lg">
+                  <UserPlusIcon className="h-6 w-6 text-blue-600" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm border border-slate-100 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-600">Open Roles</p>
+                  <p className="text-2xl font-bold text-slate-900">
+                    {project.roles.filter((r) => !r.filled).length}
+                  </p>
+                </div>
+                <div className="bg-orange-100 p-3 rounded-lg">
+                  <AlertCircleIcon className="h-6 w-6 text-orange-600" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm border border-slate-100 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-600">Pending Applications</p>
+                  <p className="text-2xl font-bold text-slate-900">{pendingApplications.length}</p>
+                </div>
+                <div className="bg-purple-100 p-3 rounded-lg">
+                  <MailIcon className="h-6 w-6 text-purple-600" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+            <div className="border-b border-slate-200">
+              <div className="flex">
+                <button
+                  onClick={() => setActiveTab('team')}
+                  className={`px-6 py-4 text-sm font-medium transition-colors ${
+                    activeTab === 'team'
+                      ? 'text-orange-500 border-b-2 border-orange-500'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Team Members ({teamMembers.length})
+                </button>
+                <button
+                  onClick={() => setActiveTab('applications')}
+                  className={`px-6 py-4 text-sm font-medium transition-colors relative ${
+                    activeTab === 'applications'
+                      ? 'text-orange-500 border-b-2 border-orange-500'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Applications ({applications.length})
+                  {pendingApplications.length > 0 && (
+                    <span className="absolute top-2 right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {pendingApplications.length}
+                    </span>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Team Members Tab */}
+            {activeTab === 'team' && (
+              <div className="p-6">
+                {/* Search */}
+                <div className="mb-6">
+                  <div className="relative">
+                    <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search team members..."
+                      className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* Team Members List */}
+                {filteredTeamMembers.length > 0 ? (
+                  <div className="space-y-4">
+                    {filteredTeamMembers.map((member) => (
+                      <div
+                        key={member.id}
+                        className="flex items-center justify-between p-4 border border-slate-200 rounded-lg hover:border-orange-300 transition-colors"
+                      >
+                        <div className="flex items-center gap-4">
+                          <img
+                            src={member.profilePic}
+                            alt={member.name}
+                            className="w-12 h-12 rounded-full ring-2 ring-slate-200"
+                          />
+                          <div>
+                            <h3 className="font-semibold text-slate-900">{member.name}</h3>
+                            <p className="text-sm text-slate-600">{member.role}</p>
+                            <p className="text-xs text-slate-500 mt-1">
+                              {member.university} • Joined {member.joinedAt}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleMessageMember(member.id)}
+                            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm flex items-center gap-2"
+                          >
+                            <MailIcon className="h-4 w-4" />
+                            Message
+                          </button>
+                          <button
+                            onClick={() => handleRemoveMember(member.id, member.name)}
+                            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm flex items-center gap-2"
+                          >
+                            <UserMinusIcon className="h-4 w-4" />
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <UserPlusIcon className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                    <p className="text-slate-500">
+                      {searchQuery ? 'No team members found matching your search' : 'No team members yet'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Applications Tab */}
+            {activeTab === 'applications' && (
+              <div className="p-6">
+                {pendingApplications.length > 0 ? (
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="font-semibold text-slate-900 mb-4">Pending Applications</h3>
+                      <div className="space-y-4">
+                        {pendingApplications.map((app) => (
+                          <div
+                            key={app.id}
+                            className="border border-slate-200 rounded-lg p-4 hover:border-orange-300 transition-colors"
+                          >
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex items-center gap-3">
+                                <img
+                                  src={app.user.profilePic}
+                                  alt={app.user.name}
+                                  className="w-10 h-10 rounded-full ring-2 ring-slate-200"
+                                />
+                                <div>
+                                  <h4 className="font-semibold text-slate-900">{app.user.name}</h4>
+                                  <p className="text-sm text-slate-600">{app.user.university}</p>
+                                </div>
+                              </div>
+                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                                {app.role}
+                              </span>
+                            </div>
+                            <p className="text-sm text-slate-700 mb-4 bg-slate-50 p-3 rounded">
+                              {app.message}
+                            </p>
+                            <div className="flex items-center justify-between">
+                              <p className="text-xs text-slate-500">
+                                Applied {new Date(app.createdAt).toLocaleDateString()}
+                              </p>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleRejectApplication(app.id)}
+                                  disabled={processingApp === app.id}
+                                  className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors text-sm flex items-center gap-2 disabled:opacity-50"
+                                >
+                                  <XCircleIcon className="h-4 w-4" />
+                                  Reject
+                                </button>
+                                <button
+                                  onClick={() => handleAcceptApplication(app.id)}
+                                  disabled={processingApp === app.id}
+                                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm flex items-center gap-2 disabled:opacity-50"
+                                >
+                                  <CheckCircleIcon className="h-4 w-4" />
+                                  Accept
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {processedApplications.length > 0 && (
+                      <div>
+                        <h3 className="font-semibold text-slate-900 mb-4">Processed Applications</h3>
+                        <div className="space-y-4">
+                          {processedApplications.map((app) => (
+                            <div
+                              key={app.id}
+                              className="border border-slate-200 rounded-lg p-4 opacity-60"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <img
+                                    src={app.user.profilePic}
+                                    alt={app.user.name}
+                                    className="w-10 h-10 rounded-full ring-2 ring-slate-200"
+                                  />
+                                  <div>
+                                    <h4 className="font-semibold text-slate-900">{app.user.name}</h4>
+                                    <p className="text-sm text-slate-600">{app.role}</p>
+                                  </div>
+                                </div>
+                                <span
+                                  className={`text-xs px-2 py-1 rounded-full ${
+                                    app.status === 'Accepted'
+                                      ? 'bg-green-100 text-green-700'
+                                      : 'bg-red-100 text-red-700'
+                                  }`}
+                                >
+                                  {app.status}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <MailIcon className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                    <p className="text-slate-500">No applications yet</p>
+                    <p className="text-sm text-slate-400 mt-2">
+                      Applications will appear here when users apply to your project roles
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ManageTeamPage;

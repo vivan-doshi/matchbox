@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
@@ -6,7 +5,9 @@ import SignupFlow from './pages/SignupFlow';
 import Dashboard from './pages/Dashboard';
 import ProfilePage from './pages/ProfilePage';
 import ProjectDetailsPage from './pages/ProjectDetailsPage';
-import MyProjectsPageNew from './pages/MyProjectsPageNew';
+import EditProjectPage from './pages/EditProjectPage';
+import ManageTeamPage from './pages/ManageTeamPage';
+import MyProjects from './pages/MyProjects';
 import { AuthProvider } from './context/AuthContext';
 import { SignupProvider } from './context/SignupContext';
 
@@ -21,7 +22,9 @@ export function App() {
             <Route path="/dashboard/*" element={<Dashboard />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/project/:id" element={<ProjectDetailsPage />} />
-            <Route path="/my-projects" element={<MyProjectsPageNew />} />
+            <Route path="/project/:id/edit" element={<EditProjectPage />} />
+            <Route path="/project/:id/manage-team" element={<ManageTeamPage />} />
+            <Route path="/my-projects" element={<MyProjects />} />
           </Routes>
         </div>
       </BrowserRouter>

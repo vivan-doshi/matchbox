@@ -9,12 +9,14 @@ import {
   getProjectApplicants,
   updateApplicationStatus,
   getProjectRecommendations,
+  getMyProjects,
 } from '../controllers/projectController';
 import { protect } from '../middleware/auth';
 
 const router = express.Router();
 
 router.route('/').get(getProjects).post(protect, createProject);
+router.get('/my-projects', protect, getMyProjects);
 
 router
   .route('/:id')

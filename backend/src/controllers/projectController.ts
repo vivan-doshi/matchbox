@@ -274,17 +274,20 @@ export const applyToProject = async (
     const user = await User.findById(req.userId);
     let fitScore: 'High' | 'Medium' | 'Low' = 'Medium';
 
-    // Simple fit scoring logic (can be enhanced)
-    if (user) {
-      const avgSkill =
-        (user.skills.programming +
-          user.skills.design +
-          user.skills.marketing +
-          user.skills.writing +
-          user.skills.research) /
-        5;
-      if (avgSkill >= 7) fitScore = 'High';
-      else if (avgSkill < 4) fitScore = 'Low';
+    // Simple fit scoring logic based on number of skills and proficiency levels
+    if (user && user.skills && user.skills.length > 0) {
+      const proficiencyScore = {
+        'Beginner': 1,
+        'Intermediate': 2,
+        'Fluent': 3,
+        'Expert': 4
+      };
+
+      const avgScore = user.skills.reduce((sum, skill) =>
+        sum + proficiencyScore[skill.proficiency], 0) / user.skills.length;
+
+      if (avgScore >= 3) fitScore = 'High';
+      else if (avgScore < 2) fitScore = 'Low';
     }
 
     const application = await Application.create({
@@ -457,6 +460,32 @@ export const getProjectRecommendations = async (
       success: true,
       count: users.length,
       data: users,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Get user's created projects
+// @route   GET /api/projects/my-projects
+// @access  Private
+export const getMyProjects = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const projects = await Project.find({ creator: req.userId })
+      .populate('creator', 'firstName lastName preferredName university profilePicture')
+      .populate('roles.user', 'firstName lastName preferredName profilePicture university')
+      .sort('-createdAt');
+
+    res.status(200).json({
+      success: true,
+      count: projects.length,
+      data: projects,
     });
   } catch (error: any) {
     res.status(500).json({

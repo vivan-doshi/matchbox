@@ -1,92 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { SearchIcon, ChevronDownIcon } from 'lucide-react';
 import ProjectCard from './ProjectCard';
-
-const SAMPLE_PROJECTS = [{
-  id: '1',
-  title: 'AI-powered Study Assistant',
-  description: 'Building an AI assistant to help students organize notes, schedule study sessions, and provide personalized learning recommendations.',
-  tags: ['AI/ML', 'Mobile', 'Education'],
-  roles: [{
-    title: 'Backend Developer',
-    filled: true,
-    user: {
-      name: 'Alex'
-    }
-  }, {
-    title: 'ML Engineer',
-    filled: true,
-    user: {
-      name: 'Taylor'
-    }
-  }, {
-    title: 'UI/UX Designer',
-    filled: false
-  }, {
-    title: 'Frontend Developer',
-    filled: false
-  }],
-  creator: {
-    id: '101',
-    name: 'Alex Chen',
-    university: 'Stanford',
-    profilePic: 'https://i.pravatar.cc/150?img=11'
-  }
-}, {
-  id: '2',
-  title: 'Campus Events Platform',
-  description: 'Creating a platform for students to discover, organize, and RSVP to campus events. Includes calendar integration and notifications.',
-  tags: ['Web', 'Mobile', 'Campus Life'],
-  roles: [{
-    title: 'Frontend Developer',
-    filled: true,
-    user: {
-      name: 'Jordan'
-    }
-  }, {
-    title: 'Backend Developer',
-    filled: false
-  }, {
-    title: 'UI/UX Designer',
-    filled: false
-  }],
-  creator: {
-    id: '102',
-    name: 'Jordan Lee',
-    university: 'MIT',
-    profilePic: 'https://i.pravatar.cc/150?img=12'
-  }
-}, {
-  id: '3',
-  title: 'Sustainable Fashion Marketplace',
-  description: 'Building a platform for students to buy, sell, and trade second-hand clothing and accessories to promote sustainability on campus.',
-  tags: ['E-commerce', 'Sustainability', 'Web'],
-  roles: [{
-    title: 'Product Manager',
-    filled: true,
-    user: {
-      name: 'Sam'
-    }
-  }, {
-    title: 'Frontend Developer',
-    filled: true,
-    user: {
-      name: 'Riley'
-    }
-  }, {
-    title: 'Backend Developer',
-    filled: false
-  }, {
-    title: 'Marketing Specialist',
-    filled: false
-  }],
-  creator: {
-    id: '103',
-    name: 'Sam Rivera',
-    university: 'NYU',
-    profilePic: 'https://i.pravatar.cc/150?img=13'
-  }
-}];
+import { apiClient } from '../../utils/apiClient';
+import { Project } from '../../types/api';
 
 interface HomePageProps {
   onProjectCreated?: (project: any) => void;
@@ -97,8 +13,31 @@ const HomePage: React.FC<HomePageProps> = ({ newProject }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('All Projects');
   const [sortOption, setSortOption] = useState('Most Recent');
-  const [projects, setProjects] = useState(SAMPLE_PROJECTS);
+  const [projects, setProjects] = useState<any[]>([]);
   const [newProjectId, setNewProjectId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch projects from API
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  const fetchProjects = async () => {
+    try {
+      setLoading(true);
+      const response = await apiClient.getProjects();
+
+      if (response.success && response.data) {
+        setProjects(response.data);
+      }
+    } catch (err: any) {
+      console.error('Error fetching projects:', err);
+      setError(err.response?.data?.message || 'Failed to fetch projects');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Handle new project addition with animation and persistence
   useEffect(() => {
@@ -126,6 +65,33 @@ const HomePage: React.FC<HomePageProps> = ({ newProject }) => {
       return () => clearTimeout(timer);
     }
   }, [newProject]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-orange-500 border-r-transparent"></div>
+          <p className="mt-4 text-slate-600">Loading projects...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={fetchProjects}
+            className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -183,15 +149,21 @@ const HomePage: React.FC<HomePageProps> = ({ newProject }) => {
       </div>
 
       {/* 2-Column Grid Layout for Project Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {projects.map((project) => (
-          <ProjectCard
-            key={project.id}
-            project={project}
-            isNew={newProjectId === project.id}
-          />
-        ))}
-      </div>
+      {projects.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-slate-600">No projects found. Create one to get started!</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {projects.map((project) => (
+            <ProjectCard
+              key={project.id}
+              project={project}
+              isNew={newProjectId === project.id}
+            />
+          ))}
+        </div>
+      )}
 
       <style>{`
         @keyframes slideDown {

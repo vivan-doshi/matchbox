@@ -3,10 +3,22 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { HomeIcon, MessageSquareIcon, UserIcon, FolderIcon, UsersIcon, MenuIcon, XIcon, LogOutIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-const Navigation: React.FC = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+interface NavigationProps {
+  isSidebarOpen?: boolean;
+  setIsSidebarOpen?: (open: boolean) => void;
+}
+
+const Navigation: React.FC<NavigationProps> = ({
+  isSidebarOpen: externalSidebarOpen,
+  setIsSidebarOpen: externalSetIsSidebarOpen
+}) => {
+  const [internalSidebarOpen, setInternalSidebarOpen] = useState(false);
   const { logout } = useAuth();
   const navigate = useNavigate();
+
+  // Use external state if provided, otherwise use internal state
+  const isSidebarOpen = externalSidebarOpen !== undefined ? externalSidebarOpen : internalSidebarOpen;
+  const setIsSidebarOpen = externalSetIsSidebarOpen || setInternalSidebarOpen;
 
   const handleNavClick = () => {
     setIsSidebarOpen(false);
@@ -19,18 +31,20 @@ const Navigation: React.FC = () => {
 
   return (
     <>
-      {/* Hamburger Button - Always visible */}
-      <button
-        onClick={() => setIsSidebarOpen(true)}
-        className="fixed top-4 left-4 z-40 p-2 bg-orange-500 text-white rounded-lg shadow-lg hover:bg-orange-600 transition-colors"
-        aria-label="Open navigation menu"
-      >
-        <MenuIcon className="h-6 w-6" />
-      </button>
+      {/* Hamburger Button - Only show if not controlled externally */}
+      {externalSidebarOpen === undefined && (
+        <button
+          onClick={() => setIsSidebarOpen(true)}
+          className="fixed top-6 left-6 z-[100] p-2 bg-orange-500 text-white rounded-lg shadow-lg hover:bg-orange-600 transition-colors"
+          aria-label="Open navigation menu"
+        >
+          <MenuIcon className="h-6 w-6" />
+        </button>
+      )}
 
       {/* Overlay - Darkens background when sidebar is open */}
       <div
-        className={`fixed inset-0 z-40 transition-opacity duration-300 ${
+        className={`fixed inset-0 z-[110] transition-opacity duration-300 ${
           isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
       >
@@ -42,7 +56,7 @@ const Navigation: React.FC = () => {
 
       {/* Sidebar Navigation - Slide-out drawer */}
       <nav
-        className={`fixed top-0 left-0 h-full w-64 bg-gradient-to-b from-orange-500 to-red-500 text-white shadow-2xl transform transition-transform duration-300 ease-in-out z-50 ${
+        className={`fixed top-0 left-0 h-full w-64 bg-gradient-to-b from-orange-500 to-red-500 text-white shadow-2xl transform transition-transform duration-300 ease-in-out z-[120] ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         aria-label="Main navigation"

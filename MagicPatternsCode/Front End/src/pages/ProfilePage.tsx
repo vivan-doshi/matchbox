@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeftIcon, LinkedinIcon, GithubIcon, ExternalLinkIcon, EditIcon, FolderIcon, FileTextIcon, UploadIcon, CheckIcon, XIcon } from 'lucide-react';
+import { ArrowLeftIcon, LinkedinIcon, GithubIcon, ExternalLinkIcon, EditIcon, FolderIcon, FileTextIcon, UploadIcon, CheckIcon, XIcon, MenuIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Navigation from '../components/Navigation';
 
@@ -14,6 +14,7 @@ const ProfilePage: React.FC = () => {
   const [showUploadSuccess, setShowUploadSuccess] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showResumePreview, setShowResumePreview] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Transform auth user data to match original structure
   const originalUser = authUser ? {
@@ -210,11 +211,26 @@ const ProfilePage: React.FC = () => {
   const activeProjects = user.projects.filter(p => p.status === 'active');
   const completedProjects = user.projects.filter(p => p.status === 'completed');
   return <div className="min-h-screen page-background-gradient">
-      <Navigation />
+      {/* Fixed Hamburger Menu Button - Always visible */}
+      <button
+        onClick={() => setIsSidebarOpen(true)}
+        className="fixed top-6 left-6 z-[100] p-2 bg-orange-500 text-white rounded-lg shadow-lg hover:bg-orange-600 transition-colors"
+        aria-label="Open navigation menu"
+      >
+        <MenuIcon className="h-6 w-6" />
+      </button>
+
+      <Navigation isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
       <div>
         <header className="bg-white border-b border-slate-200 py-4 px-6">
           <div className="container mx-auto flex justify-between items-center">
             <div className="flex items-center">
+              {/* Spacer for fixed hamburger menu */}
+              <div className="w-10 mr-3"></div>
+
+              <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center mr-2">
+                <span className="text-white font-bold text-sm">M</span>
+              </div>
               <h1 className="text-xl font-bold">Profile</h1>
             </div>
           <div className="flex items-center">

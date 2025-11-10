@@ -11,7 +11,14 @@ import {
   XIcon,
   SendIcon,
   CheckCircleIcon,
+  EditIcon,
+  TrashIcon,
+  SettingsIcon,
+  MenuIcon,
 } from 'lucide-react';
+import { apiClient } from '../utils/apiClient';
+import { useAuth } from '../context/AuthContext';
+import Navigation from '../components/Navigation';
 
 // Types
 interface User {
@@ -46,88 +53,135 @@ interface Project {
 const ProjectDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user: currentUser, isAuthenticated } = useAuth();
+
+  console.log('ProjectDetailsPage rendered with ID:', id);
+  console.log('Current user:', currentUser);
 
   // State management
+  const [project, setProject] = useState<Project | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
   const [appliedRoles, setAppliedRoles] = useState<string[]>([]);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [applicationMessage, setApplicationMessage] = useState('');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [messageText, setMessageText] = useState('');
   const [messageSent, setMessageSent] = useState(false);
 
-  // Mock project data
-  const project: Project = {
-    id: '1',
-    title: 'AI-powered Study Assistant',
-    description:
-      "We're building an AI assistant to help students organize notes, schedule study sessions, and provide personalized learning recommendations. The app will use natural language processing to analyze notes and machine learning to create personalized study plans. This is a comprehensive project that aims to revolutionize how students approach their studies.",
-    tags: ['AI/ML', 'Mobile', 'Education'],
-    timeCommitment: '10-15 hrs/week',
-    duration: 10,
-    roles: [
-      {
-        title: 'Backend Developer',
-        description: 'Responsible for building the API and database architecture, implementing authentication, and creating scalable microservices.',
-        filled: true,
-        user: {
-          id: '101',
-          name: 'Alex Chen',
-          university: 'Stanford',
-          profilePic: 'https://i.pravatar.cc/150?img=11',
-        },
-      },
-      {
-        title: 'ML Engineer',
-        description: 'Will work on developing and training the machine learning models, optimizing algorithms, and implementing recommendation systems.',
-        filled: true,
-        user: {
-          id: '102',
-          name: 'Taylor Kim',
-          university: 'MIT',
-          profilePic: 'https://i.pravatar.cc/150?img=12',
-        },
-      },
-      {
-        title: 'UI/UX Designer',
-        description: 'Will create user flows, wireframes, and high-fidelity designs. Responsible for maintaining design system and conducting user research.',
-        filled: false,
-      },
-      {
-        title: 'Frontend Developer',
-        description: 'Will implement the UI designs and integrate with the backend API. Experience with React Native required.',
-        filled: false,
-      },
-    ],
-    creator: {
-      id: '101',
-      name: 'Alex Chen',
-      university: 'Stanford',
-      profilePic: 'https://i.pravatar.cc/150?img=11',
-    },
-    timeline: {
-      startDate: 'Oct 15, 2023',
-      endDate: 'Dec 20, 2023',
-    },
+  // Check if current user is the project creator
+  const isCreator = React.useMemo(() => {
+    if (!currentUser || !project) return false;
+
+    const userId = currentUser.id;
+    const creatorId = project.creator.id;
+
+    console.log('Creator check:', {
+      userId,
+      creatorId,
+      match: userId === creatorId,
+      currentUser,
+      creator: project.creator
+    });
+
+    return userId === creatorId;
+  }, [currentUser, project]);
+
+  console.log('Is creator?', isCreator);
+
+  // Fetch project data
+  useEffect(() => {
+    if (id) {
+      fetchProject();
+    }
+  }, [id]);
+
+  const fetchProject = async () => {
+    try {
+      setLoading(true);
+      console.log('Fetching project with ID:', id);
+      const response = await apiClient.getProjectById(id!);
+      console.log('API response:', response);
+
+      if (response.success && response.data) {
+        // Transform API data to match local Project interface
+        const apiProject = response.data;
+        console.log('API project data:', apiProject);
+        const creator = typeof apiProject.creator === 'object' ? apiProject.creator : null;
+
+        const transformedProject: Project = {
+          id: apiProject.id,
+          title: apiProject.title,
+          description: apiProject.description,
+          tags: apiProject.tags || [],
+          timeCommitment: apiProject.timeCommitment || 'Not specified',
+          duration: apiProject.duration || 0,
+          roles: apiProject.roles.map((role: any) => {
+            const user = typeof role.user === 'object' && role.user ? role.user : null;
+            return {
+              title: role.title,
+              description: role.description,
+              filled: role.filled,
+              user: user ? {
+                id: user.id || user._id,
+                name: user.preferredName || `${user.firstName} ${user.lastName}`,
+                university: user.university || '',
+                profilePic: user.profilePicture || `https://ui-avatars.com/api/?name=${user.firstName}+${user.lastName}`,
+              } : undefined,
+            };
+          }),
+          creator: {
+            id: creator?.id || creator?._id || '',
+            name: creator?.preferredName || `${creator?.firstName} ${creator?.lastName}` || 'Unknown',
+            university: creator?.university || '',
+            profilePic: creator?.profilePicture || `https://ui-avatars.com/api/?name=${creator?.firstName}+${creator?.lastName}`,
+          },
+          timeline: {
+            startDate: apiProject.startDate
+              ? new Date(apiProject.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+              : 'Not set',
+            endDate: apiProject.deadline
+              ? new Date(apiProject.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+              : 'Not set',
+          },
+        };
+
+        console.log('Transformed project:', transformedProject);
+        setProject(transformedProject);
+        console.log('Project state updated successfully');
+      }
+    } catch (err: any) {
+      console.error('Error fetching project:', err);
+      setError(err.response?.data?.message || 'Failed to fetch project details');
+    } finally {
+      setLoading(false);
+      console.log('Loading complete, loading state:', false);
+    }
   };
 
-  const filledRoles = project.roles.filter((role) => role.filled).length;
-  const totalRoles = project.roles.length;
+  const filledRoles = project?.roles.filter((role) => role.filled).length || 0;
+  const totalRoles = project?.roles.length || 0;
 
   // Load saved state from localStorage
   useEffect(() => {
+    if (!project) return;
+
     const savedProjects = JSON.parse(localStorage.getItem('savedProjects') || '[]');
     setIsSaved(savedProjects.includes(project.id));
 
     const applied = JSON.parse(localStorage.getItem('appliedRoles') || '[]');
     setAppliedRoles(applied);
-  }, [project.id]);
+  }, [project]);
 
   // Save/bookmark toggle
   const handleSaveToggle = () => {
+    if (!project) return;
+
     const savedProjects = JSON.parse(localStorage.getItem('savedProjects') || '[]');
     let updated;
     if (isSaved) {
@@ -146,6 +200,8 @@ const ProjectDetailsPage: React.FC = () => {
 
   // Handle apply button click - opens modal for role selection
   const handleApplyClick = () => {
+    if (!project) return;
+
     // Get all open (unfilled) roles that haven't been applied to
     const openRoles = project.roles
       .filter((role) => !role.filled && !hasApplied(role.title))
@@ -167,6 +223,8 @@ const ProjectDetailsPage: React.FC = () => {
 
   // Select all available roles
   const selectAllRoles = () => {
+    if (!project) return;
+
     const openRoles = project.roles
       .filter((role) => !role.filled && !hasApplied(role.title))
       .map((role) => role.title);
@@ -175,7 +233,7 @@ const ProjectDetailsPage: React.FC = () => {
 
   // Handle application submission
   const handleSubmitApplication = async () => {
-    if (selectedRoles.length === 0) return;
+    if (selectedRoles.length === 0 || !project) return;
 
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 500));
@@ -199,6 +257,7 @@ const ProjectDetailsPage: React.FC = () => {
 
   // Check if user has applied to a role
   const hasApplied = (roleTitle: string): boolean => {
+    if (!project) return false;
     return appliedRoles.includes(`${project.id}-${roleTitle}`);
   };
 
@@ -208,6 +267,35 @@ const ProjectDetailsPage: React.FC = () => {
     setShowMessageModal(true);
     setMessageText('');
     setMessageSent(false);
+  };
+
+  // Handle delete project
+  const handleDeleteProject = async () => {
+    if (!project) return;
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${project.title}"?\n\nThis action cannot be undone and will:\n- Remove the project permanently\n- Delete all associated data\n- Remove all team member assignments`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setLoading(true);
+      const response = await apiClient.deleteProject(project.id);
+
+      if (response.success) {
+        alert('Project deleted successfully!');
+        // Navigate back to My Projects page
+        navigate('/my-projects');
+      } else {
+        alert('Failed to delete project: ' + (response.message || 'Unknown error'));
+      }
+    } catch (error: any) {
+      console.error('Error deleting project:', error);
+      alert('Failed to delete project: ' + (error.response?.data?.message || error.message || 'Unknown error'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Handle send message
@@ -226,8 +314,54 @@ const ProjectDetailsPage: React.FC = () => {
     }, 1500);
   };
 
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen page-background-gradient flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-orange-500 border-r-transparent"></div>
+          <p className="mt-4 text-slate-600">Loading project details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !project) {
+    return (
+      <div className="min-h-screen page-background-gradient flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error || 'Project not found'}</p>
+          <button
+            onClick={() => navigate(-1)}
+            className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 mr-2"
+          >
+            Go Back
+          </button>
+          <button
+            onClick={fetchProject}
+            className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen page-background-gradient">
+      {/* Fixed Hamburger Menu Button - Always visible */}
+      <button
+        onClick={() => setIsSidebarOpen(true)}
+        className="fixed top-6 left-6 z-[100] p-2 bg-orange-500 text-white rounded-lg shadow-lg hover:bg-orange-600 transition-colors"
+        aria-label="Open navigation menu"
+      >
+        <MenuIcon className="h-6 w-6" />
+      </button>
+
+      <Navigation isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
+
       {/* Header */}
       <header className="bg-white border-b border-slate-200 py-4 px-6 sticky top-0 z-40">
         <div className="container mx-auto flex justify-between items-center">
@@ -253,21 +387,29 @@ const ProjectDetailsPage: React.FC = () => {
             <h1 className="text-xl font-bold text-slate-900">Project Details</h1>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-base text-slate-500 mr-2">Created by</span>
-            <button
-              onClick={() => handleProfileClick(project.creator.id)}
-              className="flex items-center group hover:bg-slate-50 rounded-lg p-2 transition-all"
-              aria-label={`View ${project.creator.name}'s profile`}
-            >
-              <img
-                src={project.creator.profilePic}
-                alt={project.creator.name}
-                className="w-10 h-10 rounded-full mr-2 ring-2 ring-transparent group-hover:ring-orange-300 transition-all transform group-hover:scale-105"
-              />
-              <span className="font-semibold text-base text-slate-900 group-hover:text-orange-500 transition-colors">
-                {project.creator.name}
-              </span>
-            </button>
+            {isCreator ? (
+              <div className="flex items-center bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
+                <span className="text-base text-blue-700 font-semibold">Your Project</span>
+              </div>
+            ) : (
+              <>
+                <span className="text-base text-slate-500 mr-2">Created by</span>
+                <button
+                  onClick={() => handleProfileClick(project.creator.id)}
+                  className="flex items-center group hover:bg-slate-50 rounded-lg p-2 transition-all"
+                  aria-label={`View ${project.creator.name}'s profile`}
+                >
+                  <img
+                    src={project.creator.profilePic}
+                    alt={project.creator.name}
+                    className="w-10 h-10 rounded-full mr-2 ring-2 ring-transparent group-hover:ring-orange-300 transition-all transform group-hover:scale-105"
+                  />
+                  <span className="font-semibold text-base text-slate-900 group-hover:text-orange-500 transition-colors">
+                    {project.creator.name}
+                  </span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -400,26 +542,57 @@ const ProjectDetailsPage: React.FC = () => {
                 ))}
               </div>
 
-              {/* Consolidated Apply to Project Button */}
-              {project.roles.some((role) => !role.filled && !hasApplied(role.title)) && (
-                <div className="mt-8 flex justify-center">
+              {/* Conditional Buttons - Creator vs Non-Creator */}
+              {isCreator ? (
+                // Creator Actions
+                <div className="mt-8 flex justify-center gap-4">
                   <button
-                    onClick={handleApplyClick}
-                    className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-8 py-4 rounded-full text-lg font-bold hover:shadow-2xl transition-all transform hover:scale-105 flex items-center gap-2"
+                    onClick={() => navigate(`/project/${project.id}/edit`)}
+                    className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-full text-base font-bold hover:shadow-2xl transition-all transform hover:scale-105 flex items-center gap-2"
                   >
-                    Apply to Project
-                    <CheckCircleIcon className="h-5 w-5" />
+                    <EditIcon className="h-5 w-5" />
+                    Edit Project
+                  </button>
+                  <button
+                    onClick={() => navigate(`/project/${project.id}/manage-team`)}
+                    className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-3 rounded-full text-base font-bold hover:shadow-2xl transition-all transform hover:scale-105 flex items-center gap-2"
+                  >
+                    <UsersIcon className="h-5 w-5" />
+                    Manage Team
+                  </button>
+                  <button
+                    onClick={handleDeleteProject}
+                    className="bg-gradient-to-r from-red-600 to-red-700 text-white px-6 py-3 rounded-full text-base font-bold hover:shadow-2xl transition-all transform hover:scale-105 flex items-center gap-2"
+                  >
+                    <TrashIcon className="h-5 w-5" />
+                    Delete
                   </button>
                 </div>
-              )}
+              ) : (
+                // Non-Creator Actions
+                <>
+                  {/* Apply to Project Button */}
+                  {project.roles.some((role) => !role.filled && !hasApplied(role.title)) && (
+                    <div className="mt-8 flex justify-center">
+                      <button
+                        onClick={handleApplyClick}
+                        className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-8 py-4 rounded-full text-lg font-bold hover:shadow-2xl transition-all transform hover:scale-105 flex items-center gap-2"
+                      >
+                        Apply to Project
+                        <CheckCircleIcon className="h-5 w-5" />
+                      </button>
+                    </div>
+                  )}
 
-              {/* Show message if all roles are filled or applied */}
-              {!project.roles.some((role) => !role.filled && !hasApplied(role.title)) && (
-                <div className="mt-8 flex justify-center">
-                  <div className="bg-slate-100 text-slate-700 px-6 py-3 rounded-full text-base font-semibold">
-                    All positions filled or already applied
-                  </div>
-                </div>
+                  {/* Show message if all roles are filled or applied */}
+                  {!project.roles.some((role) => !role.filled && !hasApplied(role.title)) && (
+                    <div className="mt-8 flex justify-center">
+                      <div className="bg-slate-100 text-slate-700 px-6 py-3 rounded-full text-base font-semibold">
+                        All positions filled or already applied
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
