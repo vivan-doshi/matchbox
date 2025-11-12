@@ -12,8 +12,9 @@ import type {
   PaginatedResponse,
   Match,
   Chat,
-  SendMessageRequest,
-  CreateChatRequest,
+  Message,
+  Application,
+  Notification,
   ErrorResponse,
 } from '../types/api';
 
@@ -80,6 +81,20 @@ class ApiClient {
     localStorage.removeItem('user');
   }
 
+  private getCurrentUserId(): string {
+    const storedUser = localStorage.getItem('user');
+    if (!storedUser) {
+      throw new Error('User not authenticated');
+    }
+
+    try {
+      const parsed = JSON.parse(storedUser);
+      return parsed.id || parsed._id;
+    } catch {
+      throw new Error('User not authenticated');
+    }
+  }
+
   // ============= AUTH ENDPOINTS =============
 
   async checkEmail(email: string): Promise<ApiResponse<{ exists: boolean }>> {
@@ -119,6 +134,11 @@ class ApiClient {
     return response.data;
   }
 
+  async searchUsers(params?: Record<string, any>): Promise<ApiResponse<User[]>> {
+    const response = await this.client.get<ApiResponse<User[]>>('/users/search', { params });
+    return response.data;
+  }
+
   async getUserById(id: string): Promise<ApiResponse<User>> {
     const response = await this.client.get<ApiResponse<User>>(`/users/${id}`);
     return response.data;
@@ -131,6 +151,24 @@ class ApiClient {
 
   async deleteUser(id: string): Promise<ApiResponse> {
     const response = await this.client.delete<ApiResponse>(`/users/${id}`);
+    return response.data;
+  }
+
+  async saveProject(projectId: string): Promise<ApiResponse> {
+    const userId = this.getCurrentUserId();
+    const response = await this.client.post<ApiResponse>(`/users/${userId}/saved-projects/${projectId}`);
+    return response.data;
+  }
+
+  async unsaveProject(projectId: string): Promise<ApiResponse> {
+    const userId = this.getCurrentUserId();
+    const response = await this.client.delete<ApiResponse>(`/users/${userId}/saved-projects/${projectId}`);
+    return response.data;
+  }
+
+  async getSavedProjects(): Promise<ApiResponse<Project[]>> {
+    const userId = this.getCurrentUserId();
+    const response = await this.client.get<ApiResponse<Project[]>>(`/users/${userId}/saved-projects`);
     return response.data;
   }
 
@@ -163,13 +201,52 @@ class ApiClient {
     return response.data;
   }
 
-  async getMyProjects(): Promise<PaginatedResponse<Project>> {
-    const response = await this.client.get<PaginatedResponse<Project>>('/projects/my-projects');
+  async getMyProjects(): Promise<ApiResponse<Project[]>> {
+    const response = await this.client.get<ApiResponse<Project[]>>('/projects/my-projects');
     return response.data;
   }
 
-  async applyToProject(projectId: string, data: { roleTitle: string; message: string }): Promise<ApiResponse> {
+  async getJoinedProjects(): Promise<ApiResponse<Project[]>> {
+    const response = await this.client.get<ApiResponse<Project[]>>('/projects/joined');
+    return response.data;
+  }
+
+  async applyToProject(projectId: string, data: { roles: string[]; message: string }): Promise<ApiResponse> {
     const response = await this.client.post<ApiResponse>(`/projects/${projectId}/apply`, data);
+    return response.data;
+  }
+
+  async inviteUserToProject(
+    projectId: string,
+    data: { inviteeId: string; message?: string }
+  ): Promise<ApiResponse> {
+    const response = await this.client.post<ApiResponse>(`/projects/${projectId}/invite`, data);
+    return response.data;
+  }
+
+  async getMyApplications(projectId: string): Promise<ApiResponse<Application[]>> {
+    const response = await this.client.get<ApiResponse<Application[]>>(`/projects/${projectId}/my-applications`);
+    return response.data;
+  }
+
+  async getProjectApplicants(projectId: string): Promise<ApiResponse> {
+    const response = await this.client.get<ApiResponse>(`/projects/${projectId}/applicants`);
+    return response.data;
+  }
+
+  async updateApplicationStatus(
+    projectId: string,
+    applicationId: string,
+    status: 'Accepted' | 'Rejected'
+  ): Promise<ApiResponse> {
+    const response = await this.client.put<ApiResponse>(`/projects/${projectId}/applicants/${applicationId}`, {
+      status,
+    });
+    return response.data;
+  }
+
+  async removeTeamMember(projectId: string, roleId: string): Promise<ApiResponse> {
+    const response = await this.client.delete<ApiResponse>(`/projects/${projectId}/roles/${roleId}/member`);
     return response.data;
   }
 
@@ -183,8 +260,8 @@ class ApiClient {
 
   // ============= CHAT ENDPOINTS =============
 
-  async getChats(): Promise<PaginatedResponse<Chat>> {
-    const response = await this.client.get<PaginatedResponse<Chat>>('/chats');
+  async getChats(): Promise<ApiResponse<Chat[]>> {
+    const response = await this.client.get<ApiResponse<Chat[]>>('/chats');
     return response.data;
   }
 
@@ -193,15 +270,47 @@ class ApiClient {
     return response.data;
   }
 
-  async createChat(data: CreateChatRequest): Promise<ApiResponse<Chat>> {
-    const response = await this.client.post<ApiResponse<Chat>>('/chats', data);
+  async createChat(userId: string): Promise<ApiResponse<Chat>> {
+    const response = await this.client.post<ApiResponse<Chat>>('/chats', { userId });
     return response.data;
   }
 
-  async sendMessage(data: SendMessageRequest): Promise<ApiResponse> {
-    const response = await this.client.post<ApiResponse>(`/chats/${data.chatId}/messages`, {
-      content: data.content,
+  async getMessages(chatId: string): Promise<ApiResponse<Message[]>> {
+    const response = await this.client.get<ApiResponse<Message[]>>(`/chats/${chatId}/messages`);
+    return response.data;
+  }
+
+  async sendMessage(chatId: string, text: string): Promise<ApiResponse<Chat>> {
+    const response = await this.client.post<ApiResponse<Chat>>(`/chats/${chatId}/messages`, { text });
+    return response.data;
+  }
+
+  async markChatAsRead(chatId: string): Promise<ApiResponse<Chat>> {
+    const response = await this.client.put<ApiResponse<Chat>>(`/chats/${chatId}/read`);
+    return response.data;
+  }
+
+  // ============= NOTIFICATION ENDPOINTS =============
+
+  async getNotifications(params?: { limit?: number; unreadOnly?: boolean }): Promise<ApiResponse<Notification[]>> {
+    const response = await this.client.get<ApiResponse<Notification[]>>('/notifications', {
+      params,
     });
+    return response.data;
+  }
+
+  async getNotificationUnreadCount(): Promise<ApiResponse<{ count: number }>> {
+    const response = await this.client.get<ApiResponse<{ count: number }>>('/notifications/unread-count');
+    return response.data;
+  }
+
+  async markNotificationAsRead(id: string): Promise<ApiResponse<Notification>> {
+    const response = await this.client.put<ApiResponse<Notification>>(`/notifications/${id}/read`);
+    return response.data;
+  }
+
+  async markAllNotificationsAsRead(): Promise<ApiResponse> {
+    const response = await this.client.put<ApiResponse>('/notifications/read-all');
     return response.data;
   }
 

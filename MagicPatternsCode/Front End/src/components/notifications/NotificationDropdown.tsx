@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   BellIcon,
@@ -11,16 +11,20 @@ import {
   CheckCircleIcon,
   XCircleIcon,
 } from 'lucide-react';
+import { apiClient } from '../../utils/apiClient';
+import type { Notification as ApiNotification } from '../../types/api';
 
-interface Notification {
-  id: string;
-  userId: string;
-  type: 'project_invite' | 'message' | 'team_join' | 'project_update' | 'request_approved' | 'request_declined';
-  title: string;
-  message: string;
-  read: boolean;
-  createdAt: string;
-  actionUrl?: string;
+type NotificationType =
+  | 'project_invite'
+  | 'message'
+  | 'team_join'
+  | 'project_update'
+  | 'request_approved'
+  | 'request_declined'
+  | string;
+
+interface NotificationItem extends ApiNotification {
+  type: NotificationType;
   metadata?: {
     projectId?: string;
     senderId?: string;
@@ -31,7 +35,7 @@ interface Notification {
 
 interface NotificationGroup {
   date: string;
-  notifications: Notification[];
+  notifications: NotificationItem[];
 }
 
 interface NotificationDropdownProps {
@@ -39,117 +43,50 @@ interface NotificationDropdownProps {
   onNotificationRead: () => void;
 }
 
-// Mock notifications - this would come from an API in production
-const MOCK_NOTIFICATIONS: Notification[] = [
-  {
-    id: '1',
-    userId: 'current-user',
-    type: 'project_invite',
-    title: 'Project Invitation',
-    message: 'Emma Wilson invited you to join "Campus Events Platform"',
-    read: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 mins ago
-    actionUrl: '/project/1',
-    metadata: {
-      projectId: '1',
-      senderId: '1',
-      senderName: 'Emma Wilson',
-      senderAvatar: 'https://i.pravatar.cc/150?img=1',
-    },
-  },
-  {
-    id: '2',
-    userId: 'current-user',
-    type: 'message',
-    title: 'New Message',
-    message: 'Marcus Johnson sent you a message',
-    read: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-    actionUrl: '/dashboard/chat',
-    metadata: {
-      senderId: '2',
-      senderName: 'Marcus Johnson',
-      senderAvatar: 'https://i.pravatar.cc/150?img=2',
-    },
-  },
-  {
-    id: '3',
-    userId: 'current-user',
-    type: 'team_join',
-    title: 'Team Member Joined',
-    message: 'Sophia Lee joined your project "AI Study Assistant"',
-    read: true,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), // 5 hours ago
-    actionUrl: '/project/2',
-    metadata: {
-      projectId: '2',
-      senderId: '3',
-      senderName: 'Sophia Lee',
-      senderAvatar: 'https://i.pravatar.cc/150?img=3',
-    },
-  },
-  {
-    id: '4',
-    userId: 'current-user',
-    type: 'request_approved',
-    title: 'Request Approved',
-    message: 'Your request to join "Food Delivery App" was approved',
-    read: true,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
-    actionUrl: '/project/3',
-    metadata: {
-      projectId: '3',
-    },
-  },
-  {
-    id: '5',
-    userId: 'current-user',
-    type: 'project_update',
-    title: 'Project Update',
-    message: 'New milestone added to "Campus Events Platform"',
-    read: true,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
-    actionUrl: '/project/1',
-    metadata: {
-      projectId: '1',
-    },
-  },
-];
-
-const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ onClose, onNotificationRead }) => {
+const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
+  onClose,
+  onNotificationRead,
+}) => {
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchNotifications();
-  }, [filter]);
-
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
+      const response = await apiClient.getNotifications({
+        limit: 50,
+        unreadOnly: filter === 'unread',
+      });
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      let filteredNotifications = MOCK_NOTIFICATIONS;
-      if (filter === 'unread') {
-        filteredNotifications = MOCK_NOTIFICATIONS.filter(n => !n.read);
+      if (response.success && response.data) {
+        setNotifications(response.data);
+      } else {
+        setNotifications([]);
       }
-
-      setNotifications(filteredNotifications);
-    } catch (error) {
-      console.error('Failed to fetch notifications:', error);
+    } catch (err: any) {
+      console.error('Failed to fetch notifications:', err);
+      const message =
+        err.response?.data?.message || err.message || 'Failed to load notifications.';
+      setError(message);
+      setNotifications([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter]);
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {
-      // In production: await api.put(`/api/notifications/${notificationId}/read`);
-
+      await apiClient.markNotificationAsRead(notificationId);
       setNotifications(prev =>
         prev.map(n => (n.id === notificationId ? { ...n, read: true } : n))
       );
@@ -161,8 +98,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ onClose, on
 
   const handleMarkAllAsRead = async () => {
     try {
-      // In production: await api.put('/api/notifications/read-all');
-
+      await apiClient.markAllNotificationsAsRead();
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       onNotificationRead();
     } catch (error) {
@@ -170,7 +106,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ onClose, on
     }
   };
 
-  const handleNotificationClick = async (notification: Notification) => {
+  const handleNotificationClick = async (notification: NotificationItem) => {
     if (!notification.read) {
       await handleMarkAsRead(notification.id);
     }
@@ -184,7 +120,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ onClose, on
 
   const groupedNotifications = groupNotificationsByDate(notifications);
 
-  const getNotificationIcon = (type: Notification['type']) => {
+  const getNotificationIcon = (type: NotificationType) => {
     const iconClass = 'h-5 w-5';
     switch (type) {
       case 'project_invite':
@@ -230,7 +166,12 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ onClose, on
       {/* Header */}
       <div className="bg-gradient-to-r from-orange-500 to-red-500 px-5 py-4">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-bold text-white">Notifications</h3>
+          <div className="flex items-center gap-3">
+            <div className="bg-white bg-opacity-10 rounded-full p-2">
+              <BellIcon className="h-5 w-5 text-white" />
+            </div>
+            <h3 className="text-lg font-bold text-white">Notifications</h3>
+          </div>
           {notifications.some(n => !n.read) && (
             <button
               onClick={handleMarkAllAsRead}
@@ -241,24 +182,23 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ onClose, on
           )}
         </div>
 
-        {/* Filter Tabs */}
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setFilter('all')}
-            className={`flex-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+            className={`flex-1 text-sm py-1.5 rounded-lg transition-colors ${
               filter === 'all'
-                ? 'bg-white text-orange-600 shadow-sm'
-                : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
+                ? 'bg-white text-orange-600 font-semibold'
+                : 'text-white text-opacity-80 hover:text-white hover:bg-white hover:bg-opacity-20'
             }`}
           >
             All
           </button>
           <button
             onClick={() => setFilter('unread')}
-            className={`flex-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+            className={`flex-1 text-sm py-1.5 rounded-lg transition-colors ${
               filter === 'unread'
-                ? 'bg-white text-orange-600 shadow-sm'
-                : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
+                ? 'bg-white text-orange-600 font-semibold'
+                : 'text-white text-opacity-80 hover:text-white hover:bg-white hover:bg-opacity-20'
             }`}
           >
             Unread
@@ -266,161 +206,141 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ onClose, on
         </div>
       </div>
 
-      {/* Notification List */}
-      <div className="max-h-96 overflow-y-auto">
+      <div className="p-4">
+        {error && (
+          <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+            {error}
+          </div>
+        )}
+
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2Icon className="h-8 w-8 text-orange-500 animate-spin" />
+          <div className="flex justify-center py-12">
+            <Loader2Icon className="h-6 w-6 text-orange-500 animate-spin" />
           </div>
         ) : notifications.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 px-4">
-            <div className="bg-slate-100 rounded-full p-4 mb-3">
-              <BellIcon className="h-10 w-10 text-slate-400" />
-            </div>
-            <p className="text-slate-600 text-center">
+          <div className="text-center py-10">
+            <BellIcon className="mx-auto h-10 w-10 text-slate-300 mb-3" />
+            <p className="text-sm text-slate-600">
               {filter === 'unread' ? 'No unread notifications' : 'No notifications yet'}
             </p>
           </div>
         ) : (
           groupedNotifications.map(group => (
-            <div key={group.date}>
-              {/* Date Header */}
-              <div className="sticky top-0 bg-slate-50 px-5 py-2 border-b border-slate-200">
-                <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
-                  {group.date}
-                </p>
-              </div>
+            <div key={group.date} className="mb-4">
+              <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
+                {group.date}
+              </h4>
 
               {/* Notifications for this date */}
-              {group.notifications.map(notification => (
-                <div
-                  key={notification.id}
-                  onClick={() => handleNotificationClick(notification)}
-                  className={`flex items-start gap-3 px-5 py-4 border-b border-slate-100 cursor-pointer transition-colors ${
-                    !notification.read
-                      ? 'bg-orange-50 hover:bg-orange-100'
-                      : 'hover:bg-slate-50'
-                  }`}
-                >
-                  {/* Avatar or Icon */}
-                  {notification.metadata?.senderAvatar ? (
-                    <img
-                      src={notification.metadata.senderAvatar}
-                      alt={notification.metadata.senderName}
-                      className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
-                      {getNotificationIcon(notification.type)}
-                    </div>
-                  )}
+              <div className="space-y-2">
+                {group.notifications.map(notification => (
+                  <div
+                    key={notification.id}
+                    className={`p-3 rounded-xl border transition-all cursor-pointer ${
+                      notification.read
+                        ? 'border-slate-100 bg-white hover:border-slate-200'
+                        : 'border-orange-200 bg-orange-50 hover:border-orange-300'
+                    }`}
+                    onClick={() => handleNotificationClick(notification)}
+                  >
+                    <div className="flex gap-3">
+                      <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
+                        {getNotificationIcon(notification.type)}
+                      </div>
 
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900 mb-1">
-                      {notification.title}
-                    </p>
-                    <p className="text-sm text-slate-600 mb-2">
-                      {notification.message}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {formatTimestamp(notification.createdAt)}
-                    </p>
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h5 className="text-sm font-semibold text-slate-900">
+                                {notification.title}
+                              </h5>
+                              {!notification.read && (
+                                <span className="text-[10px] font-bold uppercase text-orange-600 bg-white px-2 py-0.5 rounded-full">
+                                  New
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-slate-600 mt-0.5">
+                              {notification.message}
+                            </p>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!notification.read) {
+                                handleMarkAsRead(notification.id);
+                              }
+                            }}
+                            className="text-xs text-orange-600 hover:text-orange-700 font-medium"
+                          >
+                            {notification.read ? 'Read' : 'Mark read'}
+                          </button>
+                        </div>
+
+                        <div className="flex items-center justify-between mt-2 text-xs text-slate-400">
+                          <span>{formatTimestamp(notification.createdAt)}</span>
+                          {notification.metadata?.senderName && (
+                            <span>From {notification.metadata.senderName}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-
-                  {/* Unread Indicator */}
-                  {!notification.read && (
-                    <div className="flex items-start pt-1">
-                      <div className="w-2 h-2 bg-orange-500 rounded-full flex-shrink-0" />
-                    </div>
-                  )}
-
-                  {/* Mark as Read Button */}
-                  {!notification.read && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleMarkAsRead(notification.id);
-                      }}
-                      className="p-1.5 hover:bg-white rounded-lg transition-colors flex-shrink-0"
-                      title="Mark as read"
-                    >
-                      <CheckIcon className="h-4 w-4 text-slate-600" />
-                    </button>
-                  )}
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           ))
         )}
-      </div>
 
-      {/* Footer */}
-      <div className="bg-slate-50 px-5 py-3 border-t border-slate-200">
-        <button
-          onClick={onClose}
-          className="text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors"
-        >
-          Close
-        </button>
+        {notifications.length > 0 && (
+          <div className="pt-3 border-t border-slate-100 text-center">
+            <button
+              onClick={() => {
+                onClose();
+                navigate('/notifications');
+              }}
+              className="inline-flex items-center gap-2 text-sm font-medium text-orange-600 hover:text-orange-700"
+            >
+              <CheckIcon className="h-4 w-4" />
+              View all notifications
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-// Helper function to group notifications by date
-const groupNotificationsByDate = (notifications: Notification[]): NotificationGroup[] => {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-
-  const groups: { [key: string]: Notification[] } = {};
+const groupNotificationsByDate = (notifications: NotificationItem[]): NotificationGroup[] => {
+  const groups: { [key: string]: NotificationItem[] } = {};
 
   notifications.forEach(notification => {
-    const notifDate = new Date(notification.createdAt);
-    const notifDay = new Date(notifDate.getFullYear(), notifDate.getMonth(), notifDate.getDate());
+    const date = new Date(notification.createdAt).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
 
-    let dateKey: string;
-
-    if (notifDay.getTime() === today.getTime()) {
-      dateKey = 'Today';
-    } else if (notifDay.getTime() === yesterday.getTime()) {
-      dateKey = 'Yesterday';
-    } else {
-      dateKey = notifDate.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: notifDate.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
-      });
+    if (!groups[date]) {
+      groups[date] = [];
     }
 
-    if (!groups[dateKey]) {
-      groups[dateKey] = [];
-    }
-    groups[dateKey].push(notification);
+    groups[date].push(notification);
   });
 
-  // Sort groups by date (most recent first)
-  const sortedGroups = Object.entries(groups)
+  return Object.entries(groups)
     .map(([date, notifications]) => ({
       date,
       notifications: notifications.sort(
         (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       ),
     }))
-    .sort((a, b) => {
-      if (a.date === 'Today') return -1;
-      if (b.date === 'Today') return 1;
-      if (a.date === 'Yesterday') return -1;
-      if (b.date === 'Yesterday') return 1;
-      return (
+    .sort(
+      (a, b) =>
         new Date(b.notifications[0].createdAt).getTime() -
         new Date(a.notifications[0].createdAt).getTime()
-      );
-    });
-
-  return sortedGroups;
+    );
 };
 
 export default NotificationDropdown;

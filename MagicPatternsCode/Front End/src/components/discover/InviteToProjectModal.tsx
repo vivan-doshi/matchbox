@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { XIcon, PlusIcon, Loader2Icon, CheckCircleIcon } from 'lucide-react';
+import { apiClient } from '../../utils/apiClient';
 
 interface User {
   id: string;
   firstName: string;
   lastName: string;
   profilePicture: string | null;
+  rawId?: string;
 }
 
-interface Project {
+interface ProjectOption {
   id: string;
   name: string;
   description: string;
@@ -21,43 +23,50 @@ interface InviteToProjectModalProps {
   onClose: () => void;
 }
 
-// Mock projects - this would come from an API in production
-const MOCK_PROJECTS: Project[] = [
-  {
-    id: '1',
-    name: 'Campus Events Platform',
-    description: 'A platform for students to discover and RSVP to campus events',
-    status: 'active',
-  },
-  {
-    id: '2',
-    name: 'AI Study Assistant',
-    description: 'AI-powered tool that helps students study more effectively',
-    status: 'active',
-  },
-  {
-    id: '3',
-    name: 'Food Delivery App',
-    description: 'On-demand food delivery service for campus students',
-    status: 'active',
-  },
-];
-
 const InviteToProjectModal: React.FC<InviteToProjectModalProps> = ({ user, onClose }) => {
   const navigate = useNavigate();
-  const [userProjects, setUserProjects] = useState<Project[]>([]);
+  const [userProjects, setUserProjects] = useState<ProjectOption[]>([]);
   const [selectedProject, setSelectedProject] = useState<string>('');
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate API call to fetch user's projects
-    setTimeout(() => {
-      setUserProjects(MOCK_PROJECTS);
-      setLoading(false);
-    }, 500);
+    const fetchProjects = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await apiClient.getMyProjects();
+        if (response.success && response.data) {
+          const formattedProjects: ProjectOption[] = response.data
+            .filter(project => project.status !== 'Completed')
+            .map(project => ({
+              id: project.id,
+              name: project.title,
+              description: project.description,
+              status: project.status,
+            }));
+
+          setUserProjects(formattedProjects);
+          if (formattedProjects.length === 1) {
+            setSelectedProject(formattedProjects[0].id);
+          }
+        } else {
+          setUserProjects([]);
+        }
+      } catch (err: any) {
+        console.error('Failed to load projects:', err);
+        const message = err.response?.data?.message || err.message || 'Failed to load your projects.';
+        setError(message);
+        setUserProjects([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProjects();
   }, []);
 
   const handleSendInvite = async () => {
@@ -65,16 +74,18 @@ const InviteToProjectModal: React.FC<InviteToProjectModalProps> = ({ user, onClo
 
     try {
       setSending(true);
+      setError(null);
 
-      // Simulate API call to send invitation
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const inviteeId = user.id || user.rawId;
+      if (!inviteeId) {
+        setError('Unable to determine the user to invite.');
+        return;
+      }
 
-      // In production, this would be:
-      // await api.post('/api/projects/invite', {
-      //   projectId: selectedProject,
-      //   inviteeId: user.id,
-      //   message: message
-      // });
+      await apiClient.inviteUserToProject(selectedProject, {
+        inviteeId,
+        message: message.trim() || undefined,
+      });
 
       setSuccess(true);
 
@@ -84,7 +95,9 @@ const InviteToProjectModal: React.FC<InviteToProjectModalProps> = ({ user, onClo
       }, 1500);
     } catch (error) {
       console.error('Failed to send invitation:', error);
-      alert('Failed to send invitation. Please try again.');
+      const message =
+        (error as any)?.response?.data?.message || (error as Error).message || 'Failed to send invitation. Please try again.';
+      setError(message);
     } finally {
       setSending(false);
     }
@@ -92,8 +105,7 @@ const InviteToProjectModal: React.FC<InviteToProjectModalProps> = ({ user, onClo
 
   const handleCreateProject = () => {
     onClose();
-    navigate('/dashboard');
-    // Trigger create project modal (would need to pass this state up)
+    navigate('/dashboard', { state: { openCreateModal: true } });
   };
 
   // Close on background click
@@ -140,6 +152,12 @@ const InviteToProjectModal: React.FC<InviteToProjectModalProps> = ({ user, onClo
 
         {/* Content */}
         <div className="p-6">
+          {error && (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2Icon className="h-8 w-8 text-orange-500 animate-spin" />

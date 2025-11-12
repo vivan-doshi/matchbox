@@ -70,6 +70,7 @@ export const updateUserProfile = async (
       interests,
       profilePicture,
       weeklyAvailability,
+      resume,
     } = req.body;
 
     console.log('[updateUserProfile] Finding and updating user...');
@@ -86,11 +87,12 @@ export const updateUserProfile = async (
         isAlumni,
         bio,
         skills,
-        professionalLinks,
-        interests,
-        profilePicture,
-        weeklyAvailability,
-      },
+      professionalLinks,
+      interests,
+      profilePicture,
+      resume,
+      weeklyAvailability,
+    },
       {
         new: true,
         runValidators: true,
@@ -140,6 +142,155 @@ export const getUserProjects = async (
       data: projects,
     });
   } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Save a project for the current user
+// @route   POST /api/users/:id/saved-projects/:projectId
+// @access  Private
+export const saveProject = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id: userId, projectId } = req.params as { id: string; projectId: string };
+
+    if (!req.userId || req.userId !== userId) {
+      res.status(403).json({
+        success: false,
+        message: 'Not authorized to save projects for this user',
+      });
+      return;
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+      return;
+    }
+
+    const alreadySaved = user.savedProjects?.some(
+      (savedProject) => savedProject.toString() === projectId
+    );
+
+    if (alreadySaved) {
+      res.status(400).json({
+        success: false,
+        message: 'Project already saved',
+      });
+      return;
+    }
+
+    user.savedProjects = [...(user.savedProjects || []), projectId as any];
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Project saved',
+      data: user.savedProjects,
+    });
+  } catch (error: any) {
+    console.error('Error saving project:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Remove a saved project for the current user
+// @route   DELETE /api/users/:id/saved-projects/:projectId
+// @access  Private
+export const unsaveProject = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id: userId, projectId } = req.params as { id: string; projectId: string };
+
+    if (!req.userId || req.userId !== userId) {
+      res.status(403).json({
+        success: false,
+        message: 'Not authorized to remove saved projects for this user',
+      });
+      return;
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+      return;
+    }
+
+    user.savedProjects = (user.savedProjects || []).filter(
+      (savedProject) => savedProject.toString() !== projectId
+    );
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Project removed from saved list',
+      data: user.savedProjects,
+    });
+  } catch (error: any) {
+    console.error('Error removing saved project:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Get saved projects for a user
+// @route   GET /api/users/:id/saved-projects
+// @access  Private
+export const getSavedProjects = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id: userId } = req.params as { id: string };
+
+    if (!req.userId || req.userId !== userId) {
+      res.status(403).json({
+        success: false,
+        message: 'Not authorized to view saved projects for this user',
+      });
+      return;
+    }
+
+    const user = await User.findById(userId).populate({
+      path: 'savedProjects',
+      populate: { path: 'creator', select: 'firstName lastName preferredName university profilePicture' },
+    });
+
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: user.savedProjects || [],
+    });
+  } catch (error: any) {
+    console.error('Error fetching saved projects:', error);
     res.status(500).json({
       success: false,
       message: error.message || 'Server error',
@@ -198,7 +349,7 @@ export const searchUsers = async (
     }
 
     const users = await User.find(query)
-      .select('-password')
+      .select('-password -resume.dataUrl')
       .limit(20);
 
     res.status(200).json({

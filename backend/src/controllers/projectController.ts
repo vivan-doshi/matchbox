@@ -3,6 +3,7 @@ import Project from '../models/Project';
 import Application from '../models/Application';
 import User from '../models/User';
 import { AuthRequest } from '../middleware/auth';
+import { createNotification } from '../utils/notificationHelper';
 
 // @desc    Get all projects
 // @route   GET /api/projects
@@ -243,7 +244,15 @@ export const applyToProject = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { role, message } = req.body;
+    const { roles, message } = req.body;
+
+    if (!Array.isArray(roles) || roles.length === 0) {
+      res.status(400).json({
+        success: false,
+        message: 'Please select at least one role to apply for',
+      });
+      return;
+    }
 
     const project = await Project.findById(req.params.id);
 
@@ -255,19 +264,38 @@ export const applyToProject = async (
       return;
     }
 
-    // Check if user already applied for this role
-    const existingApplication = await Application.findOne({
-      project: req.params.id,
-      user: req.userId,
-      role,
-    });
-
-    if (existingApplication) {
-      res.status(400).json({
-        success: false,
-        message: 'You have already applied for this role',
+    for (const roleTitle of roles) {
+      const existingApplication = await Application.findOne({
+        project: req.params.id,
+        user: req.userId,
+        role: roleTitle,
       });
-      return;
+
+      if (existingApplication) {
+        res.status(400).json({
+          success: false,
+          message: `You have already applied for the ${roleTitle} role`,
+        });
+        return;
+      }
+
+      const targetRole = project.roles.find((projectRole) => projectRole.title === roleTitle);
+
+      if (!targetRole) {
+        res.status(400).json({
+          success: false,
+          message: `Role ${roleTitle} does not exist for this project`,
+        });
+        return;
+      }
+
+      if (targetRole.filled) {
+        res.status(400).json({
+          success: false,
+          message: `Role ${roleTitle} has already been filled`,
+        });
+        return;
+      }
     }
 
     // Calculate fit score based on user skills and role requirements
@@ -290,21 +318,28 @@ export const applyToProject = async (
       else if (avgScore < 2) fitScore = 'Low';
     }
 
-    const application = await Application.create({
-      project: req.params.id,
-      user: req.userId,
-      role,
-      message,
-      fitScore,
-    });
+    const createdApplications = [];
 
-    const populatedApplication = await Application.findById(
-      application._id
-    ).populate('user', 'firstName lastName preferredName university profilePicture skills');
+    for (const roleTitle of roles) {
+      const application = await Application.create({
+        project: req.params.id,
+        user: req.userId,
+        role: roleTitle,
+        message,
+        fitScore,
+      });
+
+      const populatedApplication = await Application.findById(application._id).populate(
+        'user',
+        'firstName lastName preferredName university profilePicture skills'
+      );
+
+      createdApplications.push(populatedApplication);
+    }
 
     res.status(201).json({
       success: true,
-      data: populatedApplication,
+      data: createdApplications,
     });
   } catch (error: any) {
     res.status(500).json({
@@ -350,6 +385,41 @@ export const getProjectApplicants = async (
       success: true,
       count: applicants.length,
       data: applicants,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Get current user's applications for a project
+// @route   GET /api/projects/:id/my-applications
+// @access  Private
+export const getMyApplications = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.userId) {
+      res.status(401).json({
+        success: false,
+        message: 'Not authorized to view applications',
+      });
+      return;
+    }
+
+    const applications = await Application.find({
+      project: req.params.id,
+      user: req.userId,
+    })
+      .populate('user', 'firstName lastName preferredName university profilePicture')
+      .sort('-createdAt');
+
+    res.status(200).json({
+      success: true,
+      data: applications,
     });
   } catch (error: any) {
     res.status(500).json({
@@ -426,6 +496,66 @@ export const updateApplicationStatus = async (
   }
 };
 
+// @desc    Remove a team member from a role
+// @route   DELETE /api/projects/:id/roles/:roleId/member
+// @access  Private (project creator)
+export const removeTeamMember = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id: projectId, roleId } = req.params as { id: string; roleId: string };
+
+    const project = await Project.findById(projectId).populate(
+      'roles.user',
+      'firstName lastName preferredName university profilePicture'
+    );
+
+    if (!project) {
+      res.status(404).json({
+        success: false,
+        message: 'Project not found',
+      });
+      return;
+    }
+
+    if (project.creator.toString() !== req.userId) {
+      res.status(403).json({
+        success: false,
+        message: 'Only the project creator can remove team members',
+      });
+      return;
+    }
+
+    const role: any = (project.roles as any).id(roleId);
+
+    if (!role) {
+      res.status(404).json({
+        success: false,
+        message: 'Role not found',
+      });
+      return;
+    }
+
+    role.user = undefined;
+    role.filled = false;
+    await project.save();
+    await project.populate('roles.user', 'firstName lastName preferredName university profilePicture');
+
+    res.status(200).json({
+      success: true,
+      message: 'Team member removed successfully',
+      data: project,
+    });
+  } catch (error: any) {
+    console.error('Error removing team member:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
 // @desc    Get recommended users for project
 // @route   GET /api/projects/:id/recommendations
 // @access  Private
@@ -488,6 +618,138 @@ export const getMyProjects = async (
       data: projects,
     });
   } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Get projects the user has joined (as a team member)
+// @route   GET /api/projects/joined
+// @access  Private
+export const getJoinedProjects = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.userId) {
+      res.status(401).json({
+        success: false,
+        message: 'Not authorized to access this route',
+      });
+      return;
+    }
+
+    const projects = await Project.find({
+      'roles.user': req.userId,
+      creator: { $ne: req.userId },
+    })
+      .populate('creator', 'firstName lastName preferredName university profilePicture')
+      .populate('roles.user', 'firstName lastName preferredName profilePicture university')
+      .sort('-updatedAt');
+
+    res.status(200).json({
+      success: true,
+      count: projects.length,
+      data: projects,
+    });
+  } catch (error: any) {
+    console.error('[getJoinedProjects] Error fetching joined projects:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Invite a user to join a project
+// @route   POST /api/projects/:id/invite
+// @access  Private (project creator)
+export const inviteUserToProject = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.userId) {
+      res.status(401).json({
+        success: false,
+        message: 'Not authorized to access this route',
+      });
+      return;
+    }
+
+    const project = await Project.findById(req.params.id);
+
+    if (!project) {
+      res.status(404).json({
+        success: false,
+        message: 'Project not found',
+      });
+      return;
+    }
+
+    if (project.creator.toString() !== req.userId) {
+      res.status(403).json({
+        success: false,
+        message: 'Only the project creator can send invitations',
+      });
+      return;
+    }
+
+    const { inviteeId, message } = req.body;
+
+    if (!inviteeId) {
+      res.status(400).json({
+        success: false,
+        message: 'Invitee ID is required',
+      });
+      return;
+    }
+
+    if (inviteeId === req.userId) {
+      res.status(400).json({
+        success: false,
+        message: 'You cannot invite yourself',
+      });
+      return;
+    }
+
+    const invitee = await User.findById(inviteeId).select('firstName lastName preferredName');
+
+    if (!invitee) {
+      res.status(404).json({
+        success: false,
+        message: 'Invitee not found',
+      });
+      return;
+    }
+
+    const inviterName =
+      req.user?.preferredName ||
+      `${req.user?.firstName ?? ''} ${req.user?.lastName ?? ''}`.trim() ||
+      'A teammate';
+
+    await createNotification({
+      user: inviteeId,
+      type: 'project_invite',
+      title: `Invitation to join ${project.title}`,
+      message:
+        message ||
+        `${inviterName} invited you to join "${project.title}".`,
+      actionUrl: `/project/${project._id}`,
+      metadata: {
+        projectId: project._id,
+        inviterId: req.userId,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Invitation sent successfully',
+    });
+  } catch (error: any) {
+    console.error('[inviteUserToProject] Error sending invitation:', error);
     res.status(500).json({
       success: false,
       message: error.message || 'Server error',

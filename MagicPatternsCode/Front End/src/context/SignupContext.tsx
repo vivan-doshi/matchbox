@@ -11,13 +11,17 @@ type SignupFormData = {
   firstName: string;
   lastName: string;
   preferredName?: string;
-  profilePicture?: File;
+  profilePicture?: string; // data URL
 
   // Step 3: Links
   linkedin?: string;
   github?: string;
   portfolio?: string;
-  resume?: File;
+  resume?: {
+    dataUrl: string;
+    filename: string;
+    mimeType: string;
+  };
 
   // Step 4: Bio & Skills
   bio?: string;
@@ -74,13 +78,8 @@ export const SignupProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Save to sessionStorage whenever formData changes (excluding File objects)
   useEffect(() => {
     try {
-      // Create a copy of formData without File objects (they can't be serialized)
-      const dataToStore = { ...formData };
-      delete dataToStore.profilePicture;
-      delete dataToStore.resume;
-
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(dataToStore));
-      console.log('[SignupContext] Saved data to sessionStorage:', dataToStore);
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+      console.log('[SignupContext] Saved data to sessionStorage:', formData);
     } catch (error) {
       console.error('[SignupContext] Error saving to sessionStorage:', error);
     }

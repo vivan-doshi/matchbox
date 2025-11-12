@@ -1,167 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { SearchIcon, FilterIcon, XIcon, UsersIcon, GridIcon, ListIcon, ClockIcon } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { SearchIcon, FilterIcon, XIcon, UsersIcon, GridIcon, ListIcon, ClockIcon, Loader2Icon } from 'lucide-react';
 import UserCard from '../components/discover/UserCard';
 import InviteToProjectModal from '../components/discover/InviteToProjectModal';
-
-// Mock user data - this would come from an API in production
-const MOCK_USERS = [
-  {
-    id: '1',
-    firstName: 'Emma',
-    lastName: 'Wilson',
-    profilePicture: 'https://i.pravatar.cc/300?img=1',
-    title: 'Computer Science Student',
-    school: 'USC Viterbi School of Engineering',
-    major: 'Computer Science',
-    graduationYear: '2025',
-    skills: [
-      { name: 'React', proficiency: 'Expert' as const },
-      { name: 'Node.js', proficiency: 'Fluent' as const },
-      { name: 'Python', proficiency: 'Fluent' as const },
-      { name: 'Machine Learning', proficiency: 'Intermediate' as const },
-    ],
-    interests: ['Web Development', 'AI/ML', 'Hackathons'],
-    availability: { totalHours: 15 },
-    bio: 'Passionate about building innovative web applications and exploring AI. Looking to collaborate on projects that make a difference.',
-    linkedin: 'https://linkedin.com/in/emmawilson',
-    github: 'https://github.com/emmawilson',
-  },
-  {
-    id: '2',
-    firstName: 'Marcus',
-    lastName: 'Johnson',
-    profilePicture: 'https://i.pravatar.cc/300?img=2',
-    title: 'Business Administration Student',
-    school: 'USC Marshall School of Business',
-    major: 'Business Administration',
-    graduationYear: '2024',
-    skills: [
-      { name: 'Product Management', proficiency: 'Expert' as const },
-      { name: 'Market Research', proficiency: 'Fluent' as const },
-      { name: 'Financial Analysis', proficiency: 'Fluent' as const },
-      { name: 'UI/UX Design', proficiency: 'Intermediate' as const },
-    ],
-    interests: ['Entrepreneurship', 'Product Strategy', 'Startups'],
-    availability: { totalHours: 10 },
-    bio: 'Aspiring product manager with experience in market research and user experience design. Love turning ideas into reality.',
-    linkedin: 'https://linkedin.com/in/marcusjohnson',
-  },
-  {
-    id: '3',
-    firstName: 'Sophia',
-    lastName: 'Lee',
-    profilePicture: 'https://i.pravatar.cc/300?img=3',
-    title: 'Graphic Design Student',
-    school: 'USC Roski School of Art and Design',
-    major: 'Graphic Design',
-    graduationYear: '2025',
-    skills: [
-      { name: 'UI/UX Design', proficiency: 'Expert' as const },
-      { name: 'Figma', proficiency: 'Expert' as const },
-      { name: 'Adobe Creative Suite', proficiency: 'Expert' as const },
-      { name: 'Prototyping', proficiency: 'Fluent' as const },
-    ],
-    interests: ['UI/UX', 'Branding', 'Mobile Design'],
-    availability: { totalHours: 12 },
-    bio: 'UI/UX designer focused on creating beautiful and intuitive user experiences. Always excited to work on creative projects.',
-    linkedin: 'https://linkedin.com/in/sophialee',
-    github: 'https://github.com/sophialee',
-  },
-  {
-    id: '4',
-    firstName: 'Daniel',
-    lastName: 'Brown',
-    profilePicture: 'https://i.pravatar.cc/300?img=4',
-    title: 'Data Science Student',
-    school: 'USC Viterbi School of Engineering',
-    major: 'Data Science',
-    graduationYear: '2026',
-    skills: [
-      { name: 'Python', proficiency: 'Expert' as const },
-      { name: 'Machine Learning', proficiency: 'Fluent' as const },
-      { name: 'Data Visualization', proficiency: 'Fluent' as const },
-      { name: 'SQL', proficiency: 'Fluent' as const },
-    ],
-    interests: ['Data Analytics', 'Machine Learning', 'Cloud Computing'],
-    availability: { totalHours: 20 },
-    bio: 'Data science enthusiast with a passion for extracting insights from data. Looking to apply ML to real-world problems.',
-    linkedin: 'https://linkedin.com/in/danielbrown',
-    github: 'https://github.com/danielbrown',
-  },
-  {
-    id: '5',
-    firstName: 'Olivia',
-    lastName: 'Martinez',
-    profilePicture: 'https://i.pravatar.cc/300?img=5',
-    title: 'Mobile Development Student',
-    school: 'USC Viterbi School of Engineering',
-    major: 'Computer Science',
-    graduationYear: '2024',
-    skills: [
-      { name: 'React Native', proficiency: 'Expert' as const },
-      { name: 'Swift', proficiency: 'Fluent' as const },
-      { name: 'Kotlin', proficiency: 'Intermediate' as const },
-      { name: 'Firebase', proficiency: 'Fluent' as const },
-    ],
-    interests: ['Mobile Apps', 'iOS Development', 'Cross-platform'],
-    availability: { totalHours: 8 },
-    bio: 'Mobile developer specializing in iOS and cross-platform apps. Love creating smooth and engaging mobile experiences.',
-    linkedin: 'https://linkedin.com/in/oliviamartinez',
-    github: 'https://github.com/oliviamartinez',
-  },
-  {
-    id: '6',
-    firstName: 'Noah',
-    lastName: 'Garcia',
-    profilePicture: 'https://i.pravatar.cc/300?img=6',
-    title: 'Communications Student',
-    school: 'USC Annenberg School for Communication',
-    major: 'Communications',
-    graduationYear: '2025',
-    skills: [
-      { name: 'Content Writing', proficiency: 'Expert' as const },
-      { name: 'Social Media', proficiency: 'Expert' as const },
-      { name: 'Public Relations', proficiency: 'Fluent' as const },
-      { name: 'Marketing', proficiency: 'Fluent' as const },
-    ],
-    interests: ['Content Strategy', 'Digital Marketing', 'Brand Building'],
-    availability: { totalHours: 14 },
-    bio: 'Communications specialist with a knack for storytelling and brand strategy. Passionate about creating compelling narratives.',
-    linkedin: 'https://linkedin.com/in/noahgarcia',
-  },
-];
-
-interface User {
-  id: string;
-  firstName: string;
-  lastName: string;
-  profilePicture: string | null;
-  title: string;
-  school: string;
-  major: string;
-  graduationYear: string;
-  skills: UserSkill[];
-  interests: string[];
-  availability: {
-    totalHours: number;
-  };
-  bio: string;
-  linkedin?: string;
-  github?: string;
-}
-
-interface UserSkill {
-  name: string;
-  proficiency: 'Beginner' | 'Intermediate' | 'Fluent' | 'Expert';
-}
+import UserProfileModal from '../components/discover/UserProfileModal';
+import { apiClient } from '../utils/apiClient';
+import { useAuth } from '../context/AuthContext';
+import type { User as ApiUser } from '../types/api';
+import type { DiscoverUser, DiscoverUserSkill } from '../types/discover';
 
 const DiscoverPeoplePage: React.FC = () => {
-  const [users, setUsers] = useState<User[]>(MOCK_USERS);
-  const [filteredUsers, setFilteredUsers] = useState<User[]>(MOCK_USERS);
+  const { user: authUser } = useAuth();
+  const [users, setUsers] = useState<DiscoverUser[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<DiscoverUser[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
-  const [inviteUser, setInviteUser] = useState<User | null>(null);
+  const [inviteUser, setInviteUser] = useState<DiscoverUser | null>(null);
+  const [profilePreviewUser, setProfilePreviewUser] = useState<DiscoverUser | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [filters, setFilters] = useState({
     school: '',
@@ -172,32 +29,87 @@ const DiscoverPeoplePage: React.FC = () => {
   });
 
   // Extract unique values for filter options
-  const schools = Array.from(new Set(users.map(u => u.school)));
-  const majors = Array.from(new Set(users.map(u => u.major)));
+  const schools = Array.from(new Set(users.map(u => u.school))).sort();
+  const majors = Array.from(new Set(users.map(u => u.major))).sort();
   const allSkills = Array.from(new Set(users.flatMap(u => u.skills.map(s => s.name))));
   const graduationYears = Array.from(new Set(users.map(u => u.graduationYear))).sort();
 
+  const transformUser = (user: ApiUser): DiscoverUser => {
+    const normalizedId = user.id || (user as any)._id || '';
+    return {
+    id: normalizedId,
+    rawId: normalizedId,
+    _id: (user as any)._id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    profilePicture:
+      user.profilePicture ||
+      `https://ui-avatars.com/api/?name=${encodeURIComponent(
+        `${user.firstName} ${user.lastName}`
+      )}&background=f97316&color=fff`,
+    title: user.major ? `${user.major} Student` : 'Student',
+    school: user.university || 'Unknown School',
+    major: user.major || 'Undeclared',
+    graduationYear: user.graduationYear ? String(user.graduationYear) : 'N/A',
+    skills:
+      user.skills && user.skills.length > 0
+        ? (user.skills as DiscoverUserSkill[])
+        : [
+            {
+              name: 'Collaboration',
+              proficiency: 'Fluent',
+            },
+          ],
+    interests: user.interests && user.interests.length > 0 ? user.interests : ['Collaboration'],
+    availability: {
+      totalHours: user.weeklyAvailability?.hoursPerWeek ?? 0,
+    },
+    bio: user.bio || 'This user has not added a bio yet.',
+    linkedin: user.professionalLinks?.linkedin,
+    github: user.professionalLinks?.github,
+  };
+};
+
+  const fetchUsers = useCallback(async (query?: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await apiClient.searchUsers(query ? { q: query } : undefined);
+      if (response.success && response.data) {
+        const mappedUsers = response.data
+          .map(transformUser)
+          .filter(u => u.id && u.id !== authUser?.id)
+          .sort((a, b) => a.firstName.localeCompare(b.firstName));
+        setUsers(mappedUsers);
+        setFilteredUsers(mappedUsers);
+      } else {
+        setUsers([]);
+        setFilteredUsers([]);
+      }
+    } catch (err: any) {
+      console.error('Failed to fetch users:', err);
+      const message = err.response?.data?.message || err.message || 'Failed to load people.';
+      setError(message);
+      setUsers([]);
+      setFilteredUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [authUser?.id]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      fetchUsers(searchQuery.trim() || undefined);
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [fetchUsers, searchQuery]);
+
   useEffect(() => {
     applyFilters();
-  }, [searchQuery, filters]);
+  }, [filters, users]);
 
   const applyFilters = () => {
     let filtered = [...users];
-
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(user => {
-        const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
-        return (
-          fullName.includes(query) ||
-          user.major.toLowerCase().includes(query) ||
-          user.school.toLowerCase().includes(query) ||
-          user.skills.some(s => s.name.toLowerCase().includes(query)) ||
-          user.interests.some(i => i.toLowerCase().includes(query))
-        );
-      });
-    }
 
     // School filter
     if (filters.school) {
@@ -270,6 +182,18 @@ const DiscoverPeoplePage: React.FC = () => {
           Find USC students and alumni to collaborate with
         </p>
       </div>
+
+      {error && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <span>{error}</span>
+          <button
+            onClick={() => fetchUsers(searchQuery.trim() || undefined)}
+            className="rounded-lg bg-white px-3 py-1 text-red-600 shadow-sm hover:bg-red-100"
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {/* Search Bar */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-4">
@@ -451,7 +375,12 @@ const DiscoverPeoplePage: React.FC = () => {
       </div>
 
       {/* User Grid/List */}
-      {filteredUsers.length === 0 ? (
+      {loading ? (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
+          <Loader2Icon className="h-10 w-10 animate-spin text-orange-500 mx-auto mb-3" />
+          <p className="text-slate-600">Loading people across the platform...</p>
+        </div>
+      ) : filteredUsers.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
           <UsersIcon className="h-16 w-16 text-slate-300 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-slate-900 mb-2">No people found</h3>
@@ -479,6 +408,7 @@ const DiscoverPeoplePage: React.FC = () => {
               user={user}
               viewMode={viewMode}
               onInvite={() => setInviteUser(user)}
+              onViewProfile={() => setProfilePreviewUser(user)}
             />
           ))}
         </div>
@@ -489,6 +419,17 @@ const DiscoverPeoplePage: React.FC = () => {
         <InviteToProjectModal
           user={inviteUser}
           onClose={() => setInviteUser(null)}
+        />
+      )}
+
+      {profilePreviewUser && (
+        <UserProfileModal
+          user={profilePreviewUser}
+          onClose={() => setProfilePreviewUser(null)}
+          onInvite={() => {
+            setProfilePreviewUser(null);
+            setInviteUser(profilePreviewUser);
+          }}
         />
       )}
     </div>

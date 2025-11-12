@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { SearchIcon, ChevronDownIcon } from 'lucide-react';
 import ProjectCard from './ProjectCard';
 import { apiClient } from '../../utils/apiClient';
@@ -13,10 +13,72 @@ const HomePage: React.FC<HomePageProps> = ({ newProject }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('All Projects');
   const [sortOption, setSortOption] = useState('Most Recent');
-  const [projects, setProjects] = useState<any[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [newProjectId, setNewProjectId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const filteredProjects = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    const normalize = (value?: string) => (value ? value.toLowerCase() : '');
+
+    const matchesQuery = (project: Project) => {
+      if (!query) return true;
+      const title = normalize(project.title);
+      const description = normalize(project.description);
+      const category = normalize(project.category);
+      const tags = (project.tags || []).map(tag => tag.toLowerCase());
+      return (
+        title.includes(query) ||
+        description.includes(query) ||
+        category.includes(query) ||
+        tags.some(tag => tag.includes(query))
+      );
+    };
+
+    const matchesCategory =
+      filterCategory === 'All Projects'
+        ? () => true
+        : (project: Project) => project.category === filterCategory;
+
+    const getDurationValue = (project: Project) =>
+      typeof project.duration === 'number' ? project.duration : Number.MAX_SAFE_INTEGER;
+
+    const getDeadlineValue = (project: Project) =>
+      project.deadline ? new Date(project.deadline).getTime() : Number.MAX_SAFE_INTEGER;
+
+    const getRecommendationScore = (project: any) =>
+      project.recommendations ??
+      project.matchScore ??
+      (Array.isArray(project.roles)
+        ? project.roles.filter((role: any) => role.filled).length
+        : 0);
+
+    const parseDate = (value?: string) => (value ? new Date(value).getTime() : 0);
+
+    const sorted = projects
+      .filter(matchesQuery)
+      .filter(matchesCategory)
+      .slice();
+
+    sorted.sort((a: Project, b: Project) => {
+      switch (sortOption) {
+        case 'Most Recommended':
+          return getRecommendationScore(b) - getRecommendationScore(a);
+        case 'Short Duration':
+          return getDurationValue(a) - getDurationValue(b);
+        case 'Long Duration':
+          return getDurationValue(b) - getDurationValue(a);
+        case 'Deadline Soon':
+          return getDeadlineValue(a) - getDeadlineValue(b);
+        case 'Most Recent':
+        default:
+          return parseDate(b.createdAt) - parseDate(a.createdAt);
+      }
+    });
+
+    return sorted;
+  }, [projects, searchTerm, filterCategory, sortOption]);
 
   // Fetch projects from API
   useEffect(() => {
@@ -51,7 +113,7 @@ const HomePage: React.FC<HomePageProps> = ({ newProject }) => {
         }
 
         console.log('Adding new project to list:', newProject.id);
-        return [newProject, ...prevProjects];
+        return [newProject as Project, ...prevProjects];
       });
 
       setNewProjectId(newProject.id);
@@ -149,13 +211,24 @@ const HomePage: React.FC<HomePageProps> = ({ newProject }) => {
       </div>
 
       {/* 2-Column Grid Layout for Project Cards */}
-      {projects.length === 0 ? (
+      <div className="flex justify-between items-center text-sm text-slate-500 mb-4">
+        <span>
+          Showing <span className="font-semibold text-slate-700">{filteredProjects.length}</span> of{' '}
+          {projects.length} projects
+        </span>
+      </div>
+
+      {filteredProjects.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-slate-600">No projects found. Create one to get started!</p>
+          <p className="text-slate-600">
+            {projects.length === 0
+              ? 'No projects found. Create one to get started!'
+              : 'No projects match your search. Try adjusting the filters.'}
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {projects.map((project) => (
+          {filteredProjects.map((project) => (
             <ProjectCard
               key={project.id}
               project={project}

@@ -1,42 +1,27 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ClockIcon, PlusIcon, EyeIcon, LinkedinIcon, GithubIcon } from 'lucide-react';
-
-interface UserSkill {
-  name: string;
-  proficiency: 'Beginner' | 'Intermediate' | 'Fluent' | 'Expert';
-}
-
-interface User {
-  id: string;
-  firstName: string;
-  lastName: string;
-  profilePicture: string | null;
-  title: string;
-  school: string;
-  major: string;
-  graduationYear: string;
-  skills: UserSkill[];
-  interests: string[];
-  availability: {
-    totalHours: number;
-  };
-  bio: string;
-  linkedin?: string;
-  github?: string;
-}
+import type { DiscoverUser } from '../../types/discover';
 
 interface UserCardProps {
-  user: User;
+  user: DiscoverUser;
   viewMode: 'grid' | 'list';
   onInvite: () => void;
+  onViewProfile?: () => void;
 }
 
-const UserCard: React.FC<UserCardProps> = ({ user, viewMode, onInvite }) => {
+const UserCard: React.FC<UserCardProps> = ({ user, viewMode, onInvite, onViewProfile }) => {
   const navigate = useNavigate();
+  const profileId = user.id || user.rawId || user._id;
 
   const handleViewProfile = () => {
-    navigate(`/profile/${user.id}`);
+    if (onViewProfile) {
+      onViewProfile();
+      return;
+    }
+
+    if (!profileId) return;
+    navigate(`/profile/${profileId}`);
   };
 
   const getProficiencyColor = (proficiency: string) => {
@@ -56,7 +41,15 @@ const UserCard: React.FC<UserCardProps> = ({ user, viewMode, onInvite }) => {
 
   if (viewMode === 'list') {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-all">
+      <div
+        className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-all cursor-pointer"
+        onClick={handleViewProfile}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') handleViewProfile();
+        }}
+      >
         <div className="flex flex-col md:flex-row">
           {/* Profile Picture */}
           <div
@@ -145,17 +138,25 @@ const UserCard: React.FC<UserCardProps> = ({ user, viewMode, onInvite }) => {
             {/* Actions */}
             <div className="flex gap-3">
               <button
-                onClick={onInvite}
-                className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:shadow-lg transition-all"
-              >
-                <PlusIcon className="h-4 w-4" />
-                Invite to Project
-              </button>
-              <button
-                onClick={handleViewProfile}
-                className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 transition-all"
-              >
-                <EyeIcon className="h-4 w-4" />
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onInvite();
+            }}
+            className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:shadow-lg transition-all"
+          >
+            <PlusIcon className="h-4 w-4" />
+            Invite to Project
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleViewProfile();
+            }}
+            className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 transition-all"
+          >
+            <EyeIcon className="h-4 w-4" />
                 View Profile
               </button>
             </div>
@@ -167,7 +168,15 @@ const UserCard: React.FC<UserCardProps> = ({ user, viewMode, onInvite }) => {
 
   // Grid view
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-all flex flex-col">
+    <div
+      className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-all flex flex-col cursor-pointer"
+      onClick={handleViewProfile}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') handleViewProfile();
+      }}
+    >
       {/* Profile Picture */}
       <div
         className="h-48 overflow-hidden cursor-pointer"
@@ -253,14 +262,22 @@ const UserCard: React.FC<UserCardProps> = ({ user, viewMode, onInvite }) => {
         {/* Actions */}
         <div className="flex flex-col gap-2">
           <button
-            onClick={onInvite}
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onInvite();
+            }}
             className="flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:shadow-lg transition-all"
           >
             <PlusIcon className="h-4 w-4" />
             Invite to Project
           </button>
           <button
-            onClick={handleViewProfile}
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleViewProfile();
+            }}
             className="flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 transition-all"
           >
             <EyeIcon className="h-4 w-4" />

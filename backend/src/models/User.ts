@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema, Types } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 export interface IUser extends Document {
@@ -13,6 +13,11 @@ export interface IUser extends Document {
   isAlumni: boolean;
   bio?: string;
   profilePicture?: string;
+  resume?: {
+    filename?: string;
+    dataUrl?: string;
+    uploadedAt?: Date;
+  };
   skills: Array<{
     name: string;
     proficiency: 'Beginner' | 'Intermediate' | 'Fluent' | 'Expert';
@@ -23,6 +28,7 @@ export interface IUser extends Document {
     portfolio?: string;
   };
   interests: string[];
+  savedProjects?: Types.ObjectId[];
   weeklyAvailability?: {
     hoursPerWeek: number;
   };
@@ -80,6 +86,11 @@ const UserSchema: Schema = new Schema(
       type: String,
       default: 'https://api.dicebear.com/7.x/avataaars/svg',
     },
+    resume: {
+      filename: String,
+      dataUrl: String,
+      uploadedAt: Date,
+    },
     skills: [
       {
         name: { type: String, required: true },
@@ -96,6 +107,15 @@ const UserSchema: Schema = new Schema(
       portfolio: String,
     },
     interests: [String],
+    savedProjects: {
+      type: [
+        {
+          type: Schema.Types.ObjectId,
+          ref: 'Project',
+        },
+      ],
+      default: [],
+    },
     weeklyAvailability: {
       hoursPerWeek: { type: Number, min: 0, max: 168, default: 0 },
     },

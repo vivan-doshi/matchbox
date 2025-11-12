@@ -53,6 +53,8 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       professionalLinks,
       interests,
       weeklyAvailability,
+      profilePicture,
+      resume,
     } = req.body;
 
     // Check if user exists
@@ -80,6 +82,8 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       bio,
       skills,
       professionalLinks,
+      profilePicture,
+      resume,
       interests: interests || [],
       weeklyAvailability: weeklyAvailability || { hoursPerWeek: 0 },
     });

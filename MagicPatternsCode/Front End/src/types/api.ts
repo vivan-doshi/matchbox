@@ -41,6 +41,12 @@ export interface ProfessionalLinks {
   portfolio?: string;
 }
 
+export interface UserResume {
+  filename?: string;
+  dataUrl?: string;
+  uploadedAt?: string;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -53,12 +59,14 @@ export interface User {
   isAlumni: boolean;
   bio?: string;
   profilePicture?: string;
+  resume?: UserResume;
   skills: UserSkill[];
   professionalLinks: ProfessionalLinks;
   interests: string[];
   weeklyAvailability?: {
     hoursPerWeek: number;
   };
+  savedProjects?: Array<string | Project>;
   createdAt: string;
   updatedAt: string;
 }
@@ -90,6 +98,8 @@ export interface SignupRequest {
   weeklyAvailability?: {
     hoursPerWeek: number;
   };
+  profilePicture?: string;
+  resume?: UserResume;
 }
 
 export interface AuthResponse {
@@ -118,7 +128,7 @@ export interface ProjectRole {
   title: string;
   description: string;
   filled: boolean;
-  user?: string; // User ID
+  user?: string | User; // May be populated with user object
 }
 
 export interface CreatorRole {
@@ -218,14 +228,16 @@ export interface MatchFilters extends PaginationParams {
 
 // ============= CHAT TYPES =============
 export interface Message {
+  _id?: string;
   sender: string | User;
-  content: string;
-  timestamp: string;
-  read: boolean;
+  text: string;
+  createdAt?: string;
+  read?: boolean;
 }
 
 export interface Chat {
-  id: string;
+  id?: string;
+  _id?: string;
   participants: (string | User)[];
   messages: Message[];
   project?: string | Project;
@@ -234,14 +246,18 @@ export interface Chat {
   updatedAt: string;
 }
 
-export interface SendMessageRequest {
-  chatId: string;
-  content: string;
-}
-
-export interface CreateChatRequest {
-  participantIds: string[];
-  projectId?: string;
+// ============= NOTIFICATION TYPES =============
+export interface Notification {
+  id: string;
+  user: string | User;
+  type: string;
+  title: string;
+  message: string;
+  read: boolean;
+  actionUrl?: string;
+  metadata?: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // ============= ERROR TYPES =============

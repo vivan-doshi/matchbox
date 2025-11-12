@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   PlusIcon,
   ChevronDownIcon,
@@ -10,12 +10,14 @@ import {
   CheckIcon,
   XIcon,
   MenuIcon,
+  FolderOpen,
 } from 'lucide-react';
 import { apiClient } from '../utils/apiClient';
 import { Project } from '../types/api';
 import ProjectTeamTable from '../components/projects/ProjectTeamTable';
 import Navigation from '../components/Navigation';
 import CreateProjectModal from '../components/dashboard/CreateProjectModal';
+import { useAuth } from '../context/AuthContext';
 
 interface FormattedProject {
   id: string;
@@ -32,6 +34,7 @@ interface FormattedProject {
 }
 
 const MyProjects: React.FC = () => {
+  const navigate = useNavigate();
   const [projects, setProjects] = useState<FormattedProject[]>([]);
   const [savedProjects, setSavedProjects] = useState<FormattedProject[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,6 +44,64 @@ const MyProjects: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [currentView, setCurrentView] = useState<'posted' | 'saved' | 'joined'>('posted');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [joinedProjects, setJoinedProjects] = useState<Project[]>([]);
+  const [loadingJoined, setLoadingJoined] = useState(false);
+  const [joinedError, setJoinedError] = useState<string | null>(null);
+  const [hasFetchedJoined, setHasFetchedJoined] = useState(false);
+
+  const { user: authUser } = useAuth();
+  const formatProject = useCallback((project: any): FormattedProject => {
+    const projectId = project.id || project._id;
+
+    return {
+      id: projectId,
+      title: project.title,
+      description: project.description,
+      tags: project.tags || [],
+      status: project.status,
+      createdAt: new Date(project.createdAt).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      }),
+      deadline: project.deadline
+        ? new Date(project.deadline).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          })
+        : 'Not set',
+      teamMembers: (project.roles || [])
+        .filter((role: any) => role.filled && role.user)
+        .map((role: any) => {
+          const user = typeof role.user === 'object' ? role.user : null;
+          return {
+            id: user?.id || '',
+            name: user?.preferredName || `${user?.firstName} ${user?.lastName}` || 'Unknown',
+            role: role.title,
+            university: user?.university || '',
+            profilePic:
+              user?.profilePicture || `https://ui-avatars.com/api/?name=${user?.firstName}+${user?.lastName}`,
+            status: 'Active',
+            joinedAt: new Date(project.createdAt).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            }),
+          };
+        }),
+      openRoles: (project.roles || [])
+        .filter((role: any) => !role.filled)
+        .map((role: any, index: number) => ({
+          id: role._id || `role-${index}`,
+          title: role.title,
+          description: role.description,
+          applicants: 0,
+        })),
+      applicants: project.applicants?.length || 0,
+      recommendations: project.recommendations?.length || 0,
+    };
+  }, []);
 
   useEffect(() => {
     fetchMyProjects();
@@ -66,60 +127,9 @@ const MyProjects: React.FC = () => {
       const response = await apiClient.getMyProjects();
 
       if (response.success && response.data) {
-        const formattedProjects: FormattedProject[] = response.data.map((project: any) => {
-          const projectId = project.id || project._id;
-
-          console.log('Project data:', { id: projectId, title: project.title });
-
-          return {
-            id: projectId,
-            title: project.title,
-            description: project.description,
-            tags: project.tags || [],
-            status: project.status,
-            createdAt: new Date(project.createdAt).toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-            }),
-            deadline: project.deadline
-              ? new Date(project.deadline).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric',
-                })
-              : 'Not set',
-            teamMembers: project.roles
-              .filter((role: any) => role.filled && role.user)
-              .map((role: any) => {
-                const user = typeof role.user === 'object' ? role.user : null;
-                return {
-                  id: user?.id || '',
-                  name: user?.preferredName || `${user?.firstName} ${user?.lastName}` || 'Unknown',
-                  role: role.title,
-                  university: user?.university || '',
-                  profilePic: user?.profilePicture || `https://ui-avatars.com/api/?name=${user?.firstName}+${user?.lastName}`,
-                  status: 'Active',
-                  joinedAt: new Date(project.createdAt).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  }),
-                };
-              }),
-            openRoles: project.roles
-              .filter((role: any) => !role.filled)
-              .map((role: any, index: number) => ({
-                id: `role-${index}`,
-                title: role.title,
-                description: role.description,
-                applicants: 0, // Will be populated from applications
-              })),
-            applicants: 0, // Will be populated from applications endpoint
-            recommendations: 0, // Will be populated from recommendations endpoint
-          };
-        });
-
+        const formattedProjects: FormattedProject[] = response.data.map((project: any) =>
+          formatProject(project)
+        );
         setProjects(formattedProjects);
         if (formattedProjects.length > 0) {
           setExpandedProject(formattedProjects[0].id);
@@ -135,85 +145,47 @@ const MyProjects: React.FC = () => {
 
   const fetchSavedProjects = async () => {
     try {
-      // Get saved project IDs from localStorage
-      const savedProjectIds = JSON.parse(localStorage.getItem('savedProjects') || '[]');
-
-      if (savedProjectIds.length === 0) {
+      if (!localStorage.getItem('user')) {
         setSavedProjects([]);
         return;
       }
 
-      // Fetch all saved projects by their IDs
-      const savedProjectsData: FormattedProject[] = [];
-
-      for (const projectId of savedProjectIds) {
-        try {
-          const response = await apiClient.getProjectById(projectId);
-
-          if (response.success && response.data) {
-            const project = response.data;
-
-            const formattedProject: FormattedProject = {
-              id: project.id,
-              title: project.title,
-              description: project.description,
-              tags: project.tags || [],
-              status: project.status,
-              createdAt: new Date(project.createdAt).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-              }),
-              deadline: project.deadline
-                ? new Date(project.deadline).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })
-                : 'Not set',
-              teamMembers: project.roles
-                .filter((role: any) => role.filled && role.user)
-                .map((role: any) => {
-                  const user = typeof role.user === 'object' ? role.user : null;
-                  return {
-                    id: user?.id || '',
-                    name: user?.preferredName || `${user?.firstName} ${user?.lastName}` || 'Unknown',
-                    role: role.title,
-                    university: user?.university || '',
-                    profilePic: user?.profilePicture || `https://ui-avatars.com/api/?name=${user?.firstName}+${user?.lastName}`,
-                    status: 'Active',
-                    joinedAt: new Date(project.createdAt).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    }),
-                  };
-                }),
-              openRoles: project.roles
-                .filter((role: any) => !role.filled)
-                .map((role: any, index: number) => ({
-                  id: `role-${index}`,
-                  title: role.title,
-                  description: role.description,
-                  applicants: 0,
-                })),
-              applicants: 0,
-              recommendations: 0,
-            };
-
-            savedProjectsData.push(formattedProject);
-          }
-        } catch (error) {
-          console.error(`Error fetching saved project ${projectId}:`, error);
-          // Continue with other projects even if one fails
-        }
-      }
-
-      setSavedProjects(savedProjectsData);
+      const response = await apiClient.getSavedProjects();
+      const savedList = response.data || [];
+      const formattedProjects = savedList.map((project: any) => formatProject(project));
+      setSavedProjects(formattedProjects);
     } catch (err: any) {
       console.error('Error fetching saved projects:', err);
+      setError(err.response?.data?.message || 'Failed to fetch saved projects');
     }
   };
+
+  const fetchJoinedProjects = useCallback(async () => {
+    try {
+      setLoadingJoined(true);
+      setJoinedError(null);
+      const response = await apiClient.getJoinedProjects();
+
+      if (response.success && response.data) {
+        setJoinedProjects(response.data);
+      } else {
+        setJoinedProjects([]);
+      }
+    } catch (error: any) {
+      console.error('Error fetching joined projects:', error);
+      const message = error.response?.data?.message || error.message || 'Failed to load joined projects.';
+      setJoinedError(message);
+    } finally {
+      setLoadingJoined(false);
+      setHasFetchedJoined(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (currentView === 'joined' && !hasFetchedJoined) {
+      fetchJoinedProjects();
+    }
+  }, [currentView, hasFetchedJoined, fetchJoinedProjects]);
 
   const toggleExpand = (projectId: string) => {
     setExpandedProject(expandedProject === projectId ? null : projectId);
@@ -261,23 +233,18 @@ const MyProjects: React.FC = () => {
 
   return (
     <div className="min-h-screen page-background-gradient">
-      {/* Fixed Hamburger Menu Button - Always visible */}
-      <button
-        onClick={() => setIsSidebarOpen(true)}
-        className="fixed top-6 left-6 z-[100] p-2 bg-orange-500 text-white rounded-lg shadow-lg hover:bg-orange-600 transition-colors"
-        aria-label="Open navigation menu"
-      >
-        <MenuIcon className="h-6 w-6" />
-      </button>
-
       <Navigation isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
 
       <header className="bg-white border-b border-slate-200 py-4 px-6">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center">
-            {/* Spacer for fixed hamburger menu */}
-            <div className="w-10 mr-3"></div>
-
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="mr-3 p-2 rounded-lg hover:bg-slate-100 transition-colors"
+              aria-label="Open navigation menu"
+            >
+              <MenuIcon className="h-6 w-6 text-slate-700" />
+            </button>
             <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center mr-2">
               <span className="text-white font-bold text-sm">M</span>
             </div>
@@ -311,7 +278,7 @@ const MyProjects: React.FC = () => {
                     : 'text-slate-600 hover:text-orange-600'
                 }`}
               >
-                Projects Joined (0)
+                Projects Joined ({joinedProjects.length})
               </button>
             </div>
           </div>
@@ -521,7 +488,10 @@ const MyProjects: React.FC = () => {
                         >
                           View Project
                         </Link>
-                        <button className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg text-sm font-medium hover:shadow-md transition-all">
+                        <button
+                          onClick={() => navigate(`/project/${project.id}/manage-team`)}
+                          className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg text-sm font-medium hover:shadow-md transition-all"
+                        >
                           Manage Team
                         </button>
                       </div>
@@ -629,11 +599,120 @@ const MyProjects: React.FC = () => {
 
         {/* Projects Joined View */}
         {currentView === 'joined' && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-12 text-center">
-            <h3 className="text-xl font-bold mb-2">No joined projects</h3>
-            <p className="text-slate-600 mb-6">
-              Projects you've joined as a team member will appear here!
-            </p>
+          <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-8">
+            {loadingJoined ? (
+              <div className="flex justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+              </div>
+            ) : joinedError ? (
+              <div className="text-center py-12 text-red-500">
+                <p className="font-semibold mb-2">Unable to load joined projects.</p>
+                <p className="text-sm text-red-400 mb-4">{joinedError}</p>
+                <button
+                  onClick={fetchJoinedProjects}
+                  className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors"
+                >
+                  Try Again
+                </button>
+              </div>
+            ) : joinedProjects.length === 0 ? (
+              <div className="text-center py-12 text-slate-600">
+                <FolderOpen className="mx-auto h-12 w-12 text-slate-400 mb-4" />
+                <h3 className="text-xl font-bold mb-2">No joined projects</h3>
+                <p className="text-slate-500">
+                  Projects you've joined as a team member will appear here after you get accepted to a role.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {joinedProjects.map((project) => {
+                  const projectId = project.id || (project as any)._id;
+                  const creator =
+                    typeof project.creator === 'object' && project.creator !== null
+                      ? project.creator
+                      : null;
+                  const creatorName = creator
+                    ? creator.preferredName ||
+                      `${creator.firstName} ${creator.lastName}`.trim()
+                    : 'Project Creator';
+                  const userRoleTitle = project.roles?.find((role) => {
+                    if (!authUser?.id || !role.user) return false;
+                    if (typeof role.user === 'string') {
+                      return role.user === authUser.id;
+                    }
+                    const populatedUser = role.user;
+                    return (
+                      populatedUser.id === authUser.id ||
+                      (populatedUser as any)._id === authUser.id
+                    );
+                  })?.title;
+                  const filledRoles = project.roles?.filter((role) => role.filled).length || 0;
+                  const totalRoles = project.roles?.length || 0;
+                  const formattedDeadline = project.deadline
+                    ? new Date(project.deadline).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })
+                    : null;
+
+                  return (
+                    <div
+                      key={projectId}
+                      className="border border-slate-200 rounded-lg p-6 hover:border-orange-300 hover:shadow-md transition-all"
+                    >
+                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                        <div className="flex-1">
+                          <h3 className="text-xl font-bold text-slate-900 mb-2">
+                            {project.title}
+                          </h3>
+                          <p className="text-slate-600 mb-4">{project.description}</p>
+
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {project.category && (
+                              <span className="px-3 py-1 bg-orange-50 text-orange-700 rounded-full text-xs font-medium">
+                                {project.category}
+                              </span>
+                            )}
+                            {project.status && (
+                              <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
+                                {project.status}
+                              </span>
+                            )}
+                            {userRoleTitle && (
+                              <span className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-medium">
+                                Your Role: {userRoleTitle}
+                              </span>
+                            )}
+                          </div>
+
+                          <p className="text-sm text-slate-500 mb-2">
+                            Created by {creatorName}
+                          </p>
+
+                          <div className="flex flex-wrap gap-4 text-xs text-slate-500">
+                            <span>
+                              Roles filled: {filledRoles}/{totalRoles}
+                            </span>
+                            {formattedDeadline && <span>Due {formattedDeadline}</span>}
+                          </div>
+                        </div>
+
+                        <Link
+                          to={`/project/${projectId}`}
+                          className="self-start px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg text-sm font-medium hover:shadow-md transition-all"
+                          onClick={() => {
+                            sessionStorage.setItem('projectReferrer', '/my-projects');
+                          }}
+                        >
+                          View Project
+                        </Link>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </main>

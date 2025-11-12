@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { BookmarkIcon, CheckCircleIcon, CircleIcon } from 'lucide-react';
+import { apiClient } from '../../utils/apiClient';
 
 type Role = {
   title: string;
@@ -32,7 +33,9 @@ interface ProjectCardProps {
 }
 
 const ProjectCard: React.FC<ProjectCardProps> = ({ project, isNew = false }) => {
+  const navigate = useNavigate();
   const [isSaved, setIsSaved] = useState(false);
+  const [checkingSaved, setCheckingSaved] = useState(true);
 
   const filledRoles = project.roles.filter((role) => role.filled).length;
   const totalRoles = project.roles.length;
@@ -41,18 +44,31 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, isNew = false }) => 
   const isDescriptionLong = project.description.length > 150;
   const displayDescription = project.description.substring(0, 150);
 
-  // Load saved state from localStorage
   useEffect(() => {
-    const loadSavedState = () => {
-      const savedProjects = JSON.parse(localStorage.getItem('savedProjects') || '[]');
-      setIsSaved(savedProjects.includes(project.id));
+    const checkSavedState = async () => {
+      const storedUser = localStorage.getItem('user');
+      if (!storedUser) {
+        setIsSaved(false);
+        setCheckingSaved(false);
+        return;
+      }
+
+      try {
+        const response = await apiClient.getSavedProjects();
+        const savedList = response.data || [];
+        const savedIds = savedList.map((saved: any) => saved._id || saved.id);
+        setIsSaved(savedIds.includes(project.id));
+      } catch (error) {
+        console.error('Error checking saved projects:', error);
+      } finally {
+        setCheckingSaved(false);
+      }
     };
 
-    loadSavedState();
+    checkSavedState();
 
-    // Listen for changes from My Projects page
     const handleSavedProjectsChange = () => {
-      loadSavedState();
+      checkSavedState();
     };
 
     window.addEventListener('savedProjectsChanged', handleSavedProjectsChange);
@@ -62,27 +78,40 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, isNew = false }) => 
     };
   }, [project.id]);
 
-  // Toggle bookmark/save state
-  const handleBookmarkToggle = (e: React.MouseEvent) => {
+  const handleBookmarkToggle = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    const savedProjects = JSON.parse(localStorage.getItem('savedProjects') || '[]');
-    let updated;
-    if (isSaved) {
-      updated = savedProjects.filter((pid: string) => pid !== project.id);
-    } else {
-      updated = [...savedProjects, project.id];
+    if (!localStorage.getItem('user')) {
+      alert('Please log in to save projects.');
+      return;
     }
-    localStorage.setItem('savedProjects', JSON.stringify(updated));
-    setIsSaved(!isSaved);
 
-    // Dispatch custom event to notify My Projects page
-    window.dispatchEvent(new Event('savedProjectsChanged'));
+    try {
+      if (isSaved) {
+        await apiClient.unsaveProject(project.id);
+        setIsSaved(false);
+      } else {
+        await apiClient.saveProject(project.id);
+        setIsSaved(true);
+      }
+
+      window.dispatchEvent(new Event('savedProjectsChanged'));
+    } catch (error: any) {
+      console.error('Error updating saved projects:', error);
+      alert(error.response?.data?.message || 'Failed to update saved projects');
+    }
+  };
+
+  const handleCardClick = () => {
+    navigate(`/project/${project.id}`);
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition-all relative h-full flex flex-col">
+    <div
+      onClick={handleCardClick}
+      className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition-all relative h-full flex flex-col cursor-pointer transform hover:-translate-y-1"
+    >
       {/* Header section with badges */}
       <div className="absolute top-0 left-0 right-0 flex justify-between items-start p-4 z-10 pointer-events-none">
         {/* "New" Badge for Recently Created Projects */}
@@ -100,7 +129,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, isNew = false }) => 
         {/* Bookmark Icon in Top-Right Corner */}
         <button
           onClick={handleBookmarkToggle}
-          className="pointer-events-auto p-2 rounded-full hover:bg-slate-100 transition-colors bg-white bg-opacity-80"
+          disabled={checkingSaved}
+          className="pointer-events-auto p-2 rounded-full hover:bg-slate-100 transition-colors bg-white bg-opacity-80 disabled:opacity-50"
           aria-label={isSaved ? 'Remove bookmark' : 'Bookmark project'}
         >
           <BookmarkIcon
@@ -116,11 +146,9 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, isNew = false }) => 
       <div className="p-6 pt-16 flex-grow flex flex-col">
         {/* Project Title - Clickable */}
         <div className="mb-3">
-          <Link to={`/project/${project.id}`}>
-            <h3 className="font-bold text-lg mb-1 hover:text-orange-500 transition-colors cursor-pointer">
-              {project.title}
-            </h3>
-          </Link>
+          <h3 className="font-bold text-lg mb-1 hover:text-orange-500 transition-colors">
+            {project.title}
+          </h3>
           <div className="flex items-center text-sm text-slate-500">
             <img
               src={project.creator.profilePic}
@@ -138,12 +166,16 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, isNew = false }) => 
           {displayDescription}
           {isDescriptionLong && '...'}
           {isDescriptionLong && (
-            <Link
-              to={`/project/${project.id}`}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCardClick();
+              }}
               className="ml-1 text-orange-500 hover:text-orange-600 font-medium transition-colors"
             >
               See More
-            </Link>
+            </button>
           )}
         </p>
 
@@ -179,20 +211,20 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, isNew = false }) => 
                 {role.filled ? (
                   <div className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all bg-green-50 border border-green-200">
                     <CheckCircleIcon className="h-4 w-4 text-green-600" />
-                    <span className="text-xs font-medium text-green-700">
-                      {role.title}
-                    </span>
+                    <span className="text-xs font-medium text-green-700">{role.title}</span>
                   </div>
                 ) : (
-                  <Link
-                    to={`/project/${project.id}`}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCardClick();
+                    }}
                     className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all bg-slate-50 border border-slate-200 hover:border-orange-300 hover:bg-orange-50 hover:shadow-sm cursor-pointer transform hover:scale-105"
                   >
                     <CircleIcon className="h-4 w-4 text-slate-400" />
-                    <span className="text-xs font-medium text-slate-600">
-                      {role.title}
-                    </span>
-                  </Link>
+                    <span className="text-xs font-medium text-slate-600">{role.title}</span>
+                  </button>
                 )}
 
                 {/* Tooltip on Hover */}

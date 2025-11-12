@@ -35,12 +35,14 @@ import userRoutes from './routes/userRoutes';
 import projectRoutes from './routes/projectRoutes';
 import chatRoutes from './routes/chatRoutes';
 import matchRoutes from './routes/matchRoutes';
+import notificationRoutes from './routes/notificationRoutes';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/matches', matchRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Health check route
 app.get('/health', (_req: Request, res: Response) => {

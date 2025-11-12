@@ -17,6 +17,7 @@ import Navigation from '../components/Navigation';
 
 interface TeamMember {
   id: string;
+  roleId: string;
   name: string;
   email?: string;
   university: string;
@@ -34,9 +35,11 @@ interface Application {
     email?: string;
     university: string;
     profilePic: string;
+    bio?: string;
   };
   role: string;
   message: string;
+  fitScore?: 'High' | 'Medium' | 'Low';
   status: 'Pending' | 'Accepted' | 'Rejected';
   createdAt: string;
 }
@@ -53,33 +56,34 @@ const ManageTeamPage: React.FC = () => {
   const [processingApp, setProcessingApp] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchProjectData();
+    if (!id) return;
+    fetchProject();
+    fetchApplications();
   }, [id]);
 
-  const fetchProjectData = async () => {
+  const fetchProject = async () => {
     if (!id) return;
 
     try {
       setLoading(true);
-
-      // Fetch project details
       const projectResponse = await apiClient.getProjectById(id);
 
       if (projectResponse.success && projectResponse.data) {
         const proj = projectResponse.data;
         setProject(proj);
 
-        // Extract team members from filled roles
-        const members: TeamMember[] = proj.roles
-          .filter((role) => role.filled && role.user)
-          .map((role) => {
+        const members: TeamMember[] = (proj.roles || [])
+          .filter((role: any) => role.filled && role.user)
+          .map((role: any) => {
             const user = typeof role.user === 'object' ? role.user : null;
             return {
-              id: user?.id || '',
-              name: user?.preferredName || `${user?.firstName} ${user?.lastName}` || 'Unknown',
+              id: user?.id || user?._id || '',
+              roleId: role._id || '',
+              name: user?.preferredName || `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim() || 'Unknown',
               email: user?.email,
               university: user?.university || '',
-              profilePic: user?.profilePicture || `https://ui-avatars.com/api/?name=${user?.firstName}+${user?.lastName}`,
+              profilePic:
+                user?.profilePicture || `https://ui-avatars.com/api/?name=${user?.firstName}+${user?.lastName}`,
               role: role.title,
               status: 'Active',
               joinedAt: new Date(proj.createdAt).toLocaleDateString('en-US', {
@@ -91,10 +95,6 @@ const ManageTeamPage: React.FC = () => {
           });
 
         setTeamMembers(members);
-
-        // TODO: Fetch applications when the endpoint is ready
-        // For now, using mock data
-        setApplications([]);
       }
     } catch (error: any) {
       console.error('Error fetching project data:', error);
@@ -105,86 +105,115 @@ const ManageTeamPage: React.FC = () => {
     }
   };
 
+  const fetchApplications = async () => {
+    if (!id) return;
+
+    try {
+      const response = await apiClient.getProjectApplicants(id);
+
+      if (response.success && Array.isArray(response.data)) {
+        const formatted = response.data.map((app: any) => {
+          const user = typeof app.user === 'object' ? app.user : null;
+          return {
+            id: app.id || app._id,
+            user: {
+              id: user?.id || user?._id || '',
+              name: user?.preferredName || `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim() || 'Unknown',
+              email: user?.email,
+              university: user?.university || 'Unknown University',
+              profilePic:
+                user?.profilePicture || `https://ui-avatars.com/api/?name=${user?.firstName}+${user?.lastName}`,
+              bio: user?.bio,
+            },
+            role: app.role,
+            message: app.message || '',
+            status: app.status,
+            fitScore: app.fitScore,
+            createdAt: app.createdAt,
+          } as Application;
+        });
+        setApplications(formatted);
+      } else {
+        setApplications([]);
+      }
+    } catch (error) {
+      console.error('Error fetching applications:', error);
+      setApplications([]);
+    }
+  };
+
   const handleAcceptApplication = async (applicationId: string) => {
+    if (!project?.id) return;
+    if (!window.confirm('Accept this application and add the member to your team?')) {
+      return;
+    }
+
     try {
       setProcessingApp(applicationId);
-
-      // TODO: Replace with actual API call when endpoint is ready
-      // await apiClient.acceptApplication(applicationId);
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Update application status
-      setApplications((prev) =>
-        prev.map((app) =>
-          app.id === applicationId ? { ...app, status: 'Accepted' as const } : app
-        )
-      );
-
-      alert('Application accepted! The user has been added to the team.');
-      fetchProjectData(); // Refresh data
+      await apiClient.updateApplicationStatus(project.id, applicationId, 'Accepted');
+      await fetchApplications();
+      await fetchProject();
+      alert('Application accepted successfully!');
     } catch (error: any) {
       console.error('Error accepting application:', error);
-      alert('Failed to accept application: ' + (error.response?.data?.message || error.message));
+      alert(error.response?.data?.message || 'Failed to accept application');
     } finally {
       setProcessingApp(null);
     }
   };
 
   const handleRejectApplication = async (applicationId: string) => {
+    if (!project?.id) return;
+    if (!window.confirm('Reject this application?')) {
+      return;
+    }
+
     try {
       setProcessingApp(applicationId);
-
-      // TODO: Replace with actual API call when endpoint is ready
-      // await apiClient.rejectApplication(applicationId);
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Update application status
-      setApplications((prev) =>
-        prev.map((app) =>
-          app.id === applicationId ? { ...app, status: 'Rejected' as const } : app
-        )
-      );
-
+      await apiClient.updateApplicationStatus(project.id, applicationId, 'Rejected');
+      await fetchApplications();
       alert('Application rejected.');
     } catch (error: any) {
       console.error('Error rejecting application:', error);
-      alert('Failed to reject application: ' + (error.response?.data?.message || error.message));
+      alert(error.response?.data?.message || 'Failed to reject application');
     } finally {
       setProcessingApp(null);
     }
   };
 
-  const handleRemoveMember = async (memberId: string, memberName: string) => {
+  const handleRemoveMember = async (member: TeamMember) => {
+    if (!project?.id) return;
     const confirmed = window.confirm(
-      `Are you sure you want to remove ${memberName} from the team?\n\nThis will:\n- Remove them from their assigned role\n- Make the role available for new applicants\n- Notify the member about the removal`
+      `Are you sure you want to remove ${member.name} from the team?\n\nThis will:\n- Remove them from their assigned role\n- Make the role available for new applicants\n- Notify the member about the removal`
     );
 
     if (!confirmed) return;
 
     try {
-      // TODO: Replace with actual API call when endpoint is ready
-      // await apiClient.removeTeamMember(id, memberId);
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      setTeamMembers((prev) => prev.filter((member) => member.id !== memberId));
-      alert(`${memberName} has been removed from the team.`);
-      fetchProjectData(); // Refresh data
+      await apiClient.removeTeamMember(project.id, member.roleId);
+      await fetchProject();
+      alert(`${member.name} has been removed from the team.`);
     } catch (error: any) {
       console.error('Error removing team member:', error);
-      alert('Failed to remove team member: ' + (error.response?.data?.message || error.message));
+      alert(error.response?.data?.message || 'Failed to remove team member');
     }
   };
 
-  const handleMessageMember = (memberId: string) => {
-    // TODO: Implement messaging functionality
-    console.log('Message member:', memberId);
-    alert('Messaging feature coming soon!');
+  const handleMessageMember = async (memberId: string) => {
+    try {
+      const response = await apiClient.createChat(memberId);
+      const chat = response.data;
+      const chatId = (chat as any)?.id || (chat as any)?._id;
+
+      if (!chatId) {
+        throw new Error('Unable to determine chat ID');
+      }
+
+      navigate(`/dashboard/chat?chatId=${chatId}`);
+    } catch (error: any) {
+      console.error('Error creating chat:', error);
+      alert(error.response?.data?.message || 'Failed to start conversation');
+    }
   };
 
   const filteredTeamMembers = teamMembers.filter((member) =>
@@ -372,7 +401,7 @@ const ManageTeamPage: React.FC = () => {
                             Message
                           </button>
                           <button
-                            onClick={() => handleRemoveMember(member.id, member.name)}
+                              onClick={() => handleRemoveMember(member)}
                             className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm flex items-center gap-2"
                           >
                             <UserMinusIcon className="h-4 w-4" />

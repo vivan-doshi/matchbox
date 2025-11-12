@@ -1,12 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeftIcon, LinkedinIcon, GithubIcon, ExternalLinkIcon, EditIcon, FolderIcon, FileTextIcon, UploadIcon, CheckIcon, XIcon, MenuIcon } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { LinkedinIcon, GithubIcon, ExternalLinkIcon, EditIcon, FolderIcon, FileTextIcon, UploadIcon, CheckIcon, XIcon, MenuIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Navigation from '../components/Navigation';
+import { apiClient } from '../utils/apiClient';
+import { Project, User } from '../types/api';
+
+type ProfileProjectCard = Project & {
+  userRoleLabel: string;
+  ownership: 'creator' | 'member';
+};
 
 const ProfilePage: React.FC = () => {
-  const { user: authUser, updateUserProfile, loading: authLoading } = useAuth();
+  const { user: authUser, updateUserProfile, loading: authLoading, refreshUser } = useAuth();
+  const { userId: viewedUserId } = useParams<{ userId?: string }>();
   const navigate = useNavigate();
+  const isOwnProfile = !viewedUserId || viewedUserId === authUser?.id;
+  const [externalUser, setExternalUser] = useState<User | null>(null);
+  const [externalLoading, setExternalLoading] = useState(false);
+  const [externalError, setExternalError] = useState<string | null>(null);
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [activeProjectTab, setActiveProjectTab] = useState<'active' | 'completed'>('active');
@@ -15,42 +27,112 @@ const ProfilePage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [showResumePreview, setShowResumePreview] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [profileProjects, setProfileProjects] = useState<ProfileProjectCard[]>([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
+  const [projectsError, setProjectsError] = useState<string | null>(null);
+  const [profileImageUploading, setProfileImageUploading] = useState(false);
+  const [profileImageError, setProfileImageError] = useState<string | null>(null);
+  const canEdit = isOwnProfile;
 
-  // Transform auth user data to match original structure
-  const originalUser = authUser ? {
-    name: authUser.preferredName || `${authUser.firstName} ${authUser.lastName}`,
-    university: authUser.university,
-    major: authUser.major,
-    graduationYear: authUser.graduationYear?.toString() || 'N/A',
-    bio: authUser.bio || '',
-    profilePicture: authUser.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(authUser.firstName + ' ' + authUser.lastName)}&size=300&background=f97316&color=fff`,
-    links: {
-      linkedin: authUser.professionalLinks?.linkedin || '',
-      github: authUser.professionalLinks?.github || '',
-      portfolio: authUser.professionalLinks?.portfolio || '',
-      resume: {
-        url: '',
-        filename: '',
-        uploadedAt: ''
+  const fileToDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (err) => reject(err);
+      reader.readAsDataURL(file);
+    });
+
+  useEffect(() => {
+    if (isOwnProfile || !viewedUserId) {
+      setExternalUser(null);
+      setExternalError(null);
+      return;
+    }
+
+    const fetchExternalProfile = async () => {
+      try {
+        setExternalLoading(true);
+        setExternalError(null);
+        console.log('[ProfilePage] Fetching external profile for userId:', viewedUserId);
+
+        const response = await apiClient.getUserById(viewedUserId);
+        console.log('[ProfilePage] API Response:', response);
+
+        if (response.success && response.data) {
+          console.log('[ProfilePage] Setting external user:', response.data);
+          setExternalUser(response.data);
+        } else {
+          console.log('[ProfilePage] Response missing data:', response);
+          setExternalError('Unable to load this profile.');
+        }
+      } catch (error: any) {
+        console.error('[ProfilePage] Failed to load external profile', error);
+        console.error('[ProfilePage] Error details:', error.response?.data);
+        const message = error.response?.data?.message || error.message || 'Unable to load this profile.';
+        setExternalError(message);
+      } finally {
+        setExternalLoading(false);
       }
-    },
-    skills: authUser.skills || [],
-    interests: authUser.interests || [],
-    weeklyAvailability: authUser.weeklyAvailability || { hoursPerWeek: 0 },
-    projects: [] as any[] // Mock empty projects for now - TODO: Fetch user's actual projects
-  } : {
-    name: 'Loading...',
-    university: '',
-    major: '',
-    graduationYear: '',
-    bio: '',
-    profilePicture: '',
-    links: { linkedin: '', github: '', portfolio: '', resume: { url: '', filename: '', uploadedAt: '' } },
-    skills: [],
-    interests: [],
-    weeklyAvailability: { hoursPerWeek: 0 },
-    projects: [] as any[]
-  };
+    };
+
+    fetchExternalProfile();
+  }, [isOwnProfile, viewedUserId]);
+
+  const activeProfileUser = isOwnProfile ? authUser : externalUser;
+
+  const resumeLink = activeProfileUser?.resume?.dataUrl
+    ? {
+        url: activeProfileUser.resume.dataUrl,
+        filename: activeProfileUser.resume.filename || 'Resume',
+        uploadedAt: activeProfileUser.resume.uploadedAt || '',
+      }
+    : null;
+
+  const originalUser = useMemo(() => {
+    if (!activeProfileUser) {
+      return {
+        name: 'Loading...',
+        university: '',
+        major: '',
+        graduationYear: '',
+        bio: '',
+        profilePicture: '',
+        links: {
+          linkedin: '',
+          github: '',
+          portfolio: '',
+          resume: { url: '', filename: '', uploadedAt: '' },
+        },
+        skills: [],
+        interests: [],
+        weeklyAvailability: { hoursPerWeek: 0 },
+      };
+    }
+
+    return {
+      name: activeProfileUser.preferredName || `${activeProfileUser.firstName} ${activeProfileUser.lastName}`,
+      university: activeProfileUser.university,
+      major: activeProfileUser.major,
+      graduationYear: activeProfileUser.graduationYear?.toString() || 'N/A',
+      bio: activeProfileUser.bio || '',
+      profilePicture:
+        activeProfileUser.profilePicture ||
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(
+          activeProfileUser.firstName + ' ' + activeProfileUser.lastName
+        )}&size=300&background=f97316&color=fff`,
+      links: {
+        linkedin: activeProfileUser.professionalLinks?.linkedin || '',
+        github: activeProfileUser.professionalLinks?.github || '',
+        portfolio: activeProfileUser.professionalLinks?.portfolio || '',
+        resume: resumeLink || { url: '', filename: '', uploadedAt: '' },
+      },
+      skills: activeProfileUser.skills || [],
+      interests: activeProfileUser.interests || [],
+      weeklyAvailability: activeProfileUser.weeklyAvailability || { hoursPerWeek: 0 },
+    };
+  }, [activeProfileUser, resumeLink]);
+
+  const user = originalUser;
 
   // Editable state
   const [editedName, setEditedName] = useState(originalUser.name);
@@ -70,7 +152,7 @@ const ProfilePage: React.FC = () => {
 
   // Update editable state when user data changes
   useEffect(() => {
-    if (authUser) {
+    if (canEdit && activeProfileUser) {
       setEditedName(originalUser.name);
       setEditedBio(originalUser.bio);
       setEditedUniversity(originalUser.university);
@@ -83,7 +165,7 @@ const ProfilePage: React.FC = () => {
       setEditedHoursPerWeek(originalUser.weeklyAvailability.hoursPerWeek);
       setEditedSkills(originalUser.skills);
     }
-  }, [authUser]);
+  }, [canEdit, activeProfileUser, originalUser]);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -92,10 +174,20 @@ const ProfilePage: React.FC = () => {
     }
   }, [authLoading, authUser, navigate]);
 
-  // Use original data for display
-  const user = originalUser;
+  // Debug: Log state changes
+  useEffect(() => {
+    console.log('[ProfilePage] State updated:', {
+      isOwnProfile,
+      viewedUserId,
+      authUser: authUser?.email,
+      authLoading,
+      externalUser: externalUser?.email,
+      externalLoading,
+      externalError,
+      activeProfileUser: activeProfileUser?.email
+    });
+  }, [isOwnProfile, viewedUserId, authUser, authLoading, externalUser, externalLoading, externalError, activeProfileUser]);
 
-  // Debug logging
   useEffect(() => {
     if (authUser) {
       console.log('[ProfilePage] User data loaded:', {
@@ -107,14 +199,135 @@ const ProfilePage: React.FC = () => {
     }
   }, [authUser]);
 
-  // Show loading if still fetching auth
-  if (authLoading || !authUser) {
-    return <div className="min-h-screen page-background-gradient flex items-center justify-center">
-      <div className="text-slate-600">Loading profile...</div>
-    </div>;
+  const fetchProfileProjects = useCallback(async () => {
+    if (!authUser?.id) {
+      setProfileProjects([]);
+      setProjectsError(null);
+      return;
+    }
+
+    try {
+      setProjectsLoading(true);
+      setProjectsError(null);
+
+      const [createdResponse, joinedResponse] = await Promise.all([
+        apiClient.getMyProjects(),
+        apiClient.getJoinedProjects(),
+      ]);
+
+      if (!createdResponse.success || !joinedResponse.success) {
+        const message =
+          createdResponse.message ||
+          joinedResponse.message ||
+          'Failed to load some projects.';
+        setProjectsError(message);
+      } else {
+        setProjectsError(null);
+      }
+
+      const createdProjects = createdResponse.success && createdResponse.data ? createdResponse.data : [];
+      const joinedProjects = joinedResponse.success && joinedResponse.data ? joinedResponse.data : [];
+
+      const normalizedCreated: ProfileProjectCard[] = createdProjects.map((project) => ({
+        ...project,
+        userRoleLabel: 'Creator',
+        ownership: 'creator',
+      }));
+
+      const normalizedJoined: ProfileProjectCard[] = joinedProjects.map((project) => {
+        const matchingRole = project.roles?.find((role) => {
+          if (!role.user) return false;
+          if (typeof role.user === 'string') {
+            return role.user === authUser.id;
+          }
+          const populatedUser = role.user;
+          return (
+            populatedUser.id === authUser.id ||
+            (populatedUser as any)._id === authUser.id
+          );
+        });
+
+        return {
+          ...project,
+          userRoleLabel: matchingRole?.title || 'Team Member',
+          ownership: 'member',
+        };
+      });
+
+      setProfileProjects([...normalizedCreated, ...normalizedJoined]);
+    } catch (error: any) {
+      console.error('[ProfilePage] Error fetching profile projects:', error);
+      const message =
+        error.response?.data?.message || error.message || 'Failed to load projects.';
+      setProjectsError(message);
+      setProfileProjects([]);
+    } finally {
+      setProjectsLoading(false);
+    }
+  }, [authUser?.id]);
+
+  useEffect(() => {
+    if (!isOwnProfile) {
+      setProfileProjects([]);
+      return;
+    }
+    if (!authLoading) {
+      fetchProfileProjects();
+    }
+  }, [authLoading, fetchProfileProjects, isOwnProfile]);
+
+  if (!isOwnProfile && externalError) {
+    return (
+      <div className="min-h-screen page-background-gradient flex items-center justify-center p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 max-w-md w-full text-center">
+          <h2 className="text-xl font-semibold text-slate-900 mb-2">Profile Unavailable</h2>
+          <p className="text-slate-600 mb-4">{externalError}</p>
+          <button
+            onClick={() => navigate(-1)}
+            className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg font-medium hover:shadow-lg transition-all"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (
+    (isOwnProfile && (authLoading || !authUser)) ||
+    (!isOwnProfile && (externalLoading || !externalUser))
+  ) {
+    return (
+      <div className="min-h-screen page-background-gradient flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-orange-500 border-r-transparent"></div>
+          <p className="mt-4 text-slate-600">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle case where external user data is not found
+  if (!isOwnProfile && !externalUser && !externalLoading) {
+    return (
+      <div className="min-h-screen page-background-gradient flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4">👤</div>
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">User Not Found</h2>
+          <p className="text-slate-600 mb-6">This profile could not be loaded.</p>
+          <button
+            onClick={() => navigate('/dashboard/discover')}
+            className="px-6 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:from-orange-600 hover:to-red-600"
+          >
+            Back to Discover People
+          </button>
+        </div>
+      </div>
+    );
   }
 
   const handleEditProfile = async () => {
+    if (!canEdit) return;
     if (isEditMode) {
       try {
         setSaving(true);
@@ -168,6 +381,7 @@ const ProfilePage: React.FC = () => {
   };
 
   const handleCancel = () => {
+    if (!canEdit) return;
     // Reset all edited values to original
     setEditedName(originalUser.name);
     setEditedBio(originalUser.bio);
@@ -194,83 +408,181 @@ const ProfilePage: React.FC = () => {
     setEditedInterests(editedInterests.filter(i => i !== interest));
   };
 
-  const handleResumeUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!canEdit) return;
     const file = e.target.files?.[0];
-    if (file) {
+    if (!file) return;
+
+    const validTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ];
+
+    if (!validTypes.includes(file.type)) {
+      alert('Please upload a PDF or Word document.');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Resume must be smaller than 10MB.');
+      return;
+    }
+
+    try {
       setUploadingResume(true);
-      // Simulate upload
-      setTimeout(() => {
-        setUploadingResume(false);
-        setShowUploadSuccess(true);
-        setTimeout(() => setShowUploadSuccess(false), 3000);
-        console.log('Resume uploaded:', file.name);
-      }, 1500);
+      const dataUrl = await fileToDataUrl(file);
+      await updateUserProfile({
+        resume: {
+          dataUrl,
+          filename: file.name,
+          mimeType: file.type,
+          uploadedAt: new Date().toISOString(),
+        },
+      });
+      await refreshUser();
+      setShowUploadSuccess(true);
+      setTimeout(() => setShowUploadSuccess(false), 2500);
+    } catch (error: any) {
+      console.error('[ProfilePage] Resume upload failed:', error);
+      alert(error?.message || 'Failed to upload resume. Please try again.');
+    } finally {
+      setUploadingResume(false);
     }
   };
 
-  const activeProjects = user.projects.filter(p => p.status === 'active');
-  const completedProjects = user.projects.filter(p => p.status === 'completed');
-  return <div className="min-h-screen page-background-gradient">
-      {/* Fixed Hamburger Menu Button - Always visible */}
-      <button
-        onClick={() => setIsSidebarOpen(true)}
-        className="fixed top-6 left-6 z-[100] p-2 bg-orange-500 text-white rounded-lg shadow-lg hover:bg-orange-600 transition-colors"
-        aria-label="Open navigation menu"
-      >
-        <MenuIcon className="h-6 w-6" />
-      </button>
+  const handleProfilePictureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!canEdit) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
 
+    if (!file.type.startsWith('image/')) {
+      setProfileImageError('Please upload a valid image file.');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setProfileImageError('Profile pictures must be smaller than 5MB.');
+      return;
+    }
+
+    try {
+      setProfileImageUploading(true);
+      setProfileImageError(null);
+      const dataUrl = await fileToDataUrl(file);
+      await updateUserProfile({ profilePicture: dataUrl });
+      await refreshUser();
+    } catch (error: any) {
+      console.error('[ProfilePage] Profile image upload failed:', error);
+      setProfileImageError(error?.message || 'Failed to upload profile picture.');
+    } finally {
+      setProfileImageUploading(false);
+    }
+  };
+
+  const isCompletedStatus = (status?: string) =>
+    (status || '').toLowerCase() === 'completed';
+
+  const formatDate = (value?: string) => {
+    if (!value) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return null;
+    }
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
+  const getStatusBadgeClasses = (status?: string) => {
+    const normalized = (status || '').toLowerCase();
+    if (normalized === 'completed') return 'bg-green-100 text-green-700';
+    if (normalized === 'in progress') return 'bg-blue-100 text-blue-700';
+    if (normalized === 'planning') return 'bg-amber-100 text-amber-700';
+    return 'bg-slate-100 text-slate-700';
+  };
+
+  const activeProjects = profileProjects.filter(project => !isCompletedStatus(project.status));
+  const completedProjects = profileProjects.filter(project => isCompletedStatus(project.status));
+  return <div className="min-h-screen page-background-gradient">
       <Navigation isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
       <div>
         <header className="bg-white border-b border-slate-200 py-4 px-6">
           <div className="container mx-auto flex justify-between items-center">
             <div className="flex items-center">
-              {/* Spacer for fixed hamburger menu */}
-              <div className="w-10 mr-3"></div>
-
+              <button
+                onClick={() => setIsSidebarOpen(true)}
+                className="mr-3 p-2 rounded-lg hover:bg-slate-100 transition-colors"
+                aria-label="Open navigation menu"
+              >
+                <MenuIcon className="h-6 w-6 text-slate-700" />
+              </button>
               <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center mr-2">
                 <span className="text-white font-bold text-sm">M</span>
               </div>
               <h1 className="text-xl font-bold">Profile</h1>
             </div>
-          <div className="flex items-center">
-            <Link to="/my-projects" className="flex items-center text-sm bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-full font-medium hover:bg-slate-50 transition-all mr-2">
-              <FolderIcon className="h-4 w-4 mr-1" />
-              My Projects
-            </Link>
-            <button
-              onClick={handleEditProfile}
-              className="flex items-center text-sm px-4 py-2 rounded-full font-medium transition-all cursor-pointer bg-gradient-to-r from-orange-500 to-red-500 text-white hover:shadow-lg"
-            >
-              {isEditMode ? (
-                <>
-                  <CheckIcon className="h-4 w-4 mr-1" />
-                  Save Changes
-                </>
-              ) : (
-                <>
-                  <EditIcon className="h-4 w-4 mr-1" />
-                  Edit Profile
-                </>
-              )}
-            </button>
-            {isEditMode && (
+          {canEdit && (
+            <div className="flex items-center">
+              <Link to="/my-projects" className="flex items-center text-sm bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-full font-medium hover:bg-slate-50 transition-all mr-2">
+                <FolderIcon className="h-4 w-4 mr-1" />
+                My Projects
+              </Link>
               <button
-                onClick={handleCancel}
-                className="flex items-center text-sm bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-full font-medium hover:bg-slate-50 transition-all cursor-pointer ml-2"
+                onClick={handleEditProfile}
+                className="flex items-center text-sm px-4 py-2 rounded-full font-medium transition-all cursor-pointer bg-gradient-to-r from-orange-500 to-red-500 text-white hover:shadow-lg"
               >
-                <XIcon className="h-4 w-4 mr-1" />
-                Cancel
+                {isEditMode ? (
+                  <>
+                    <CheckIcon className="h-4 w-4 mr-1" />
+                    Save Changes
+                  </>
+                ) : (
+                  <>
+                    <EditIcon className="h-4 w-4 mr-1" />
+                    Edit Profile
+                  </>
+                )}
               </button>
-            )}
-          </div>
+              {isEditMode && (
+                <button
+                  onClick={handleCancel}
+                  className="flex items-center text-sm bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-full font-medium hover:bg-slate-50 transition-all cursor-pointer ml-2"
+                >
+                  <XIcon className="h-4 w-4 mr-1" />
+                  Cancel
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </header>
       <main className="container mx-auto p-6">
         <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden mb-6">
           <div className="p-6 sm:p-8">
             <div className="flex flex-col sm:flex-row items-start sm:items-center">
-              <img src={user.profilePicture} alt={user.name} className="w-24 h-24 rounded-full mb-4 sm:mb-0 sm:mr-6" />
+              <div className="flex flex-col items-center sm:items-start mb-4 sm:mb-0 sm:mr-6">
+                <div className="relative">
+                <img src={user.profilePicture} alt={user.name} className="w-24 h-24 rounded-full object-cover border-2 border-white shadow-sm" />
+                {canEdit && (
+                  <label className="absolute -bottom-2 -right-2 bg-white border border-slate-200 rounded-full px-3 py-1 text-xs font-medium text-slate-600 shadow hover:text-orange-600 transition-colors cursor-pointer">
+                    {profileImageUploading ? 'Uploading...' : 'Change'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleProfilePictureUpload}
+                      disabled={profileImageUploading}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+                </div>
+                {canEdit && profileImageError && (
+                  <p className="text-xs text-red-600 mt-2">{profileImageError}</p>
+                )}
+              </div>
               <div className="flex-1">
                 {isEditMode ? (
                   <div className="space-y-3 mb-3">
@@ -406,7 +718,7 @@ const ProfilePage: React.FC = () => {
                         Add Portfolio
                       </button>
                     )}
-                    {user.links.resume ? (
+                    {user.links.resume?.url ? (
                       <button
                         onClick={() => setShowResumePreview(true)}
                         className="flex items-center text-xs bg-orange-50 text-orange-700 px-3 py-1 rounded-full hover:bg-orange-100 transition-colors cursor-pointer"
@@ -414,20 +726,24 @@ const ProfilePage: React.FC = () => {
                         <FileTextIcon className="h-3 w-3 mr-1" />
                         Resume
                       </button>
-                    ) : (
+                    ) : canEdit ? (
                       <label className="flex items-center text-xs bg-slate-100 text-slate-400 px-3 py-1 rounded-full hover:bg-slate-200 transition-colors cursor-pointer">
                         <UploadIcon className="h-3 w-3 mr-1" />
                         {uploadingResume ? 'Uploading...' : 'Upload Resume'}
                         <input
                           type="file"
-                          accept=".pdf,.doc,.docx"
+                          accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                           onChange={handleResumeUpload}
                           className="hidden"
                           disabled={uploadingResume}
                         />
                       </label>
+                    ) : (
+                      <span className="flex items-center text-xs text-slate-400">
+                        Resume not uploaded
+                      </span>
                     )}
-                    {showUploadSuccess && (
+                    {canEdit && showUploadSuccess && (
                       <span className="flex items-center text-xs bg-green-50 text-green-700 px-3 py-1 rounded-full">
                         <CheckIcon className="h-3 w-3 mr-1" />
                         Uploaded!
@@ -713,6 +1029,7 @@ const ProfilePage: React.FC = () => {
           </div>
         </div>
         {/* Project Tabs */}
+        {isOwnProfile && (
         <div className="mt-6 bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
           <div className="p-6">
             <div className="flex justify-between items-center mb-4">
@@ -721,6 +1038,18 @@ const ProfilePage: React.FC = () => {
                 View all
               </Link>
             </div>
+
+            {projectsError && (
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <span>{projectsError}</span>
+                <button
+                  onClick={fetchProfileProjects}
+                  className="text-red-700 underline underline-offset-2 hover:text-red-800"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
 
             {/* Tab Navigation */}
             <div className="flex border-b border-slate-200 mb-6">
@@ -752,107 +1081,132 @@ const ProfilePage: React.FC = () => {
               </button>
             </div>
 
-            {/* Tab Content */}
-            <div className="space-y-4">
-              {activeProjectTab === 'active' && (
-                <>
-                  {activeProjects.length > 0 ? (
-                    activeProjects.map(project => (
-                      <Link
-                        key={project.id}
-                        to={`/project/${project.id}`}
-                        className="block border border-slate-200 rounded-lg p-4 hover:border-orange-300 hover:shadow-md transition-all cursor-pointer"
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <h4 className="font-bold text-slate-800 hover:text-orange-600">
-                            {project.title}
-                          </h4>
-                          <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">
-                            In Progress
-                          </span>
-                        </div>
-                        <p className="text-sm text-slate-700 mb-3">
-                          {project.description}
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <p className="text-xs text-slate-500">Role: {project.role}</p>
-                          <div className="flex flex-wrap gap-1">
-                            {project.tags.slice(0, 3).map((tag, idx) => (
-                              <span key={idx} className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded">
-                                {tag}
+            {projectsLoading ? (
+              <div className="flex justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {activeProjectTab === 'active' && (
+                  <>
+                    {activeProjects.length > 0 ? (
+                      activeProjects.map(project => {
+                        const projectId = project.id || (project as any)._id;
+                        const deadlineLabel = formatDate(project.deadline);
+                        return (
+                          <Link
+                            key={projectId}
+                            to={`/project/${projectId}`}
+                            className="block border border-slate-200 rounded-lg p-4 hover:border-orange-300 hover:shadow-md transition-all cursor-pointer"
+                          >
+                            <div className="flex justify-between items-start mb-2">
+                              <h4 className="font-bold text-slate-800 hover:text-orange-600">
+                                {project.title}
+                              </h4>
+                              <span className={`text-xs px-2 py-1 rounded-full font-medium ${getStatusBadgeClasses(project.status)}`}>
+                                {project.status || 'Active'}
                               </span>
-                            ))}
-                          </div>
-                        </div>
-                      </Link>
-                    ))
-                  ) : (
-                    <div className="text-center py-12 text-slate-500">
-                      <p className="mb-2">No active projects yet</p>
-                      <Link
-                        to="/dashboard"
-                        className="text-sm text-orange-500 hover:text-orange-600 font-medium cursor-pointer"
-                      >
-                        Explore projects to join
-                      </Link>
-                    </div>
-                  )}
-                </>
-              )}
-
-              {activeProjectTab === 'completed' && (
-                <>
-                  {completedProjects.length > 0 ? (
-                    completedProjects.map(project => (
-                      <Link
-                        key={project.id}
-                        to={`/project/${project.id}`}
-                        className="block border border-slate-200 rounded-lg p-4 hover:border-green-300 hover:shadow-md transition-all cursor-pointer"
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <h4 className="font-bold text-slate-800 hover:text-orange-600">
-                            {project.title}
-                          </h4>
-                          <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">
-                            Completed
-                          </span>
-                        </div>
-                        <p className="text-sm text-slate-700 mb-3">
-                          {project.description}
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-xs text-slate-500">Role: {project.role}</p>
-                            {project.endDate && (
-                              <p className="text-xs text-slate-400 mt-1">
-                                Completed: {new Date(project.endDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                            </div>
+                            <p className="text-sm text-slate-700 mb-3 line-clamp-2">
+                              {project.description}
+                            </p>
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                              <p className="text-xs text-slate-500">
+                                Role: {project.userRoleLabel}
+                              </p>
+                              {project.tags && project.tags.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  {project.tags.slice(0, 3).map((tag, idx) => (
+                                    <span key={`${projectId}-active-tag-${idx}`} className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded">
+                                      {tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            {deadlineLabel && (
+                              <p className="text-xs text-slate-400 mt-2">
+                                Deadline: {deadlineLabel}
                               </p>
                             )}
-                          </div>
-                          <div className="flex flex-wrap gap-1">
-                            {project.tags.slice(0, 3).map((tag, idx) => (
-                              <span key={idx} className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded">
-                                {tag}
+                          </Link>
+                        );
+                      })
+                    ) : (
+                      <div className="text-center py-12 text-slate-500">
+                        <p className="mb-2">No active projects yet</p>
+                        <Link
+                          to="/dashboard"
+                          className="text-sm text-orange-500 hover:text-orange-600 font-medium cursor-pointer"
+                        >
+                          Explore projects to join
+                        </Link>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {activeProjectTab === 'completed' && (
+                  <>
+                    {completedProjects.length > 0 ? (
+                      completedProjects.map(project => {
+                        const projectId = project.id || (project as any)._id;
+                        const updatedLabel = formatDate(project.updatedAt);
+                        return (
+                          <Link
+                            key={projectId}
+                            to={`/project/${projectId}`}
+                            className="block border border-slate-200 rounded-lg p-4 hover:border-green-300 hover:shadow-md transition-all cursor-pointer"
+                          >
+                            <div className="flex justify-between items-start mb-2">
+                              <h4 className="font-bold text-slate-800 hover:text-orange-600">
+                                {project.title}
+                              </h4>
+                              <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">
+                                Completed
                               </span>
-                            ))}
-                          </div>
-                        </div>
-                      </Link>
-                    ))
-                  ) : (
-                    <div className="text-center py-12 text-slate-500">
-                      <p>No completed projects yet</p>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+                            </div>
+                            <p className="text-sm text-slate-700 mb-3 line-clamp-2">
+                              {project.description}
+                            </p>
+                            <div className="flex items-center justify-between gap-3">
+                              <div>
+                                <p className="text-xs text-slate-500">Role: {project.userRoleLabel}</p>
+                                {updatedLabel && (
+                                  <p className="text-xs text-slate-400 mt-1">
+                                    Updated: {updatedLabel}
+                                  </p>
+                                )}
+                              </div>
+                              {project.tags && project.tags.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  {project.tags.slice(0, 3).map((tag, idx) => (
+                                    <span key={`${projectId}-completed-tag-${idx}`} className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded">
+                                      {tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </Link>
+                        );
+                      })
+                    ) : (
+                      <div className="text-center py-12 text-slate-500">
+                        <p>No completed projects yet</p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
+        )}
       </main>
 
       {/* Resume Preview Modal */}
-      {showResumePreview && user.links.resume && (
+      {showResumePreview && user.links.resume?.url && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setShowResumePreview(false)}>
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
             {/* Modal Header */}

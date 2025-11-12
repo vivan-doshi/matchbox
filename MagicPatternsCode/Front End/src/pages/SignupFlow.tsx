@@ -193,14 +193,15 @@ const SignupEmail: React.FC = () => {
 };
 
 const SignupProfile: React.FC = () => {
-  const { updateFormData } = useSignupContext();
+  const { formData: signupFormData, updateFormData } = useSignupContext();
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    preferredName: ''
+    firstName: signupFormData.firstName || '',
+    lastName: signupFormData.lastName || '',
+    preferredName: signupFormData.preferredName || ''
   });
-  const [profilePicture, setProfilePicture] = useState<File | null>(null);
-  const [profilePicturePreview, setProfilePicturePreview] = useState<string | null>(null);
+  const [profilePicturePreview, setProfilePicturePreview] = useState<string | null>(
+    signupFormData.profilePicture || null
+  );
   const [uploadError, setUploadError] = useState('');
 
   const navigate = useNavigate();
@@ -217,31 +218,25 @@ const SignupProfile: React.FC = () => {
     setUploadError('');
 
     if (file) {
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         setUploadError('Please upload an image file (JPG, PNG, WEBP)');
         return;
       }
 
-      // Validate file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
         setUploadError('File size must be less than 5MB');
         return;
       }
 
-      // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setProfilePicturePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
-
-      setProfilePicture(file);
     }
   };
 
   const removeProfilePicture = () => {
-    setProfilePicture(null);
     setProfilePicturePreview(null);
     setUploadError('');
   };
@@ -253,7 +248,7 @@ const SignupProfile: React.FC = () => {
       firstName: formData.firstName,
       lastName: formData.lastName,
       preferredName: formData.preferredName,
-      profilePicture: profilePicture || undefined
+      profilePicture: profilePicturePreview || undefined
     });
     navigate('/signup/links');
   };
@@ -344,7 +339,10 @@ const SignupLinks: React.FC = () => {
     github: signupFormData.github || '',
     portfolio: signupFormData.portfolio || ''
   });
-  const [resume, setResume] = useState<File | null>(signupFormData.resume || null);
+  const [resumePreview, setResumePreview] = useState<string | null>(signupFormData.resume?.dataUrl || null);
+  const [resumeName, setResumeName] = useState<string>(signupFormData.resume?.filename || '');
+  const [resumeMimeType, setResumeMimeType] = useState<string>(signupFormData.resume?.mimeType || '');
+  const [resumeSize, setResumeSize] = useState<number>(0);
   const [resumeError, setResumeError] = useState('');
   const navigate = useNavigate();
 
@@ -360,36 +358,50 @@ const SignupLinks: React.FC = () => {
     setResumeError('');
 
     if (file) {
-      // Validate file type (PDF or DOCX)
-      const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+      const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
       if (!validTypes.includes(file.type)) {
         setResumeError('Please upload a PDF or DOCX file');
         return;
       }
 
-      // Validate file size (5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
-        setResumeError('File size must be less than 5MB');
+      if (file.size > 10 * 1024 * 1024) {
+        setResumeError('File size must be less than 10MB');
         return;
       }
 
-      setResume(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setResumePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+
+      setResumeName(file.name);
+      setResumeMimeType(file.type);
+      setResumeSize(file.size);
     }
   };
 
   const removeResume = () => {
-    setResume(null);
+    setResumePreview(null);
+    setResumeName('');
+    setResumeMimeType('');
+    setResumeSize(0);
     setResumeError('');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Save links and resume to context
     updateFormData({
       linkedin: formData.linkedin,
       github: formData.github,
       portfolio: formData.portfolio,
-      resume: resume || undefined
+      resume: resumePreview
+        ? {
+            dataUrl: resumePreview,
+            filename: resumeName,
+            mimeType: resumeMimeType || 'application/pdf',
+          }
+        : undefined
     });
     navigate('/signup/bio');
   };
@@ -434,13 +446,13 @@ const SignupLinks: React.FC = () => {
             Resume (optional)
           </label>
 
-          {resume ? (
+          {resumePreview ? (
             <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-lg">
               <div className="flex items-center">
                 <FileTextIcon className="h-5 w-5 text-orange-500 mr-3" />
                 <div>
-                  <p className="text-sm font-medium text-slate-700">{resume.name}</p>
-                  <p className="text-xs text-slate-500">{(resume.size / 1024).toFixed(1)} KB</p>
+                  <p className="text-sm font-medium text-slate-700">{resumeName}</p>
+                  <p className="text-xs text-slate-500">{resumeSize ? `${(resumeSize / 1024).toFixed(1)} KB` : ''}</p>
                 </div>
               </div>
               <button
@@ -457,12 +469,12 @@ const SignupLinks: React.FC = () => {
                 <UploadIcon className="h-6 w-6 text-slate-400 mr-3" />
                 <div>
                   <p className="text-sm font-medium text-slate-700">Upload Resume</p>
-                  <p className="text-xs text-slate-500">PDF or DOCX (max 5MB)</p>
+                  <p className="text-xs text-slate-500">PDF, DOC, or DOCX (max 10MB)</p>
                 </div>
               </div>
               <input
                 type="file"
-                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 onChange={handleResumeChange}
                 className="hidden"
               />
@@ -1065,12 +1077,14 @@ const SignupEducation: React.FC = () => {
         skills: signupFormData.skills,
         interests: signupFormData.interests,
         weeklyAvailability: signupFormData.weeklyAvailability,
-        professionalLinks: {
-          linkedin: signupFormData.linkedin,
-          github: signupFormData.github,
-          portfolio: signupFormData.portfolio,
-        },
-      };
+      professionalLinks: {
+        linkedin: signupFormData.linkedin,
+        github: signupFormData.github,
+        portfolio: signupFormData.portfolio,
+      },
+      profilePicture: signupFormData.profilePicture,
+      resume: signupFormData.resume,
+    };
 
       // Call the signup API
       await signup(signupData);

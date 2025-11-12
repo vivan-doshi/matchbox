@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeftIcon,
@@ -9,7 +9,6 @@ import {
   MessageCircleIcon,
   ClockIcon,
   XIcon,
-  SendIcon,
   CheckCircleIcon,
   EditIcon,
   TrashIcon,
@@ -63,16 +62,15 @@ const ProjectDetailsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
+  const [checkingSaved, setCheckingSaved] = useState(true);
   const [appliedRoles, setAppliedRoles] = useState<string[]>([]);
+  const [checkingApplications, setCheckingApplications] = useState(true);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [applicationMessage, setApplicationMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
-  const [showMessageModal, setShowMessageModal] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [messageText, setMessageText] = useState('');
-  const [messageSent, setMessageSent] = useState(false);
 
   // Check if current user is the project creator
   const isCreator = React.useMemo(() => {
@@ -167,30 +165,96 @@ const ProjectDetailsPage: React.FC = () => {
   const filledRoles = project?.roles.filter((role) => role.filled).length || 0;
   const totalRoles = project?.roles.length || 0;
 
+  const checkSavedStatus = useCallback(
+    async (projectId: string) => {
+      if (!isAuthenticated) {
+        setIsSaved(false);
+        setCheckingSaved(false);
+        return;
+      }
+
+      try {
+        setCheckingSaved(true);
+        const response = await apiClient.getSavedProjects();
+        const savedProjects = response.data || [];
+        const savedIds = savedProjects.map((saved: any) => saved.id || saved._id);
+        setIsSaved(savedIds.includes(projectId));
+      } catch (err) {
+        console.error('Error checking saved status:', err);
+      } finally {
+        setCheckingSaved(false);
+      }
+    },
+    [isAuthenticated]
+  );
+
+  const checkApplicationStatus = useCallback(async () => {
+    if (!project || !isAuthenticated) {
+      setAppliedRoles([]);
+      setCheckingApplications(false);
+      return;
+    }
+
+    try {
+      setCheckingApplications(true);
+      const response = await apiClient.getMyApplications(project.id);
+      const roles = (response.data || []).map((application: any) => application.role);
+      setAppliedRoles(roles);
+    } catch (err) {
+      console.error('Error checking applications:', err);
+    } finally {
+      setCheckingApplications(false);
+    }
+  }, [project, isAuthenticated]);
+
   // Load saved state from localStorage
   useEffect(() => {
     if (!project) return;
 
-    const savedProjects = JSON.parse(localStorage.getItem('savedProjects') || '[]');
-    setIsSaved(savedProjects.includes(project.id));
+    checkSavedStatus(project.id);
+  }, [project, checkSavedStatus]);
 
-    const applied = JSON.parse(localStorage.getItem('appliedRoles') || '[]');
-    setAppliedRoles(applied);
-  }, [project]);
+  useEffect(() => {
+    if (!project) return;
+    checkApplicationStatus();
+  }, [project, checkApplicationStatus]);
 
-  // Save/bookmark toggle
-  const handleSaveToggle = () => {
+  useEffect(() => {
     if (!project) return;
 
-    const savedProjects = JSON.parse(localStorage.getItem('savedProjects') || '[]');
-    let updated;
-    if (isSaved) {
-      updated = savedProjects.filter((pid: string) => pid !== project.id);
-    } else {
-      updated = [...savedProjects, project.id];
+    const handleSavedProjectsChange = () => {
+      checkSavedStatus(project.id);
+    };
+
+    window.addEventListener('savedProjectsChanged', handleSavedProjectsChange);
+    return () => {
+      window.removeEventListener('savedProjectsChanged', handleSavedProjectsChange);
+    };
+  }, [project, checkSavedStatus]);
+
+  // Save/bookmark toggle
+  const handleSaveToggle = async () => {
+    if (!project) return;
+
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
     }
-    localStorage.setItem('savedProjects', JSON.stringify(updated));
-    setIsSaved(!isSaved);
+
+    try {
+      if (isSaved) {
+        await apiClient.unsaveProject(project.id);
+        setIsSaved(false);
+      } else {
+        await apiClient.saveProject(project.id);
+        setIsSaved(true);
+      }
+
+      window.dispatchEvent(new Event('savedProjectsChanged'));
+    } catch (err: any) {
+      console.error('Error updating saved project:', err);
+      alert(err.response?.data?.message || 'Failed to update saved projects');
+    }
   };
 
   // Handle profile click
@@ -235,38 +299,63 @@ const ProjectDetailsPage: React.FC = () => {
   const handleSubmitApplication = async () => {
     if (selectedRoles.length === 0 || !project) return;
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
 
-    // Update applied roles for all selected roles
-    const newRoleKeys = selectedRoles.map((roleTitle) => `${project.id}-${roleTitle}`);
-    const updated = [...appliedRoles, ...newRoleKeys];
-    setAppliedRoles(updated);
-    localStorage.setItem('appliedRoles', JSON.stringify(updated));
+    try {
+      setIsSubmitting(true);
+      await apiClient.applyToProject(project.id, {
+        roles: selectedRoles,
+        message: applicationMessage,
+      });
 
-    // Close modal and show success animation
-    setShowApplicationModal(false);
-    setSelectedRoles([]);
-    setShowSuccessAnimation(true);
+      setShowApplicationModal(false);
+      setSelectedRoles([]);
+      setApplicationMessage('');
+      setShowSuccessAnimation(true);
+      await checkApplicationStatus();
 
-    // Hide success animation after 3 seconds
-    setTimeout(() => {
-      setShowSuccessAnimation(false);
-    }, 3000);
+      setTimeout(() => {
+        setShowSuccessAnimation(false);
+      }, 2000);
+    } catch (error: any) {
+      console.error('Error submitting application:', error);
+      alert(error.response?.data?.message || 'Failed to submit application');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Check if user has applied to a role
   const hasApplied = (roleTitle: string): boolean => {
-    if (!project) return false;
-    return appliedRoles.includes(`${project.id}-${roleTitle}`);
+    return appliedRoles.includes(roleTitle);
   };
 
   // Handle message click
-  const handleMessageClick = (user: User) => {
-    setSelectedUser(user);
-    setShowMessageModal(true);
-    setMessageText('');
-    setMessageSent(false);
+  const handleMessageClick = async (userToMessage: User) => {
+    const targetUserId = (userToMessage?.id || (userToMessage as any)?._id)?.toString();
+
+    if (!targetUserId) {
+      alert('Unable to start conversation for this user.');
+      return;
+    }
+
+    try {
+      const response = await apiClient.createChat(targetUserId);
+      const chat = response.data as any;
+      const chatId = chat?._id || chat?.id;
+
+      if (!chatId) {
+        throw new Error('Chat ID missing from response');
+      }
+
+      navigate(`/dashboard/chat?chatId=${chatId}`);
+    } catch (error: any) {
+      console.error('Error creating chat:', error);
+      alert(error.response?.data?.message || 'Failed to start conversation');
+    }
   };
 
   // Handle delete project
@@ -299,21 +388,6 @@ const ProjectDetailsPage: React.FC = () => {
   };
 
   // Handle send message
-  const handleSendMessage = async () => {
-    if (!messageText.trim() || !selectedUser) return;
-
-    // Simulate sending message
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    setMessageSent(true);
-
-    // Close modal after brief delay
-    setTimeout(() => {
-      setShowMessageModal(false);
-      setMessageSent(false);
-    }, 1500);
-  };
-
   // Loading state
   if (loading) {
     return (
@@ -351,21 +425,19 @@ const ProjectDetailsPage: React.FC = () => {
 
   return (
     <div className="min-h-screen page-background-gradient">
-      {/* Fixed Hamburger Menu Button - Always visible */}
-      <button
-        onClick={() => setIsSidebarOpen(true)}
-        className="fixed top-6 left-6 z-[100] p-2 bg-orange-500 text-white rounded-lg shadow-lg hover:bg-orange-600 transition-colors"
-        aria-label="Open navigation menu"
-      >
-        <MenuIcon className="h-6 w-6" />
-      </button>
-
       <Navigation isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
 
       {/* Header */}
       <header className="bg-white border-b border-slate-200 py-4 px-6 sticky top-0 z-40">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center">
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="mr-3 p-2 rounded-lg hover:bg-slate-100 transition-colors"
+              aria-label="Open navigation menu"
+            >
+              <MenuIcon className="h-6 w-6 text-slate-700" />
+            </button>
             <button
               onClick={() => {
                 // Check if we came from My Projects page
@@ -423,7 +495,8 @@ const ProjectDetailsPage: React.FC = () => {
               <h2 className="text-3xl font-bold text-slate-900 flex-1 pr-4">{project.title}</h2>
               <button
                 onClick={handleSaveToggle}
-                className="p-3 rounded-full hover:bg-orange-50 transition-all transform hover:scale-110"
+                disabled={checkingSaved}
+                className="p-3 rounded-full hover:bg-orange-50 transition-all transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label={isSaved ? 'Remove bookmark' : 'Bookmark project'}
               >
                 <BookmarkIcon
@@ -576,9 +649,10 @@ const ProjectDetailsPage: React.FC = () => {
                     <div className="mt-8 flex justify-center">
                       <button
                         onClick={handleApplyClick}
-                        className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-8 py-4 rounded-full text-lg font-bold hover:shadow-2xl transition-all transform hover:scale-105 flex items-center gap-2"
+                        disabled={checkingApplications}
+                        className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-8 py-4 rounded-full text-lg font-bold hover:shadow-2xl transition-all transform hover:scale-105 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                       >
-                        Apply to Project
+                        {checkingApplications ? 'Loading...' : 'Apply to Project'}
                         <CheckCircleIcon className="h-5 w-5" />
                       </button>
                     </div>
@@ -703,97 +777,20 @@ const ProjectDetailsPage: React.FC = () => {
               </button>
               <button
                 onClick={handleSubmitApplication}
-                disabled={selectedRoles.length === 0}
+                disabled={selectedRoles.length === 0 || isSubmitting}
                 className={`px-6 py-3 rounded-xl text-base font-semibold transition-all transform ${
-                  selectedRoles.length === 0
+                  selectedRoles.length === 0 || isSubmitting
                     ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
                     : 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:shadow-lg hover:scale-105'
                 }`}
               >
-                Submit Application
+                {isSubmitting ? 'Submitting...' : 'Submit Application'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Message Modal */}
-      {showMessageModal && selectedUser && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fadeIn"
-          onClick={() => !messageSent && setShowMessageModal(false)}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-slideUp"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {!messageSent ? (
-              <>
-                {/* Message Header */}
-                <div className="border-b border-slate-200 p-6 flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={selectedUser.profilePic}
-                      alt={selectedUser.name}
-                      className="w-12 h-12 rounded-full ring-2 ring-orange-200"
-                    />
-                    <div>
-                      <h3 className="text-xl font-bold text-slate-900">{selectedUser.name}</h3>
-                      <p className="text-sm text-slate-500">{selectedUser.university}</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setShowMessageModal(false)}
-                    className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-                    aria-label="Close modal"
-                  >
-                    <XIcon className="h-5 w-5 text-slate-500" />
-                  </button>
-                </div>
-
-                {/* Message Content */}
-                <div className="p-6">
-                  <label htmlFor="message-text" className="block text-base font-semibold text-slate-900 mb-3">
-                    Type your message
-                  </label>
-                  <textarea
-                    id="message-text"
-                    value={messageText}
-                    onChange={(e) => setMessageText(e.target.value)}
-                    placeholder={`Say hello to ${selectedUser.name}...`}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-base resize-none"
-                    rows={4}
-                    autoFocus
-                  />
-                </div>
-
-                {/* Message Footer */}
-                <div className="border-t border-slate-200 p-6 flex justify-end">
-                  <button
-                    onClick={handleSendMessage}
-                    disabled={!messageText.trim()}
-                    className="flex items-center gap-2 px-6 py-3 rounded-xl text-base font-semibold bg-gradient-to-r from-orange-500 to-red-500 text-white hover:shadow-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                  >
-                    <span>Send</span>
-                    <SendIcon className="h-5 w-5" />
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div className="p-8 text-center">
-                <div className="mb-4">
-                  <CheckCircleIcon className="h-16 w-16 text-green-500 mx-auto animate-bounce" />
-                </div>
-                <h3 className="text-2xl font-bold text-slate-900 mb-2">Message Sent!</h3>
-                <p className="text-base text-slate-600">
-                  Your message has been sent to {selectedUser.name}. You can continue the conversation in the Chat
-                  section.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Success Animation Overlay */}
       {showSuccessAnimation && (

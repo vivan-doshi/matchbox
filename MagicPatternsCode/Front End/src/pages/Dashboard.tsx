@@ -1,18 +1,20 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Routes, Route, NavLink, useLocation, Link } from 'react-router-dom';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Routes, Route, NavLink, useLocation, Link, useNavigate } from 'react-router-dom';
 import { HomeIcon, MessageSquareIcon, UserIcon, PlusIcon, FolderIcon, MenuIcon, XIcon, BellIcon, UsersIcon } from 'lucide-react';
 import HomePage from '../components/dashboard/HomePage';
 import ChatPage from '../components/dashboard/ChatPage';
 import CreateProjectModal from '../components/dashboard/CreateProjectModal';
 import DiscoverPeoplePage from '../pages/DiscoverPeoplePage';
 import NotificationDropdown from '../components/notifications/NotificationDropdown';
+import { apiClient } from '../utils/apiClient';
 
 const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [newProject, setNewProject] = useState<any>(null);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(2); // Mock unread count
+  const [unreadCount, setUnreadCount] = useState(0);
   const location = useLocation();
   const notificationRef = useRef<HTMLDivElement>(null);
 
@@ -27,6 +29,13 @@ const Dashboard: React.FC = () => {
   const handleNavClick = () => {
     setIsSidebarOpen(false);
   };
+
+  useEffect(() => {
+    if (location.state && (location.state as any).openCreateModal) {
+      setIsCreateModalOpen(true);
+      navigate('/dashboard', { replace: true, state: {} });
+    }
+  }, [location, navigate]);
 
   // Close notification dropdown when clicking outside
   useEffect(() => {
@@ -45,16 +54,27 @@ const Dashboard: React.FC = () => {
     };
   }, [showNotifications]);
 
-  // Fetch unread count (in production, this would be an API call)
-  const fetchUnreadCount = () => {
-    // Mock implementation
-    // In production: const response = await api.get('/api/notifications/unread-count');
-    // setUnreadCount(response.data.count);
-  };
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const response = await apiClient.getNotificationUnreadCount();
+      if (response.success && typeof response.count === 'number') {
+        setUnreadCount(response.count);
+      } else if (typeof response.count === 'number') {
+        setUnreadCount(response.count);
+      } else {
+        setUnreadCount(0);
+      }
+    } catch (error) {
+      console.error('Failed to fetch unread notification count:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUnreadCount();
+  }, [fetchUnreadCount]);
 
   const handleNotificationRead = () => {
-    // Refresh unread count after marking notifications as read
-    setUnreadCount(prev => Math.max(0, prev - 1));
+    fetchUnreadCount();
   };
 
   // Handle new project creation

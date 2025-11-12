@@ -21,6 +21,7 @@ export function App() {
             <Route path="/signup/*" element={<SignupProvider><SignupFlow /></SignupProvider>} />
             <Route path="/dashboard/*" element={<Dashboard />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/profile/:userId" element={<ProfilePage />} />
             <Route path="/project/:id" element={<ProjectDetailsPage />} />
             <Route path="/project/:id/edit" element={<EditProjectPage />} />
             <Route path="/project/:id/manage-team" element={<ManageTeamPage />} />
