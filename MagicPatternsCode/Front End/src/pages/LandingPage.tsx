@@ -1,173 +1,245 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowRightIcon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Zap, Users, MessageSquare, ArrowRight, CheckCircle, Quote } from 'lucide-react';
+
 const LandingPage: React.FC = () => {
-  return <div className="min-h-screen flex flex-col">
-      <header className="py-6 px-8">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center">
-            <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center mr-2">
-              <span className="text-white font-bold text-xl">M</span>
-            </div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-red-500 text-transparent bg-clip-text">
-              MATCHBOX
-            </h1>
-          </div>
-          <div>
-            <Link to="/signup" className="bg-white text-slate-800 px-5 py-2 rounded-full font-medium border border-slate-200 shadow-sm hover:shadow-md transition-all mr-3">
-              Sign Up
-            </Link>
-            <Link to="/login" className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-5 py-2 rounded-full font-medium hover:shadow-lg transition-all">
-              Log In
-            </Link>
-          </div>
+  const navigate = useNavigate();
+
+  return (
+    <div className="min-h-screen bg-white">
+      {/* Hero Section */}
+      <section className="relative bg-gradient-to-br from-cardinal to-cardinal-light text-white overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-gold rounded-full blur-3xl"></div>
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-gold-accent rounded-full blur-3xl"></div>
         </div>
-      </header>
-      <main className="flex-1 container mx-auto px-8 py-12">
-        <div className="flex flex-col lg:flex-row items-center justify-between">
-          <div className="lg:w-1/2 mb-10 lg:mb-0">
-            <h1 className="text-5xl md:text-6xl font-bold mb-6">
-              <span className="block">Team Up.</span>
-              <span className="block bg-gradient-to-r from-orange-500 to-red-500 text-transparent bg-clip-text">
-                Ship Work.
+
+        <div className="relative max-w-6xl mx-auto px-6 py-20 md:py-32">
+          <div className="text-center max-w-3xl mx-auto">
+            <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+              Find Your Perfect
+              <span className="text-gold"> Teammate</span>
+              <br />
+              in Minutes, Not Weeks
+            </h1>
+
+            <p className="text-xl md:text-2xl mb-8 text-gray-200">
+              MATCHBOX connects USC students for hackathons, startups, and class
+              projects.
+              <span className="font-semibold text-white">
+                {' '}
+                Connect. Match. Build.
               </span>
-            </h1>
-            <p className="text-xl text-slate-600 mb-8 max-w-lg">
-              You bring your idea, we help you build the team. Connect with
-              fellow students, form project groups, and collaborate seamlessly.
             </p>
-            <div className="flex flex-wrap gap-4">
-              <Link to="/signup" className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-8 py-3 rounded-full font-medium hover:shadow-lg transition-all flex items-center">
-                Get Started <ArrowRightIcon className="ml-2 h-5 w-5" />
-              </Link>
-              <a href="#how-it-works" className="bg-white text-slate-800 px-8 py-3 rounded-full font-medium border border-slate-200 shadow-sm hover:shadow-md transition-all">
-                Learn More
-              </a>
-            </div>
-          </div>
-          <div className="lg:w-1/2 relative">
-            <div className="bg-white rounded-2xl shadow-xl p-6 border border-slate-100 max-w-md mx-auto">
-              <div className="flex items-center mb-6">
-                <div className="w-14 h-14 rounded-full bg-orange-100 flex items-center justify-center">
-                  <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full"></div>
-                </div>
-                <div className="ml-4">
-                  <h3 className="font-bold text-lg">Mobile App Design</h3>
-                  <p className="text-sm text-slate-500">
-                    Looking for UI/UX Designer
-                  </p>
-                </div>
-              </div>
-              <p className="text-slate-700 mb-6">
-                I'm working on a new fitness app and need a designer to help
-                with the user interface. Experience with health/fitness apps is
-                a plus!
-              </p>
-              <div className="flex flex-wrap gap-2 mb-6">
-                <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
-                  UI/UX
-                </span>
-                <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm">
-                  Figma
-                </span>
-                <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
-                  Mobile
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <div className="flex -space-x-2">
-                  <div className="w-8 h-8 rounded-full bg-blue-500 border-2 border-white flex items-center justify-center text-white text-xs">
-                    JD
-                  </div>
-                  <div className="w-8 h-8 rounded-full bg-green-500 border-2 border-white flex items-center justify-center text-white text-xs">
-                    KM
-                  </div>
-                  <div className="w-8 h-8 rounded-full bg-orange-500 border-2 border-white flex items-center justify-center text-white text-xs">
-                    ?
-                  </div>
-                </div>
-                <button className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-full text-sm font-medium">
-                  Join Team
-                </button>
-              </div>
-            </div>
-            <div className="absolute -top-4 -right-4 bg-white rounded-2xl shadow-lg p-4 border border-slate-100 transform rotate-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                  <span className="text-purple-600 font-bold">A</span>
-                </div>
-                <div>
-                  <h3 className="font-bold">Alex matched!</h3>
-                  <p className="text-xs text-slate-500">UI/UX Designer</p>
-                </div>
-              </div>
-            </div>
-            <div className="absolute -bottom-4 -left-4 bg-white rounded-2xl shadow-lg p-4 border border-slate-100 transform -rotate-3">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                  <span className="text-blue-600 font-bold">S</span>
-                </div>
-                <div>
-                  <h3 className="font-bold">Sam matched!</h3>
-                  <p className="text-xs text-slate-500">Developer</p>
-                </div>
-              </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={() => navigate('/signup')}
+                className="px-8 py-4 bg-gold hover:bg-gold-accent text-cardinal font-semibold rounded-lg text-lg transition-colors flex items-center justify-center gap-2"
+              >
+                Get Started
+                <ArrowRight className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </div>
-        <div id="how-it-works" className="mt-32">
-          <h2 className="text-3xl font-bold text-center mb-12">
-            How MATCHBOX Works
-          </h2>
+      </section>
+
+      {/* Solution Section */}
+      <section className="py-20 bg-white">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-cardinal mb-4">
+              How MATCHBOX Works
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              From profile to project in three simple steps
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-12">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-gold rounded-full flex items-center justify-center text-cardinal text-2xl font-bold mx-auto mb-4">
+                1
+              </div>
+              <h3 className="text-xl font-bold text-cardinal mb-2">
+                Create Your Profile
+              </h3>
+              <p className="text-gray-600">
+                Add your skills, interests, and what you're looking to build.
+                Takes 2 minutes.
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-16 h-16 bg-gold rounded-full flex items-center justify-center text-cardinal text-2xl font-bold mx-auto mb-4">
+                2
+              </div>
+              <h3 className="text-xl font-bold text-cardinal mb-2">
+                Discover & Match
+              </h3>
+              <p className="text-gray-600">
+                Browse projects or post your own. Match with teammates who share
+                your vision.
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-16 h-16 bg-gold rounded-full flex items-center justify-center text-cardinal text-2xl font-bold mx-auto mb-4">
+                3
+              </div>
+              <h3 className="text-xl font-bold text-cardinal mb-2">
+                You're BOXED!
+              </h3>
+              <p className="text-gray-600">
+                Start chatting, collaborate in-app, and build something amazing
+                together.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-20 bg-cardinal text-white">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Everything You Need to Build Together
+            </h2>
+            <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+              Purpose-built for student collaboration
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-white/10">
+              <Zap className="w-12 h-12 text-gold mb-4" />
+              <h3 className="text-xl font-bold mb-2">Skill-Based Profiles</h3>
+              <p className="text-gray-300">
+                Showcase your expertise with tags, portfolio links, and past
+                projects.
+              </p>
+            </div>
+
+            <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-white/10">
+              <Users className="w-12 h-12 text-gold mb-4" />
+              <h3 className="text-xl font-bold mb-2">Discover People</h3>
+              <p className="text-gray-300">
+                Connect with talented USC students and alumni who match your
+                project needs.
+              </p>
+            </div>
+
+            <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-white/10">
+              <MessageSquare className="w-12 h-12 text-gold mb-4" />
+              <h3 className="text-xl font-bold mb-2">In-App Chat</h3>
+              <p className="text-gray-300">
+                Real-time messaging for 1:1 and group conversations. No need for
+                Discord.
+              </p>
+            </div>
+
+            <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-white/10">
+              <CheckCircle className="w-12 h-12 text-gold mb-4" />
+              <h3 className="text-xl font-bold mb-2">Mutual Approval</h3>
+              <p className="text-gray-300">
+                Both sides confirm before unlocking chat. No awkward cold
+                messages.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-cardinal mb-4">
+              What USC Students Are Saying
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Real feedback from students who found their teams on MATCHBOX
+            </p>
+          </div>
+
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
-                <span className="text-orange-500 font-bold text-xl">1</span>
-              </div>
-              <h3 className="text-xl font-bold mb-3">Create Your Profile</h3>
-              <p className="text-slate-600">
-                Sign up with your .edu email, showcase your skills, and
-                highlight your past projects and experiences.
+            <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+              <Quote className="w-10 h-10 text-gold mb-4" />
+              <p className="text-gray-700 text-lg mb-6 leading-relaxed">
+                "I found my hackathon team in 3 days. Before MATCHBOX, I spent
+                weeks scrolling through Discord with no luck."
               </p>
+              <div className="border-t border-gray-100 pt-4">
+                <p className="font-semibold text-cardinal">Sarah Chen</p>
+                <p className="text-sm text-gray-500">
+                  Computer Science, Class of 2025
+                </p>
+              </div>
             </div>
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
-                <span className="text-orange-500 font-bold text-xl">2</span>
-              </div>
-              <h3 className="text-xl font-bold mb-3">Find Projects or Teams</h3>
-              <p className="text-slate-600">
-                Browse available projects or post your own idea. Our matching
-                algorithm will suggest the best teammates.
+
+            <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+              <Quote className="w-10 h-10 text-gold mb-4" />
+              <p className="text-gray-700 text-lg mb-6 leading-relaxed">
+                "As an introvert, networking events were torture. MATCHBOX let
+                me find teammates based on skills, not small talk."
               </p>
+              <div className="border-t border-gray-100 pt-4">
+                <p className="font-semibold text-cardinal">Marcus Johnson</p>
+                <p className="text-sm text-gray-500">
+                  Business Administration, Class of 2026
+                </p>
+              </div>
             </div>
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
-                <span className="text-orange-500 font-bold text-xl">3</span>
-              </div>
-              <h3 className="text-xl font-bold mb-3">Collaborate & Ship</h3>
-              <p className="text-slate-600">
-                Connect with your team through our built-in chat, coordinate
-                schedules, and bring your project to life.
+
+            <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+              <Quote className="w-10 h-10 text-gold mb-4" />
+              <p className="text-gray-700 text-lg mb-6 leading-relaxed">
+                "Finally, a way to find people who actually want to build. No
+                more flaky teammates who ghost after the first meeting."
               </p>
+              <div className="border-t border-gray-100 pt-4">
+                <p className="font-semibold text-cardinal">Priya Patel</p>
+                <p className="text-sm text-gray-500">Design, Class of 2024</p>
+              </div>
             </div>
           </div>
         </div>
-      </main>
-      <footer className="bg-white border-t border-slate-200 py-8 px-8">
-        <div className="container mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center mb-4 md:mb-0">
-              <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center mr-2">
-                <span className="text-white font-bold text-sm">M</span>
-              </div>
-              <span className="font-bold">MATCHBOX</span>
-            </div>
-            <div className="text-sm text-slate-500">
-              © 2023 MATCHBOX. All rights reserved.
-            </div>
-          </div>
+      </section>
+
+      {/* Final CTA Section */}
+      <section className="py-20 bg-cardinal">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
+            Ready to Find Your Team?
+          </h2>
+          <p className="text-xl text-white/90 mb-8">
+            Join USC students who are already building together on MATCHBOX.
+          </p>
+
+          <button
+            onClick={() => navigate('/signup')}
+            className="px-10 py-5 bg-gold hover:bg-gold-accent text-cardinal font-bold rounded-lg text-xl transition-colors inline-flex items-center gap-2"
+          >
+            Sign Up Now
+            <ArrowRight className="w-6 h-6" />
+          </button>
+
+          <p className="mt-6 text-white/70">Available for USC students</p>
+        </div>
+      </section>
+
+      {/* Simple Footer */}
+      <footer className="bg-cardinal text-white py-8">
+        <div className="max-w-6xl mx-auto px-6 text-center">
+          <p className="text-gray-400">
+            © 2025 MATCHBOX • Built by students, for students
+          </p>
         </div>
       </footer>
-    </div>;
+    </div>
+  );
 };
+
 export default LandingPage;

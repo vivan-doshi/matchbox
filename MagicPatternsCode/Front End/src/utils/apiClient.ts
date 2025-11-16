@@ -14,6 +14,7 @@ import type {
   Chat,
   Message,
   Application,
+  Invitation,
   Notification,
   ErrorResponse,
 } from '../types/api';
@@ -22,13 +23,15 @@ import type {
 // API CLIENT CONFIGURATION
 // =============================================
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+
 class ApiClient {
   private client: AxiosInstance;
   private token: string | null = null;
 
   constructor() {
     this.client = axios.create({
-      baseURL: '/api', // Vite proxy will forward to localhost:5000
+      baseURL: API_BASE_URL, // Supports proxy in dev and explicit URLs elsewhere
       headers: {
         'Content-Type': 'application/json',
       },
@@ -102,8 +105,17 @@ class ApiClient {
     return response.data;
   }
 
-  async signup(data: SignupRequest): Promise<AuthResponse> {
-    const response = await this.client.post<AuthResponse>('/auth/signup', data);
+  async signup(data: SignupRequest | FormData): Promise<AuthResponse> {
+    // Determine if we're sending FormData or JSON
+    const isFormData = data instanceof FormData;
+
+    const response = await this.client.post<AuthResponse>('/auth/signup', data, {
+      headers: isFormData ? {
+        // Let browser set Content-Type with boundary for FormData
+        'Content-Type': 'multipart/form-data',
+      } : undefined,
+    });
+
     if (response.data.token) {
       this.setToken(response.data.token);
     }
@@ -146,6 +158,30 @@ class ApiClient {
 
   async updateUser(id: string, data: Partial<User>): Promise<ApiResponse<User>> {
     const response = await this.client.put<ApiResponse<User>>(`/users/${id}`, data);
+    return response.data;
+  }
+
+  async updateUserProfilePicture(userId: string, file: File): Promise<ApiResponse<User>> {
+    const formData = new FormData();
+    formData.append('profilePicture', file);
+
+    const response = await this.client.put<ApiResponse<User>>(`/users/${userId}/profile-picture`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
+
+  async updateUserResume(userId: string, file: File): Promise<ApiResponse<User>> {
+    const formData = new FormData();
+    formData.append('resume', file);
+
+    const response = await this.client.put<ApiResponse<User>>(`/users/${userId}/resume`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   }
 
@@ -237,16 +273,37 @@ class ApiClient {
   async updateApplicationStatus(
     projectId: string,
     applicationId: string,
-    status: 'Accepted' | 'Rejected'
+    status: 'Accepted' | 'Rejected',
+    declineReason?: string
   ): Promise<ApiResponse> {
     const response = await this.client.put<ApiResponse>(`/projects/${projectId}/applicants/${applicationId}`, {
       status,
+      declineReason,
     });
     return response.data;
   }
 
   async removeTeamMember(projectId: string, roleId: string): Promise<ApiResponse> {
     const response = await this.client.delete<ApiResponse>(`/projects/${projectId}/roles/${roleId}/member`);
+    return response.data;
+  }
+
+  // ============= INVITATION ENDPOINTS =============
+
+  async getReceivedInvitations(): Promise<ApiResponse<Invitation[]>> {
+    const response = await this.client.get<ApiResponse<Invitation[]>>('/invitations/received');
+    return response.data;
+  }
+
+  async acceptInvitation(invitationId: string): Promise<ApiResponse<Invitation>> {
+    const response = await this.client.put<ApiResponse<Invitation>>(`/invitations/${invitationId}/accept`);
+    return response.data;
+  }
+
+  async rejectInvitation(invitationId: string, reason: string): Promise<ApiResponse<Invitation>> {
+    const response = await this.client.put<ApiResponse<Invitation>>(`/invitations/${invitationId}/reject`, {
+      reason,
+    });
     return response.data;
   }
 
@@ -260,8 +317,12 @@ class ApiClient {
 
   // ============= CHAT ENDPOINTS =============
 
-  async getChats(): Promise<ApiResponse<Chat[]>> {
-    const response = await this.client.get<ApiResponse<Chat[]>>('/chats');
+  async getChats(params?: {
+    type?: 'direct' | 'invitation' | 'application';
+    status?: 'Pending' | 'Accepted' | 'Rejected';
+    tab?: 'active' | 'invitations' | 'requests';
+  }): Promise<ApiResponse<Chat[]>> {
+    const response = await this.client.get<ApiResponse<Chat[]>>('/chats', { params });
     return response.data;
   }
 

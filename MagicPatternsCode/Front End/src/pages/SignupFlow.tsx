@@ -228,17 +228,29 @@ const SignupProfile: React.FC = () => {
         return;
       }
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfilePicturePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      // Create object URL for preview (no base64 encoding needed!)
+      const previewUrl = URL.createObjectURL(file);
+      setProfilePicturePreview(previewUrl);
+
+      // Store the actual File object
+      updateFormData({
+        profilePicture: file,
+        profilePicturePreview: previewUrl
+      });
     }
   };
 
   const removeProfilePicture = () => {
+    // Clean up object URL to prevent memory leaks
+    if (profilePicturePreview) {
+      URL.revokeObjectURL(profilePicturePreview);
+    }
     setProfilePicturePreview(null);
     setUploadError('');
+    updateFormData({
+      profilePicture: null,
+      profilePicturePreview: undefined
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -248,7 +260,6 @@ const SignupProfile: React.FC = () => {
       firstName: formData.firstName,
       lastName: formData.lastName,
       preferredName: formData.preferredName,
-      profilePicture: profilePicturePreview || undefined
     });
     navigate('/signup/links');
   };
@@ -369,15 +380,17 @@ const SignupLinks: React.FC = () => {
         return;
       }
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setResumePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-
+      // No base64 encoding needed! Just store the File object
       setResumeName(file.name);
       setResumeMimeType(file.type);
       setResumeSize(file.size);
+      setResumePreview('uploaded'); // Just a flag to show file is selected
+
+      // Store the actual File object in context
+      updateFormData({
+        resume: file,
+        resumeFilename: file.name
+      });
     }
   };
 
@@ -387,6 +400,10 @@ const SignupLinks: React.FC = () => {
     setResumeMimeType('');
     setResumeSize(0);
     setResumeError('');
+    updateFormData({
+      resume: null,
+      resumeFilename: undefined
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -395,13 +412,7 @@ const SignupLinks: React.FC = () => {
       linkedin: formData.linkedin,
       github: formData.github,
       portfolio: formData.portfolio,
-      resume: resumePreview
-        ? {
-            dataUrl: resumePreview,
-            filename: resumeName,
-            mimeType: resumeMimeType || 'application/pdf',
-          }
-        : undefined
+      // resume is already saved in handleResumeChange
     });
     navigate('/signup/bio');
   };
@@ -1062,32 +1073,45 @@ const SignupEducation: React.FC = () => {
     try {
       setLoading(true);
 
-      // Prepare signup data with all collected information
-      const signupData = {
-        email: signupFormData.email,
-        password: signupFormData.password,
-        firstName: signupFormData.firstName || '',
-        lastName: signupFormData.lastName || '',
-        preferredName: signupFormData.preferredName,
-        university: school,
-        major: major === 'Other' ? customMajor : major,
-        graduationYear: parseInt(graduationYear),
-        isAlumni,
-        bio: signupFormData.bio,
-        skills: signupFormData.skills,
-        interests: signupFormData.interests,
-        weeklyAvailability: signupFormData.weeklyAvailability,
-      professionalLinks: {
+      // Create FormData for multipart/form-data submission
+      const formData = new FormData();
+
+      // Add text fields
+      formData.append('email', signupFormData.email);
+      formData.append('password', signupFormData.password);
+      formData.append('firstName', signupFormData.firstName || '');
+      formData.append('lastName', signupFormData.lastName || '');
+      if (signupFormData.preferredName) {
+        formData.append('preferredName', signupFormData.preferredName);
+      }
+      formData.append('university', school);
+      formData.append('major', major === 'Other' ? customMajor : major);
+      formData.append('graduationYear', graduationYear);
+      formData.append('isAlumni', isAlumni.toString());
+      if (signupFormData.bio) {
+        formData.append('bio', signupFormData.bio);
+      }
+
+      // Add arrays and objects as JSON strings
+      formData.append('skills', JSON.stringify(signupFormData.skills || []));
+      formData.append('interests', JSON.stringify(signupFormData.interests || []));
+      formData.append('weeklyAvailability', JSON.stringify(signupFormData.weeklyAvailability || { hoursPerWeek: 0 }));
+      formData.append('professionalLinks', JSON.stringify({
         linkedin: signupFormData.linkedin,
         github: signupFormData.github,
         portfolio: signupFormData.portfolio,
-      },
-      profilePicture: signupFormData.profilePicture,
-      resume: signupFormData.resume,
-    };
+      }));
 
-      // Call the signup API
-      await signup(signupData);
+      // Add files if they exist
+      if (signupFormData.profilePicture instanceof File) {
+        formData.append('profilePicture', signupFormData.profilePicture);
+      }
+      if (signupFormData.resume instanceof File) {
+        formData.append('resume', signupFormData.resume);
+      }
+
+      // Call the signup API with FormData
+      await signup(formData as any);
 
       // Success! Redirect to dashboard
       navigate('/dashboard');

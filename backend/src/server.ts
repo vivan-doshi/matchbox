@@ -1,4 +1,4 @@
-import express, { Application, Request, Response } from 'express';
+import express, { Application, NextFunction, Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -9,8 +9,10 @@ import { errorHandler } from './middleware/errorHandler';
 // Load env vars
 dotenv.config();
 
-// Connect to database
-connectDB();
+// Connect to database (only in non-production/local environment)
+if (process.env.NODE_ENV !== 'production') {
+  connectDB();
+}
 
 // Initialize express
 const app: Application = express();
@@ -21,8 +23,8 @@ app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
   credentials: true,
 }));
-app.use(express.json()); // Body parser
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' })); // Body parser with limit for file uploads
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Logging
 if (process.env.NODE_ENV === 'development') {
@@ -36,6 +38,7 @@ import projectRoutes from './routes/projectRoutes';
 import chatRoutes from './routes/chatRoutes';
 import matchRoutes from './routes/matchRoutes';
 import notificationRoutes from './routes/notificationRoutes';
+import invitationRoutes from './routes/invitationRoutes';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -43,6 +46,19 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/matches', matchRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/invitations', invitationRoutes);
+
+// Handle payload-too-large errors gracefully
+app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
+  if (err?.type === 'entity.too.large') {
+    return res.status(413).json({
+      success: false,
+      message:
+        'Uploads are too large. Please keep profile photos under 5MB and resumes under 10MB.',
+    });
+  }
+  return next(err);
+});
 
 // Health check route
 app.get('/health', (_req: Request, res: Response) => {
@@ -64,23 +80,26 @@ app.use((_req: Request, res: Response) => {
 // Error handler
 app.use(errorHandler);
 
-// Start server
+// Start server (only in development, not in serverless)
 const PORT = process.env.PORT || 5000;
 
-const server = app.listen(PORT, () => {
-  console.log(`
-  ╔═══════════════════════════════════════╗
-  ║   MATCHBOX API Server Running         ║
-  ║   Environment: ${process.env.NODE_ENV || 'development'}              ║
-  ║   Port: ${PORT}                          ║
-  ╚═══════════════════════════════════════╝
-  `);
-});
+if (process.env.NODE_ENV !== 'production') {
+  const server = app.listen(PORT, () => {
+    console.log(`
+    ╔═══════════════════════════════════════╗
+    ║   MATCHBOX API Server Running         ║
+    ║   Environment: ${process.env.NODE_ENV || 'development'}              ║
+    ║   Port: ${PORT}                          ║
+    ╚═══════════════════════════════════════╝
+    `);
+  });
 
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (err: Error) => {
-  console.log(`Error: ${err.message}`);
-  server.close(() => process.exit(1));
-});
+  // Handle unhandled promise rejections (development only)
+  process.on('unhandledRejection', (err: Error) => {
+    console.log(`Error: ${err.message}`);
+    server.close(() => process.exit(1));
+  });
+}
 
+// Export for serverless (Vercel)
 export default app;

@@ -14,6 +14,7 @@ import {
 import apiClient from '../utils/apiClient';
 import { Project } from '../types/api';
 import Navigation from '../components/Navigation';
+import { getProfilePictureUrl } from '../utils/profileHelpers';
 
 interface TeamMember {
   id: string;
@@ -83,7 +84,7 @@ const ManageTeamPage: React.FC = () => {
               email: user?.email,
               university: user?.university || '',
               profilePic:
-                user?.profilePicture || `https://ui-avatars.com/api/?name=${user?.firstName}+${user?.lastName}`,
+                getProfilePictureUrl(user?.profilePicture) || `https://ui-avatars.com/api/?name=${user?.firstName}+${user?.lastName}`,
               role: role.title,
               status: 'Active',
               joinedAt: new Date(proj.createdAt).toLocaleDateString('en-US', {

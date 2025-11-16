@@ -22,4 +22,8 @@ export interface DiscoverUser {
   bio: string;
   linkedin?: string;
   github?: string;
+  resume?: {
+    url: string;
+    filename: string;
+  };
 }

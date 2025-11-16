@@ -1,7 +1,9 @@
 import { Response } from 'express';
 import Project from '../models/Project';
 import Application from '../models/Application';
+import Invitation from '../models/Invitation';
 import User from '../models/User';
+import Chat from '../models/Chat';
 import { AuthRequest } from '../middleware/auth';
 import { createNotification } from '../utils/notificationHelper';
 
@@ -337,9 +339,65 @@ export const applyToProject = async (
       createdApplications.push(populatedApplication);
     }
 
+    // Create or get existing application chat with project creator
+    const applicantName =
+      user?.preferredName ||
+      `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim() ||
+      'A user';
+
+    let chat = await Chat.findOne({
+      participants: { $all: [req.userId, project.creator] },
+      type: 'application',
+      relatedProject: project._id,
+    });
+
+    const applicationMessage = message || `Hi! I'm interested in joining "${project.title}". I've applied for the following role(s): ${roles.join(', ')}. I'd love to discuss how I can contribute!`;
+
+    if (!chat) {
+      chat = await Chat.create({
+        participants: [req.userId, project.creator],
+        type: 'application',
+        relatedProject: project._id,
+        relatedApplication: createdApplications[0]?._id,
+        messages: [
+          {
+            sender: req.userId,
+            text: applicationMessage,
+            read: false,
+            createdAt: new Date(),
+          },
+        ],
+      });
+    } else {
+      // Add new application message to existing chat
+      chat.messages.push({
+        sender: req.userId,
+        text: applicationMessage,
+        read: false,
+        createdAt: new Date(),
+      } as any);
+      await chat.save();
+    }
+
+    // Send notification to project creator
+    await createNotification({
+      user: project.creator.toString(),
+      type: 'project_application',
+      title: `New application for ${project.title}`,
+      message: `${applicantName} applied for: ${roles.join(', ')}`,
+      actionUrl: `/dashboard/chat?chatId=${chat._id}`,
+      metadata: {
+        projectId: project._id,
+        applicantId: req.userId,
+        chatId: chat._id,
+        applicationIds: createdApplications.map((app) => app._id),
+      },
+    });
+
     res.status(201).json({
       success: true,
       data: createdApplications,
+      chatId: chat._id,
     });
   } catch (error: any) {
     res.status(500).json({
@@ -437,9 +495,18 @@ export const updateApplicationStatus = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { status } = req.body;
+    const { status, declineReason } = req.body;
 
-    const application = await Application.findById(req.params.applicationId);
+    if (status === 'Rejected' && (!declineReason || declineReason.trim().length === 0)) {
+      res.status(400).json({
+        success: false,
+        message: 'Please provide a reason for declining',
+      });
+      return;
+    }
+
+    const application = await Application.findById(req.params.applicationId)
+      .populate('user', 'firstName lastName preferredName');
 
     if (!application) {
       res.status(404).json({
@@ -469,7 +536,28 @@ export const updateApplicationStatus = async (
     }
 
     application.status = status;
+    if (status === 'Rejected') {
+      application.declineReason = declineReason;
+    }
     await application.save();
+
+    // Update related chat status
+    const chat = await Chat.findOne({ relatedApplication: application._id });
+    if (chat) {
+      chat.status = status;
+
+      // Add decline reason as a message if rejected
+      if (status === 'Rejected') {
+        chat.messages.push({
+          sender: req.userId,
+          text: `Application declined. Reason: ${declineReason}`,
+          read: false,
+          createdAt: new Date(),
+        } as any);
+      }
+
+      await chat.save();
+    }
 
     // If accepted, add user to project role
     if (status === 'Accepted') {
@@ -482,6 +570,34 @@ export const updateApplicationStatus = async (
         project.roles[roleIndex].user = application.user;
         await project.save();
       }
+
+      // Notify applicant of acceptance
+      const applicant = application.user as any;
+      await createNotification({
+        user: application.user.toString(),
+        type: 'application_accepted',
+        title: `Application accepted for ${project.title}`,
+        message: `Your application for the role of ${application.role} has been accepted!`,
+        actionUrl: `/project/${project._id}`,
+        metadata: {
+          projectId: project._id.toString(),
+          applicationId: application._id.toString(),
+        },
+      });
+    } else if (status === 'Rejected') {
+      // Notify applicant of rejection
+      await createNotification({
+        user: application.user.toString(),
+        type: 'application_declined',
+        title: `Application update for ${project.title}`,
+        message: `Your application for the role of ${application.role} was not accepted.`,
+        actionUrl: `/dashboard/chat?chatId=${chat?._id}`,
+        metadata: {
+          projectId: project._id.toString(),
+          applicationId: application._id.toString(),
+          chatId: chat?._id.toString(),
+        },
+      });
     }
 
     res.status(200).json({
@@ -489,6 +605,7 @@ export const updateApplicationStatus = async (
       data: application,
     });
   } catch (error: any) {
+    console.error('[updateApplicationStatus] Error:', error);
     res.status(500).json({
       success: false,
       message: error.message || 'Server error',
@@ -730,6 +847,67 @@ export const inviteUserToProject = async (
       `${req.user?.firstName ?? ''} ${req.user?.lastName ?? ''}`.trim() ||
       'A teammate';
 
+    // Check if invitation already exists
+    const existingInvitation = await Invitation.findOne({
+      project: project._id,
+      invitee: inviteeId,
+    });
+
+    if (existingInvitation) {
+      res.status(400).json({
+        success: false,
+        message: 'An invitation to this user already exists for this project',
+      });
+      return;
+    }
+
+    // Create invitation record
+    const invitation = await Invitation.create({
+      project: project._id,
+      inviter: req.userId,
+      invitee: inviteeId,
+      message,
+      status: 'Pending',
+    });
+
+    // Create or get existing invitation chat
+    let chat = await Chat.findOne({
+      participants: { $all: [req.userId, inviteeId] },
+      type: 'invitation',
+      relatedProject: project._id,
+    });
+
+    if (!chat) {
+      chat = await Chat.create({
+        participants: [req.userId, inviteeId],
+        type: 'invitation',
+        relatedProject: project._id,
+        relatedInvitation: invitation._id,
+        status: 'Pending',
+        messages: [
+          {
+            sender: req.userId,
+            text: message || `Hi! I'd like to invite you to join my project "${project.title}". I think you'd be a great fit!`,
+            read: false,
+            createdAt: new Date(),
+          },
+        ],
+      });
+    } else {
+      // Update chat with new invitation reference
+      chat.relatedInvitation = invitation._id;
+      chat.status = 'Pending';
+      // Add new invitation message to existing chat
+      chat.messages.push({
+        sender: req.userId,
+        text: message || `Hi! I'd like to invite you to join my project "${project.title}". I think you'd be a great fit!`,
+        read: false,
+        createdAt: new Date(),
+      } as any);
+      await chat.save();
+    }
+
+    // Create notification with link to chat
     await createNotification({
       user: inviteeId,
       type: 'project_invite',
@@ -737,16 +915,19 @@ export const inviteUserToProject = async (
       message:
         message ||
         `${inviterName} invited you to join "${project.title}".`,
-      actionUrl: `/project/${project._id}`,
+      actionUrl: `/dashboard/chat?chatId=${chat._id}`,
       metadata: {
         projectId: project._id,
         inviterId: req.userId,
+        chatId: chat._id,
+        invitationId: invitation._id.toString(),
       },
     });
 
     res.status(200).json({
       success: true,
       message: 'Invitation sent successfully',
+      data: { chatId: chat._id },
     });
   } catch (error: any) {
     console.error('[inviteUserToProject] Error sending invitation:', error);

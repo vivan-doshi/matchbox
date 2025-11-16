@@ -17,13 +17,21 @@ export interface Chat {
     sender: string;
     createdAt: string;
   };
+  type?: 'direct' | 'invitation' | 'application';
+  relatedProject?: string | any;
+  relatedInvitation?: string | any;
+  relatedApplication?: string | any;
+  status?: 'Pending' | 'Accepted' | 'Rejected';
   createdAt: string;
   updatedAt: string;
 }
 
 export const chatService = {
-  async getChats(): Promise<Chat[]> {
-    const response = await apiClient.getChats();
+  async getChats(type?: 'direct' | 'invitation' | 'application', tab?: 'active' | 'invitations' | 'requests'): Promise<Chat[]> {
+    const params: any = {};
+    if (type) params.type = type;
+    if (tab) params.tab = tab;
+    const response = await apiClient.getChats(params);
     return (response.data as Chat[]) || [];
   },
 

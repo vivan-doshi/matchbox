@@ -11,17 +11,16 @@ type SignupFormData = {
   firstName: string;
   lastName: string;
   preferredName?: string;
-  profilePicture?: string; // data URL
+  profilePicture?: File | null; // Changed from data URL to File object
+  profilePicturePreview?: string; // For preview only (object URL)
 
   // Step 3: Links
   linkedin?: string;
   github?: string;
   portfolio?: string;
-  resume?: {
-    dataUrl: string;
-    filename: string;
-    mimeType: string;
-  };
+  resume?: File | null; // Changed from data URL to File object
+  resumeFilename?: string; // Store filename separately
+  resumePreview?: string; // For preview/display
 
   // Step 4: Bio & Skills
   bio?: string;
@@ -75,11 +74,18 @@ const loadFromStorage = (): Partial<SignupFormData> => {
 export const SignupProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [formData, setFormData] = useState<Partial<SignupFormData>>(loadFromStorage);
 
-  // Save to sessionStorage whenever formData changes (excluding File objects)
+  // Save to sessionStorage whenever formData changes (excluding File objects and previews)
   useEffect(() => {
     try {
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
-      console.log('[SignupContext] Saved data to sessionStorage:', formData);
+      // Create a copy without File objects and preview URLs
+      const dataToSave = { ...formData };
+      delete dataToSave.profilePicture; // Don't save File object
+      delete dataToSave.profilePicturePreview; // Don't save preview URL
+      delete dataToSave.resume; // Don't save File object
+      delete dataToSave.resumePreview; // Don't save preview
+
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+      console.log('[SignupContext] Saved data to sessionStorage (excluding files):', dataToSave);
     } catch (error) {
       console.error('[SignupContext] Error saving to sessionStorage:', error);
     }

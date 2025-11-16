@@ -12,9 +12,14 @@ export interface IUser extends Document {
   graduationYear?: number;
   isAlumni: boolean;
   bio?: string;
-  profilePicture?: string;
+  profilePicture?: {
+    url?: string;
+    publicId?: string;
+  };
   resume?: {
     filename?: string;
+    url?: string;
+    publicId?: string;
     dataUrl?: string;
     uploadedAt?: Date;
   };
@@ -83,12 +88,19 @@ const UserSchema: Schema = new Schema(
       maxlength: 500,
     },
     profilePicture: {
-      type: String,
-      default: 'https://api.dicebear.com/7.x/avataaars/svg',
+      url: {
+        type: String,
+        default: 'https://api.dicebear.com/7.x/avataaars/svg',
+      },
+      publicId: {
+        type: String,
+        default: null,
+      },
     },
     resume: {
       filename: String,
-      dataUrl: String,
+      url: String,
+      publicId: String,
       uploadedAt: Date,
     },
     skills: [

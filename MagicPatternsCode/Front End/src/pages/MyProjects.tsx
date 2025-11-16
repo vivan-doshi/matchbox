@@ -18,6 +18,7 @@ import ProjectTeamTable from '../components/projects/ProjectTeamTable';
 import Navigation from '../components/Navigation';
 import CreateProjectModal from '../components/dashboard/CreateProjectModal';
 import { useAuth } from '../context/AuthContext';
+import { getProfilePictureUrl } from '../utils/profileHelpers';
 
 interface FormattedProject {
   id: string;
@@ -81,7 +82,7 @@ const MyProjects: React.FC = () => {
             role: role.title,
             university: user?.university || '',
             profilePic:
-              user?.profilePicture || `https://ui-avatars.com/api/?name=${user?.firstName}+${user?.lastName}`,
+              getProfilePictureUrl(user?.profilePicture) || `https://ui-avatars.com/api/?name=${user?.firstName}+${user?.lastName}`,
             status: 'Active',
             joinedAt: new Date(project.createdAt).toLocaleDateString('en-US', {
               month: 'short',

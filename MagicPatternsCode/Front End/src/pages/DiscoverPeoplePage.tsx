@@ -7,6 +7,7 @@ import { apiClient } from '../utils/apiClient';
 import { useAuth } from '../context/AuthContext';
 import type { User as ApiUser } from '../types/api';
 import type { DiscoverUser, DiscoverUserSkill } from '../types/discover';
+import { getResumeUrl, getResumeFilename } from '../utils/profileHelpers';
 
 const DiscoverPeoplePage: React.FC = () => {
   const { user: authUser } = useAuth();
@@ -36,6 +37,9 @@ const DiscoverPeoplePage: React.FC = () => {
 
   const transformUser = (user: ApiUser): DiscoverUser => {
     const normalizedId = user.id || (user as any)._id || '';
+    const resumeUrl = getResumeUrl(user.resume);
+    const resumeFilename = getResumeFilename(user.resume);
+
     return {
     id: normalizedId,
     rawId: normalizedId,
@@ -43,10 +47,12 @@ const DiscoverPeoplePage: React.FC = () => {
     firstName: user.firstName,
     lastName: user.lastName,
     profilePicture:
-      user.profilePicture ||
+      ((typeof user.profilePicture === 'string'
+        ? user.profilePicture
+        : user.profilePicture?.url) ||
       `https://ui-avatars.com/api/?name=${encodeURIComponent(
         `${user.firstName} ${user.lastName}`
-      )}&background=f97316&color=fff`,
+      )}&background=f97316&color=fff`) as string,
     title: user.major ? `${user.major} Student` : 'Student',
     school: user.university || 'Unknown School',
     major: user.major || 'Undeclared',
@@ -67,6 +73,10 @@ const DiscoverPeoplePage: React.FC = () => {
     bio: user.bio || 'This user has not added a bio yet.',
     linkedin: user.professionalLinks?.linkedin,
     github: user.professionalLinks?.github,
+    resume: resumeUrl && resumeFilename ? {
+      url: resumeUrl,
+      filename: resumeFilename,
+    } : undefined,
   };
 };
 

@@ -7,6 +7,7 @@ export interface IApplication extends Document {
   message: string;
   fitScore: 'High' | 'Medium' | 'Low';
   status: 'Pending' | 'Accepted' | 'Rejected';
+  declineReason?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -40,6 +41,10 @@ const ApplicationSchema: Schema = new Schema(
       type: String,
       enum: ['Pending', 'Accepted', 'Rejected'],
       default: 'Pending',
+    },
+    declineReason: {
+      type: String,
+      maxlength: 500,
     },
   },
   {

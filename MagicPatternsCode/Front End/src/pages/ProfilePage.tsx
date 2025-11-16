@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { LinkedinIcon, GithubIcon, ExternalLinkIcon, EditIcon, FolderIcon, FileTextIcon, UploadIcon, CheckIcon, XIcon, MenuIcon } from 'lucide-react';
+import { LinkedinIcon, GithubIcon, ExternalLinkIcon, EditIcon, FolderIcon, FileTextIcon, UploadIcon, CheckIcon, XIcon, MenuIcon, DownloadIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Navigation from '../components/Navigation';
 import { apiClient } from '../utils/apiClient';
 import { Project, User } from '../types/api';
+import { getProfilePictureUrl, getResumeUrl, getResumeFilename } from '../utils/profileHelpers';
 
 type ProfileProjectCard = Project & {
   userRoleLabel: string;
@@ -80,13 +81,28 @@ const ProfilePage: React.FC = () => {
 
   const activeProfileUser = isOwnProfile ? authUser : externalUser;
 
-  const resumeLink = activeProfileUser?.resume?.dataUrl
-    ? {
-        url: activeProfileUser.resume.dataUrl,
-        filename: activeProfileUser.resume.filename || 'Resume',
-        uploadedAt: activeProfileUser.resume.uploadedAt || '',
-      }
-    : null;
+  const resumeLink = useMemo(() => {
+    const resumeUrl = getResumeUrl(activeProfileUser?.resume);
+    return resumeUrl
+      ? {
+          url: resumeUrl,
+          filename: getResumeFilename(activeProfileUser?.resume) || 'Resume',
+          uploadedAt: activeProfileUser?.resume?.uploadedAt || '',
+        }
+      : null;
+  }, [activeProfileUser?.resume]);
+
+  // Debugging: Track resume data changes
+  useEffect(() => {
+    console.log('[ProfilePage] Resume data:', {
+      hasActiveUser: !!activeProfileUser,
+      hasResume: !!activeProfileUser?.resume,
+      resumeUrl: activeProfileUser?.resume?.url,
+      resumeDataUrl: activeProfileUser?.resume?.dataUrl,
+      resumeFilename: activeProfileUser?.resume?.filename,
+      resumeLink: resumeLink,
+    });
+  }, [activeProfileUser?.resume, resumeLink]);
 
   const originalUser = useMemo(() => {
     if (!activeProfileUser) {
@@ -116,7 +132,7 @@ const ProfilePage: React.FC = () => {
       graduationYear: activeProfileUser.graduationYear?.toString() || 'N/A',
       bio: activeProfileUser.bio || '',
       profilePicture:
-        activeProfileUser.profilePicture ||
+        getProfilePictureUrl(activeProfileUser.profilePicture) ||
         `https://ui-avatars.com/api/?name=${encodeURIComponent(
           activeProfileUser.firstName + ' ' + activeProfileUser.lastName
         )}&size=300&background=f97316&color=fff`,
@@ -431,18 +447,14 @@ const ProfilePage: React.FC = () => {
 
     try {
       setUploadingResume(true);
-      const dataUrl = await fileToDataUrl(file);
-      await updateUserProfile({
-        resume: {
-          dataUrl,
-          filename: file.name,
-          mimeType: file.type,
-          uploadedAt: new Date().toISOString(),
-        },
-      });
-      await refreshUser();
-      setShowUploadSuccess(true);
-      setTimeout(() => setShowUploadSuccess(false), 2500);
+
+      // Upload resume using FormData (like signup flow)
+      if (authUser?.id) {
+        await apiClient.updateUserResume(authUser.id, file);
+        await refreshUser();
+        setShowUploadSuccess(true);
+        setTimeout(() => setShowUploadSuccess(false), 2500);
+      }
     } catch (error: any) {
       console.error('[ProfilePage] Resume upload failed:', error);
       alert(error?.message || 'Failed to upload resume. Please try again.');
@@ -469,9 +481,12 @@ const ProfilePage: React.FC = () => {
     try {
       setProfileImageUploading(true);
       setProfileImageError(null);
-      const dataUrl = await fileToDataUrl(file);
-      await updateUserProfile({ profilePicture: dataUrl });
-      await refreshUser();
+
+      // Upload profile picture using FormData (like signup flow)
+      if (authUser?.id) {
+        await apiClient.updateUserProfilePicture(authUser.id, file);
+        await refreshUser();
+      }
     } catch (error: any) {
       console.error('[ProfilePage] Profile image upload failed:', error);
       setProfileImageError(error?.message || 'Failed to upload profile picture.');
@@ -658,6 +673,77 @@ const ProfilePage: React.FC = () => {
                         placeholder="Portfolio URL"
                       />
                     </div>
+
+                    {/* Resume Section in Edit Mode */}
+                    <div className="space-y-2 pt-2 border-t border-slate-200">
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">
+                        Resume
+                      </label>
+
+                      {user.links.resume?.url ? (
+                        <div className="space-y-2">
+                          {/* Current Resume Display */}
+                          <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                            <FileTextIcon className="h-4 w-4 text-slate-600" />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-slate-900">
+                                {user.links.resume.filename || 'Resume'}
+                              </p>
+                              {user.links.resume.uploadedAt && (
+                                <p className="text-xs text-slate-500">
+                                  Uploaded {new Date(user.links.resume.uploadedAt).toLocaleDateString()}
+                                </p>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setShowResumePreview(true)}
+                              className="text-xs text-orange-600 hover:text-orange-700 font-medium"
+                            >
+                              View
+                            </button>
+                          </div>
+
+                          {/* Change Resume Button */}
+                          <label className="flex items-center justify-center gap-2 w-full px-4 py-2 border-2 border-dashed border-slate-300 rounded-lg hover:border-orange-500 hover:bg-orange-50 transition-colors cursor-pointer">
+                            <UploadIcon className="h-4 w-4 text-slate-600" />
+                            <span className="text-sm font-medium text-slate-700">
+                              {uploadingResume ? 'Uploading...' : 'Change Resume'}
+                            </span>
+                            <input
+                              type="file"
+                              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                              onChange={handleResumeUpload}
+                              className="hidden"
+                              disabled={uploadingResume}
+                            />
+                          </label>
+                        </div>
+                      ) : (
+                        /* No Resume - Upload Button */
+                        <label className="flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-dashed border-slate-300 rounded-lg hover:border-orange-500 hover:bg-orange-50 transition-colors cursor-pointer">
+                          <UploadIcon className="h-4 w-4 text-slate-600" />
+                          <span className="text-sm font-medium text-slate-700">
+                            {uploadingResume ? 'Uploading...' : 'Upload Resume (PDF, DOC, DOCX - Max 10MB)'}
+                          </span>
+                          <input
+                            type="file"
+                            accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                            onChange={handleResumeUpload}
+                            className="hidden"
+                            disabled={uploadingResume}
+                          />
+                        </label>
+                      )}
+
+                      {/* Success Message */}
+                      {showUploadSuccess && (
+                        <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg">
+                          <CheckIcon className="h-4 w-4" />
+                          Resume uploaded successfully!
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <div className="flex flex-wrap gap-2">
@@ -719,13 +805,28 @@ const ProfilePage: React.FC = () => {
                       </button>
                     )}
                     {user.links.resume?.url ? (
-                      <button
-                        onClick={() => setShowResumePreview(true)}
-                        className="flex items-center text-xs bg-orange-50 text-orange-700 px-3 py-1 rounded-full hover:bg-orange-100 transition-colors cursor-pointer"
-                      >
-                        <FileTextIcon className="h-3 w-3 mr-1" />
-                        Resume
-                      </button>
+                      <>
+                        <button
+                          onClick={() => setShowResumePreview(true)}
+                          className="flex items-center text-xs bg-orange-50 text-orange-700 px-3 py-1 rounded-full hover:bg-orange-100 transition-colors cursor-pointer"
+                        >
+                          <FileTextIcon className="h-3 w-3 mr-1" />
+                          Resume
+                        </button>
+                        {canEdit && (
+                          <label className="flex items-center text-xs bg-slate-100 text-slate-700 px-3 py-1 rounded-full hover:bg-slate-200 transition-colors cursor-pointer">
+                            <UploadIcon className="h-3 w-3 mr-1" />
+                            {uploadingResume ? 'Uploading...' : 'Change Resume'}
+                            <input
+                              type="file"
+                              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                              onChange={handleResumeUpload}
+                              className="hidden"
+                              disabled={uploadingResume}
+                            />
+                          </label>
+                        )}
+                      </>
                     ) : canEdit ? (
                       <label className="flex items-center text-xs bg-slate-100 text-slate-400 px-3 py-1 rounded-full hover:bg-slate-200 transition-colors cursor-pointer">
                         <UploadIcon className="h-3 w-3 mr-1" />
@@ -1213,6 +1314,14 @@ const ProfilePage: React.FC = () => {
             <div className="flex items-center justify-between p-4 border-b border-slate-200">
               <h3 className="text-lg font-semibold text-slate-900">Resume Preview</h3>
               <div className="flex items-center gap-2">
+                <a
+                  href={user.links.resume.url}
+                  download={user.links.resume.filename || 'resume.pdf'}
+                  className="flex items-center text-sm bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
+                >
+                  <DownloadIcon className="h-4 w-4 mr-1" />
+                  Download
+                </a>
                 <a
                   href={user.links.resume.url}
                   target="_blank"

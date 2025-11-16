@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import User from '../models/User';
 import { generateToken } from '../utils/generateToken';
 import { AuthRequest } from '../middleware/auth';
+import { uploadProfilePicture, uploadResumeFile } from '../utils/fileUpload';
 
 // @desc    Check if email exists
 // @route   POST /api/auth/check-email
@@ -53,9 +54,13 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       professionalLinks,
       interests,
       weeklyAvailability,
-      profilePicture,
-      resume,
     } = req.body;
+
+    // Parse JSON strings from FormData
+    const parsedSkills = skills ? JSON.parse(skills) : [];
+    const parsedProfessionalLinks = professionalLinks ? JSON.parse(professionalLinks) : {};
+    const parsedInterests = interests ? JSON.parse(interests) : [];
+    const parsedWeeklyAvailability = weeklyAvailability ? JSON.parse(weeklyAvailability) : { hoursPerWeek: 0 };
 
     // Check if user exists
     const userExists = await User.findOne({ email });
@@ -66,6 +71,33 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
         message: 'User already exists with this email',
       });
       return;
+    }
+
+    // Handle file uploads
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+    let profilePictureData = undefined;
+    let resumeData = undefined;
+
+    // Upload profile picture if provided
+    if (files && files.profilePicture && files.profilePicture[0]) {
+      const profilePictureFile = files.profilePicture[0];
+      const uploaded = await uploadProfilePicture(profilePictureFile.buffer);
+      profilePictureData = {
+        url: uploaded.url,
+        publicId: uploaded.publicId,
+      };
+    }
+
+    // Upload resume if provided
+    if (files && files.resume && files.resume[0]) {
+      const resumeFile = files.resume[0];
+      const uploaded = await uploadResumeFile(resumeFile.buffer, resumeFile.originalname);
+      resumeData = {
+        filename: resumeFile.originalname,
+        url: uploaded.url,
+        publicId: uploaded.publicId,
+        uploadedAt: new Date(),
+      };
     }
 
     // Create user
@@ -80,12 +112,12 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       graduationYear,
       isAlumni,
       bio,
-      skills,
-      professionalLinks,
-      profilePicture,
-      resume,
-      interests: interests || [],
-      weeklyAvailability: weeklyAvailability || { hoursPerWeek: 0 },
+      skills: parsedSkills,
+      professionalLinks: parsedProfessionalLinks,
+      profilePicture: profilePictureData,
+      resume: resumeData,
+      interests: parsedInterests,
+      weeklyAvailability: parsedWeeklyAvailability,
     });
 
     const token = generateToken(user._id.toString());
@@ -105,6 +137,7 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       },
     });
   } catch (error: any) {
+    console.error('Signup error:', error);
     res.status(500).json({
       success: false,
       message: error.message || 'Server error',

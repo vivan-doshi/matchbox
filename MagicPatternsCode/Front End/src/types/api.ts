@@ -43,8 +43,15 @@ export interface ProfessionalLinks {
 
 export interface UserResume {
   filename?: string;
-  dataUrl?: string;
+  url?: string;
+  dataUrl?: string; // Deprecated - kept for backward compatibility
+  publicId?: string;
   uploadedAt?: string;
+}
+
+export interface ProfilePicture {
+  url: string;
+  publicId?: string;
 }
 
 export interface User {
@@ -58,7 +65,7 @@ export interface User {
   graduationYear?: number;
   isAlumni: boolean;
   bio?: string;
-  profilePicture?: string;
+  profilePicture?: ProfilePicture | string; // Support both old (string) and new (object) formats
   resume?: UserResume;
   skills: UserSkill[];
   professionalLinks: ProfessionalLinks;
@@ -98,8 +105,8 @@ export interface SignupRequest {
   weeklyAvailability?: {
     hoursPerWeek: number;
   };
-  profilePicture?: string;
-  resume?: UserResume;
+  profilePicture?: File | string; // File for new uploads, string for URLs
+  resume?: File | UserResume; // File for new uploads, UserResume for existing data
 }
 
 export interface AuthResponse {
@@ -201,6 +208,7 @@ export interface Application {
   role: string;
   message: string;
   status: 'Pending' | 'Accepted' | 'Rejected';
+  declineReason?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -209,6 +217,21 @@ export interface CreateApplicationRequest {
   projectId: string;
   roleTitle: string;
   message: string;
+}
+
+// ============= INVITATION TYPES =============
+export interface Invitation {
+  id: string;
+  _id?: string;
+  project: string | Project;
+  inviter: string | User;
+  invitee: string | User;
+  role?: string;
+  message?: string;
+  status: 'Pending' | 'Accepted' | 'Rejected';
+  declineReason?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // ============= MATCH TYPES =============
@@ -242,6 +265,11 @@ export interface Chat {
   messages: Message[];
   project?: string | Project;
   lastMessage?: Message;
+  type?: 'direct' | 'invitation' | 'application';
+  relatedProject?: string | Project;
+  relatedInvitation?: string | Invitation;
+  relatedApplication?: string | Application;
+  status?: 'Pending' | 'Accepted' | 'Rejected';
   createdAt: string;
   updatedAt: string;
 }

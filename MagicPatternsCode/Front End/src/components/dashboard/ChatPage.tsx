@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Send, User as UserIcon } from 'lucide-react';
+import { ArrowLeft, Send, User as UserIcon, Briefcase, UserCircle, Check, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Chat, Message, chatService } from '../../services/chatService';
+import { apiClient } from '../../utils/apiClient';
+import DeclineReasonModal from './DeclineReasonModal';
+
+type ChatTab = 'active' | 'invitations' | 'requests';
 
 const ChatPage: React.FC = () => {
   const { user } = useAuth();
@@ -11,19 +15,24 @@ const ChatPage: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [chats, setChats] = useState<Chat[]>([]);
+  const [filteredChats, setFilteredChats] = useState<Chat[]>([]);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [activeTab, setActiveTab] = useState<ChatTab>('active');
+  const [showDeclineModal, setShowDeclineModal] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const currentUserId = user?.id || (user as any)?._id;
 
-  const fetchChats = useCallback(async () => {
+  const fetchChats = useCallback(async (tab: ChatTab = 'active') => {
     try {
       setLoading(true);
-      const chatList = await chatService.getChats();
+      const chatList = await chatService.getChats(undefined, tab);
       setChats(chatList);
+      setFilteredChats(chatList);
     } catch (error) {
       console.error('Error fetching chats:', error);
     } finally {
@@ -56,8 +65,8 @@ const ChatPage: React.FC = () => {
   );
 
   useEffect(() => {
-    fetchChats();
-  }, [fetchChats]);
+    fetchChats(activeTab);
+  }, [fetchChats, activeTab]);
 
   useEffect(() => {
     const chatId = searchParams.get('chatId');
@@ -65,6 +74,12 @@ const ChatPage: React.FC = () => {
       openChat(chatId);
     }
   }, [openChat, searchParams]);
+
+  const handleTabChange = (tab: ChatTab) => {
+    setActiveTab(tab);
+    setSelectedChat(null);
+    navigate('/dashboard/chat', { replace: true });
+  };
 
   const handleSendMessage = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -80,12 +95,85 @@ const ChatPage: React.FC = () => {
 
       setNewMessage('');
       scrollToBottom();
-      await fetchChats();
+      await fetchChats(activeTab);
     } catch (error) {
       console.error('Error sending message:', error);
       alert('Failed to send message');
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleAccept = async () => {
+    if (!selectedChat) return;
+
+    try {
+      setIsProcessing(true);
+
+      if (selectedChat.type === 'invitation' && selectedChat.relatedInvitation) {
+        const invitationId = typeof selectedChat.relatedInvitation === 'string'
+          ? selectedChat.relatedInvitation
+          : (selectedChat.relatedInvitation as any)?._id;
+
+        await apiClient.acceptInvitation(invitationId);
+        alert('Invitation accepted successfully!');
+      } else if (selectedChat.type === 'application' && selectedChat.relatedApplication) {
+        const projectId = typeof selectedChat.relatedProject === 'string'
+          ? selectedChat.relatedProject
+          : (selectedChat.relatedProject as any)?._id;
+        const applicationId = typeof selectedChat.relatedApplication === 'string'
+          ? selectedChat.relatedApplication
+          : (selectedChat.relatedApplication as any)?._id;
+
+        await apiClient.updateApplicationStatus(projectId, applicationId, 'Accepted');
+        alert('Application accepted successfully!');
+      }
+
+      // Refresh chat and messages
+      await openChat(selectedChat._id);
+      await fetchChats(activeTab);
+    } catch (error: any) {
+      console.error('Error accepting:', error);
+      alert(error.response?.data?.message || 'Failed to accept');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleDecline = async (reason: string) => {
+    if (!selectedChat) return;
+
+    try {
+      setIsProcessing(true);
+
+      if (selectedChat.type === 'invitation' && selectedChat.relatedInvitation) {
+        const invitationId = typeof selectedChat.relatedInvitation === 'string'
+          ? selectedChat.relatedInvitation
+          : (selectedChat.relatedInvitation as any)?._id;
+
+        await apiClient.rejectInvitation(invitationId, reason);
+        alert('Invitation declined');
+      } else if (selectedChat.type === 'application' && selectedChat.relatedApplication) {
+        const projectId = typeof selectedChat.relatedProject === 'string'
+          ? selectedChat.relatedProject
+          : (selectedChat.relatedProject as any)?._id;
+        const applicationId = typeof selectedChat.relatedApplication === 'string'
+          ? selectedChat.relatedApplication
+          : (selectedChat.relatedApplication as any)?._id;
+
+        await apiClient.updateApplicationStatus(projectId, applicationId, 'Rejected', reason);
+        alert('Application declined');
+      }
+
+      setShowDeclineModal(false);
+      // Refresh chat and messages
+      await openChat(selectedChat._id);
+      await fetchChats(activeTab);
+    } catch (error: any) {
+      console.error('Error declining:', error);
+      alert(error.response?.data?.message || 'Failed to decline');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -95,6 +183,39 @@ const ChatPage: React.FC = () => {
       const participantId = participant?._id || participant?.id || participant;
       return participantId !== currentUserId;
     });
+  };
+
+  const isInvitee = (chat: Chat | null) => {
+    if (!chat || chat.type !== 'invitation') return false;
+    const otherParticipant = getOtherParticipant(chat);
+    const otherParticipantId = otherParticipant?._id || otherParticipant?.id || otherParticipant;
+    // In invitation chat, the invitee is the one who receives it (other participant is inviter)
+    // So we check if the selected chat has the current user as invitee
+    const project = chat.relatedProject as any;
+    return project && project.creator !== currentUserId;
+  };
+
+  const isProjectCreator = (chat: Chat | null) => {
+    if (!chat || !chat.relatedProject) return false;
+    const project = chat.relatedProject as any;
+    const projectCreatorId = typeof project.creator === 'string'
+      ? project.creator
+      : project.creator?._id || project.creator?.id;
+    return projectCreatorId === currentUserId;
+  };
+
+  const shouldShowAcceptDeclineButtons = () => {
+    if (!selectedChat || selectedChat.status !== 'Pending') return false;
+
+    if (selectedChat.type === 'invitation') {
+      // Show buttons to invitee only
+      return isInvitee(selectedChat);
+    } else if (selectedChat.type === 'application') {
+      // Show buttons to project creator only
+      return isProjectCreator(selectedChat);
+    }
+
+    return false;
   };
 
   if (loading) {
@@ -109,18 +230,59 @@ const ChatPage: React.FC = () => {
     <div className="flex h-screen bg-gray-50">
       <div className={`${selectedChat ? 'hidden md:block' : 'block'} w-full md:w-1/3 border-r bg-white`}>
         <div className="p-4 border-b">
-          <h1 className="text-2xl font-bold">Messages</h1>
+          <h1 className="text-2xl font-bold mb-3">Messages</h1>
+
+          {/* Tabs */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleTabChange('active')}
+              className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === 'active'
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Active
+            </button>
+            <button
+              onClick={() => handleTabChange('invitations')}
+              className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === 'invitations'
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Invitations
+            </button>
+            <button
+              onClick={() => handleTabChange('requests')}
+              className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === 'requests'
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Requests
+            </button>
+          </div>
         </div>
 
-        <div className="overflow-y-auto" style={{ height: 'calc(100vh - 73px)' }}>
-          {chats.length === 0 ? (
+        <div className="overflow-y-auto" style={{ height: 'calc(100vh - 145px)' }}>
+          {filteredChats.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               <p>No conversations yet</p>
-              <p className="text-sm mt-2">Start messaging team members!</p>
+              <p className="text-sm mt-2">
+                {activeTab === 'invitations'
+                  ? 'Your project invitations will appear here'
+                  : activeTab === 'requests'
+                  ? 'Project applications will appear here'
+                  : 'Start messaging team members!'}
+              </p>
             </div>
           ) : (
-            chats.map((chat) => {
+            filteredChats.map((chat) => {
               const otherUser = getOtherParticipant(chat);
+              const project = chat.relatedProject as any;
               return (
                 <div
                   key={chat._id}
@@ -137,6 +299,12 @@ const ChatPage: React.FC = () => {
                       <p className="font-semibold truncate">
                         {otherUser?.preferredName || `${otherUser?.firstName ?? ''} ${otherUser?.lastName ?? ''}`.trim()}
                       </p>
+                      {project && (
+                        <p className="text-xs text-orange-600 font-medium truncate">
+                          {chat.type === 'invitation' ? '📩 Invitation: ' : '📝 Application: '}
+                          {project.title}
+                        </p>
+                      )}
                       <p className="text-sm text-gray-500 truncate">
                         {chat.lastMessage?.text || chat.messages?.[chat.messages.length - 1]?.text || 'No messages yet'}
                       </p>
@@ -152,33 +320,86 @@ const ChatPage: React.FC = () => {
       <div className={`${selectedChat ? 'block' : 'hidden md:block'} flex-1 flex flex-col`}>
         {selectedChat ? (
           <>
-            <div className="p-4 border-b bg-white flex items-center gap-3">
-              <button
-                onClick={() => {
-                  setSelectedChat(null);
-                  navigate('/dashboard/chat', { replace: true });
-                }}
-                className="md:hidden p-2 hover:bg-gray-100 rounded-lg"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </button>
+            <div className="p-4 border-b bg-white">
+              <div className="flex items-center gap-3 mb-3">
+                <button
+                  onClick={() => {
+                    setSelectedChat(null);
+                    navigate('/dashboard/chat', { replace: true });
+                  }}
+                  className="md:hidden p-2 hover:bg-gray-100 rounded-lg"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </button>
 
-              {(() => {
-                const otherUser = getOtherParticipant(selectedChat);
-                return (
-                  <>
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-orange-400 to-red-400 flex items-center justify-center text-white font-semibold">
-                      {otherUser?.firstName?.[0] || otherUser?.preferredName?.[0] || <UserIcon className="h-5 w-5" />}
-                    </div>
-                    <div>
-                      <p className="font-semibold">
-                        {otherUser?.preferredName || `${otherUser?.firstName ?? ''} ${otherUser?.lastName ?? ''}`.trim()}
-                      </p>
-                      <p className="text-sm text-gray-500">{otherUser?.university}</p>
-                    </div>
-                  </>
-                );
-              })()}
+                {(() => {
+                  const otherUser = getOtherParticipant(selectedChat);
+                  return (
+                    <>
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-orange-400 to-red-400 flex items-center justify-center text-white font-semibold">
+                        {otherUser?.firstName?.[0] || otherUser?.preferredName?.[0] || <UserIcon className="h-5 w-5" />}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold">
+                          {otherUser?.preferredName || `${otherUser?.firstName ?? ''} ${otherUser?.lastName ?? ''}`.trim()}
+                        </p>
+                        <p className="text-sm text-gray-500">{otherUser?.university}</p>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+
+              {/* Accept/Decline buttons for pending invitations/applications */}
+              {shouldShowAcceptDeclineButtons() && (
+                <div className="flex gap-2 mb-3">
+                  <button
+                    onClick={handleAccept}
+                    disabled={isProcessing}
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Check className="h-4 w-4" />
+                    Accept
+                  </button>
+                  <button
+                    onClick={() => setShowDeclineModal(true)}
+                    disabled={isProcessing}
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <X className="h-4 w-4" />
+                    Decline
+                  </button>
+                </div>
+              )}
+
+              {/* Action buttons for invitation and application chats */}
+              {selectedChat.relatedProject && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      const projectId = typeof selectedChat.relatedProject === 'string'
+                        ? selectedChat.relatedProject
+                        : (selectedChat.relatedProject as any)?._id;
+                      navigate(`/project/${projectId}`);
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm font-medium"
+                  >
+                    <Briefcase className="h-4 w-4" />
+                    View Project
+                  </button>
+                  <button
+                    onClick={() => {
+                      const otherUser = getOtherParticipant(selectedChat);
+                      const userId = otherUser?._id || otherUser?.id || otherUser;
+                      navigate(`/profile/${userId}`);
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 border border-orange-500 text-orange-500 rounded-lg hover:bg-orange-50 transition-colors text-sm font-medium"
+                  >
+                    <UserCircle className="h-4 w-4" />
+                    View Profile
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
@@ -247,6 +468,15 @@ const ChatPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Decline Reason Modal */}
+      <DeclineReasonModal
+        isOpen={showDeclineModal}
+        onClose={() => !isProcessing && setShowDeclineModal(false)}
+        onSubmit={handleDecline}
+        title={selectedChat?.type === 'invitation' ? 'Decline Invitation' : 'Decline Application'}
+        isSubmitting={isProcessing}
+      />
     </div>
   );
 };

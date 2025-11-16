@@ -15,6 +15,11 @@ export interface IChat extends Document {
     sender: Types.ObjectId;
     createdAt: Date;
   };
+  type: 'direct' | 'invitation' | 'application';
+  relatedProject?: Types.ObjectId;
+  relatedInvitation?: Types.ObjectId;
+  relatedApplication?: Types.ObjectId;
+  status?: 'Pending' | 'Accepted' | 'Rejected';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -55,6 +60,28 @@ const ChatSchema: Schema = new Schema(
         ref: 'User',
       },
       createdAt: Date,
+    },
+    type: {
+      type: String,
+      enum: ['direct', 'invitation', 'application'],
+      default: 'direct',
+    },
+    relatedProject: {
+      type: Schema.Types.ObjectId,
+      ref: 'Project',
+    },
+    relatedInvitation: {
+      type: Schema.Types.ObjectId,
+      ref: 'Invitation',
+    },
+    relatedApplication: {
+      type: Schema.Types.ObjectId,
+      ref: 'Application',
+    },
+    status: {
+      type: String,
+      enum: ['Pending', 'Accepted', 'Rejected'],
+      default: 'Pending',
     },
   },
   {

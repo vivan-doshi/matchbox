@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ClockIcon, PlusIcon, EyeIcon, LinkedinIcon, GithubIcon } from 'lucide-react';
 import type { DiscoverUser } from '../../types/discover';
+import { getProfilePictureUrl } from '../../utils/profileHelpers';
 
 interface UserCardProps {
   user: DiscoverUser;
@@ -57,7 +58,7 @@ const UserCard: React.FC<UserCardProps> = ({ user, viewMode, onInvite, onViewPro
             onClick={handleViewProfile}
           >
             <img
-              src={user.profilePicture || '/default-avatar.png'}
+              src={getProfilePictureUrl(user.profilePicture as any)}
               alt={`${user.firstName} ${user.lastName}`}
               className="w-full h-full object-cover hover:scale-105 transition-transform"
             />
@@ -183,7 +184,7 @@ const UserCard: React.FC<UserCardProps> = ({ user, viewMode, onInvite, onViewPro
         onClick={handleViewProfile}
       >
         <img
-          src={user.profilePicture || '/default-avatar.png'}
+          src={getProfilePictureUrl(user.profilePicture as any)}
           alt={`${user.firstName} ${user.lastName}`}
           className="w-full h-full object-cover hover:scale-105 transition-transform"
         />

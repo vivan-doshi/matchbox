@@ -2,6 +2,7 @@ import { Response } from 'express';
 import User from '../models/User';
 import Project from '../models/Project';
 import { AuthRequest } from '../middleware/auth';
+import { uploadProfilePicture, uploadResumeFile } from '../utils/fileUpload';
 
 // @desc    Get user profile
 // @route   GET /api/users/:id
@@ -120,6 +121,158 @@ export const updateUserProfile = async (
     res.status(500).json({
       success: false,
       message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Update user profile picture
+// @route   PUT /api/users/:id/profile-picture
+// @access  Private
+export const updateUserProfilePicture = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    console.log('[updateUserProfilePicture] Starting profile picture update');
+    console.log('[updateUserProfilePicture] User ID from params:', req.params.id);
+    console.log('[updateUserProfilePicture] Authenticated user ID:', req.userId);
+
+    // Check if user is updating their own profile
+    if (req.params.id !== req.userId) {
+      res.status(403).json({
+        success: false,
+        message: 'You can only update your own profile picture',
+      });
+      return;
+    }
+
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+
+    if (!files || !files.profilePicture || !files.profilePicture[0]) {
+      res.status(400).json({
+        success: false,
+        message: 'No profile picture file provided',
+      });
+      return;
+    }
+
+    // Upload to Cloudinary
+    const profilePictureFile = files.profilePicture[0];
+    console.log('[updateUserProfilePicture] Uploading to Cloudinary...');
+    const uploaded = await uploadProfilePicture(profilePictureFile.buffer);
+
+    const profilePictureData = {
+      url: uploaded.url,
+      publicId: uploaded.publicId,
+    };
+
+    console.log('[updateUserProfilePicture] Cloudinary upload successful:', profilePictureData);
+
+    // Update user in database
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { profilePicture: profilePictureData },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+      return;
+    }
+
+    console.log('[updateUserProfilePicture] Profile picture updated successfully');
+    res.status(200).json({
+      success: true,
+      data: user,
+    });
+  } catch (error: any) {
+    console.error('[updateUserProfilePicture] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to update profile picture',
+    });
+  }
+};
+
+// @desc    Update user resume
+// @route   PUT /api/users/:id/resume
+// @access  Private
+export const updateUserResume = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    console.log('[updateUserResume] Starting resume update');
+    console.log('[updateUserResume] User ID from params:', req.params.id);
+    console.log('[updateUserResume] Authenticated user ID:', req.userId);
+
+    // Check if user is updating their own profile
+    if (req.params.id !== req.userId) {
+      res.status(403).json({
+        success: false,
+        message: 'You can only update your own resume',
+      });
+      return;
+    }
+
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+
+    if (!files || !files.resume || !files.resume[0]) {
+      res.status(400).json({
+        success: false,
+        message: 'No resume file provided',
+      });
+      return;
+    }
+
+    // Upload to Cloudinary
+    const resumeFile = files.resume[0];
+    console.log('[updateUserResume] Uploading to Cloudinary...');
+    const uploaded = await uploadResumeFile(resumeFile.buffer, resumeFile.originalname);
+
+    const resumeData = {
+      filename: resumeFile.originalname,
+      url: uploaded.url,
+      publicId: uploaded.publicId,
+      uploadedAt: new Date(),
+    };
+
+    console.log('[updateUserResume] Cloudinary upload successful:', resumeData);
+
+    // Update user in database
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { resume: resumeData },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+      return;
+    }
+
+    console.log('[updateUserResume] Resume updated successfully');
+    res.status(200).json({
+      success: true,
+      data: user,
+    });
+  } catch (error: any) {
+    console.error('[updateUserResume] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to update resume',
     });
   }
 };

@@ -67,7 +67,7 @@ export const AuthProvider: React.FC<{
     }
   };
 
-  const signup = async (userData: SignupRequest) => {
+  const signup = async (userData: SignupRequest | FormData) => {
     try {
       const response = await apiClient.signup(userData);
 
@@ -81,6 +81,11 @@ export const AuthProvider: React.FC<{
       }
     } catch (error: any) {
       console.error('Signup error:', error);
+      if (error.response?.status === 413) {
+        throw new Error(
+          'Uploads are too large. Please keep profile photos under 5MB and resumes under 10MB.'
+        );
+      }
       const message = error.response?.data?.message || error.message || 'Signup failed';
       throw new Error(message);
     }

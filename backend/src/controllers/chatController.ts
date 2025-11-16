@@ -5,18 +5,52 @@ import Match from '../models/Match';
 import { AuthRequest } from '../middleware/auth';
 
 // @desc    Get all chats for user
-// @route   GET /api/chats
+// @route   GET /api/chats?type=direct|invitation|application&status=Pending|Accepted|Rejected&tab=active|invitations|requests
 // @access  Private
 export const getChats = async (
   req: AuthRequest,
   res: Response
 ): Promise<void> => {
   try {
-    const chats = await Chat.find({
+    const { type, status, tab } = req.query;
+
+    const query: any = {
       participants: req.userId,
-    })
+    };
+
+    // Handle tab-based filtering
+    if (tab === 'active') {
+      // Active tab: Direct messages + Accepted invitations/applications
+      query.$or = [
+        { type: 'direct' },
+        { type: { $in: ['invitation', 'application'] }, status: 'Accepted' }
+      ];
+    } else if (tab === 'invitations') {
+      // Invitations tab: Pending invitations where user is the invitee
+      query.type = 'invitation';
+      query.status = 'Pending';
+    } else if (tab === 'requests') {
+      // Requests tab: Pending applications where user is the project creator
+      query.type = 'application';
+      query.status = 'Pending';
+    }
+
+    // Filter by chat type if provided (and no tab is specified)
+    if (!tab && type && ['direct', 'invitation', 'application'].includes(type as string)) {
+      query.type = type;
+    }
+
+    // Filter by status if provided (and no tab is specified)
+    if (!tab && status && ['Pending', 'Accepted', 'Rejected'].includes(status as string)) {
+      query.status = status;
+    }
+
+    const chats = await Chat.find(query)
       .populate('participants', 'firstName lastName preferredName university profilePicture')
       .populate('lastMessage.sender', 'firstName lastName')
+      .populate('relatedProject', 'title description creator')
+      .populate('relatedInvitation')
+      .populate('relatedApplication')
       .sort('-updatedAt');
 
     res.status(200).json({
@@ -94,10 +128,9 @@ export const getChat = async (
   res: Response
 ): Promise<void> => {
   try {
-    const chat = await Chat.findById(req.params.id).populate(
-      'participants',
-      'firstName lastName preferredName university profilePicture'
-    );
+    const chat = await Chat.findById(req.params.id)
+      .populate('participants', 'firstName lastName preferredName university profilePicture')
+      .populate('relatedProject', 'title description creator');
 
     if (!chat) {
       res.status(404).json({

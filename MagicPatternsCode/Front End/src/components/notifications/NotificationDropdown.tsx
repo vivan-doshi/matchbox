@@ -16,6 +16,7 @@ import type { Notification as ApiNotification } from '../../types/api';
 
 type NotificationType =
   | 'project_invite'
+  | 'project_application'
   | 'message'
   | 'team_join'
   | 'project_update'
@@ -125,6 +126,8 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
     switch (type) {
       case 'project_invite':
         return <UserPlusIcon className={`${iconClass} text-orange-600`} />;
+      case 'project_application':
+        return <FolderIcon className={`${iconClass} text-blue-600`} />;
       case 'message':
         return <MessageSquareIcon className={`${iconClass} text-blue-600`} />;
       case 'team_join':
