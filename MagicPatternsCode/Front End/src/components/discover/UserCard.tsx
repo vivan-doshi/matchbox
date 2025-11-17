@@ -1,19 +1,85 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ClockIcon, PlusIcon, EyeIcon, LinkedinIcon, GithubIcon } from 'lucide-react';
+import { ClockIcon, PlusIcon, EyeIcon, LinkedinIcon, GithubIcon, UserPlus, UserCheck, UserMinus, Check, Clock } from 'lucide-react';
 import type { DiscoverUser } from '../../types/discover';
 import { getProfilePictureUrl } from '../../utils/profileHelpers';
+import { connectionService, followService, type NetworkStatus } from '../../services/connectionService';
+import ConnectionRequestModal from '../network/ConnectionRequestModal';
 
 interface UserCardProps {
   user: DiscoverUser;
   viewMode: 'grid' | 'list';
   onInvite: () => void;
   onViewProfile?: () => void;
+  onConnect?: () => void;
+  showConnectionActions?: boolean;
 }
 
-const UserCard: React.FC<UserCardProps> = ({ user, viewMode, onInvite, onViewProfile }) => {
+const UserCard: React.FC<UserCardProps> = ({ user, viewMode, onInvite, onViewProfile, onConnect, showConnectionActions = true }) => {
   const navigate = useNavigate();
   const profileId = user.id || user.rawId || user._id;
+
+  const [networkStatus, setNetworkStatus] = useState<NetworkStatus | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [showConnectionModal, setShowConnectionModal] = useState(false);
+
+  // Fetch network status on mount
+  useEffect(() => {
+    if (profileId && showConnectionActions) {
+      fetchNetworkStatus();
+    }
+  }, [profileId, showConnectionActions]);
+
+  const fetchNetworkStatus = async () => {
+    try {
+      const response = await connectionService.getConnectionStatus(profileId);
+      setNetworkStatus(response.data);
+    } catch (error) {
+      console.error('Failed to fetch network status:', error);
+    }
+  };
+
+  const handleConnect = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onConnect) {
+      onConnect();
+      return;
+    }
+    // Open connection request modal
+    setShowConnectionModal(true);
+  };
+
+  const handleFollow = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!profileId || loading) return;
+
+    setLoading(true);
+    try {
+      await followService.followUser(profileId);
+      await fetchNetworkStatus(); // Refresh status
+    } catch (error: any) {
+      console.error('Failed to follow user:', error);
+      alert(error?.response?.data?.message || 'Failed to follow user');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUnfollow = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!profileId || loading) return;
+
+    setLoading(true);
+    try {
+      await followService.unfollowUser(profileId);
+      await fetchNetworkStatus(); // Refresh status
+    } catch (error: any) {
+      console.error('Failed to unfollow user:', error);
+      alert(error?.response?.data?.message || 'Failed to unfollow user');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleViewProfile = () => {
     if (onViewProfile) {
@@ -137,7 +203,76 @@ const UserCard: React.FC<UserCardProps> = ({ user, viewMode, onInvite, onViewPro
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
+              {/* Connection Status */}
+              {showConnectionActions && networkStatus && (
+                <>
+                  {networkStatus.connection.exists && networkStatus.connection.status === 'Accepted' && (
+                    <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg">
+                      <UserCheck className="h-4 w-4" />
+                      Connected
+                    </div>
+                  )}
+                  {networkStatus.connection.exists && networkStatus.connection.status === 'Pending' && networkStatus.connection.isSent && (
+                    <div className="flex items-center gap-2 text-sm text-orange-600 bg-orange-50 px-3 py-2 rounded-lg">
+                      <Clock className="h-4 w-4" />
+                      Request Sent
+                    </div>
+                  )}
+                  {networkStatus.connection.exists && networkStatus.connection.status === 'Pending' && networkStatus.connection.isReceived && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Handle accept connection
+                      }}
+                      className="flex items-center gap-2 bg-blue-500 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition-all"
+                    >
+                      <Check className="h-4 w-4" />
+                      Accept Request
+                    </button>
+                  )}
+                  {!networkStatus.connection.exists && (
+                    <button
+                      type="button"
+                      onClick={handleConnect}
+                      disabled={loading}
+                      className="flex items-center gap-2 bg-blue-500 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition-all disabled:opacity-50"
+                    >
+                      <UserPlus className="h-4 w-4" />
+                      Connect
+                    </button>
+                  )}
+                  {/* Follow Button */}
+                  <button
+                    type="button"
+                    onClick={networkStatus.follow.isFollowing ? handleUnfollow : handleFollow}
+                    disabled={loading}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50 ${
+                      networkStatus.follow.isFollowing
+                        ? 'bg-white border border-orange-500 text-orange-500 hover:bg-orange-50'
+                        : 'bg-orange-500 text-white hover:bg-orange-600'
+                    }`}
+                  >
+                    {networkStatus.follow.isFollowing ? (
+                      <>
+                        <UserMinus className="h-4 w-4" />
+                        Following
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="h-4 w-4" />
+                        Follow
+                      </>
+                    )}
+                  </button>
+                  {networkStatus.follow.isFollower && !networkStatus.follow.isFollowing && (
+                    <div className="text-xs text-slate-600 self-center">
+                      Follows you
+                    </div>
+                  )}
+                </>
+              )}
               <button
             type="button"
             onClick={(e) => {
@@ -262,6 +397,62 @@ const UserCard: React.FC<UserCardProps> = ({ user, viewMode, onInvite, onViewPro
 
         {/* Actions */}
         <div className="flex flex-col gap-2">
+          {/* Connection Status */}
+          {showConnectionActions && networkStatus && (
+            <>
+              {networkStatus.connection.exists && networkStatus.connection.status === 'Accepted' && (
+                <div className="flex items-center justify-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg">
+                  <UserCheck className="h-4 w-4" />
+                  Connected
+                </div>
+              )}
+              {networkStatus.connection.exists && networkStatus.connection.status === 'Pending' && networkStatus.connection.isSent && (
+                <div className="flex items-center justify-center gap-2 text-sm text-orange-600 bg-orange-50 px-3 py-2 rounded-lg">
+                  <Clock className="h-4 w-4" />
+                  Request Sent
+                </div>
+              )}
+              {!networkStatus.connection.exists && (
+                <button
+                  type="button"
+                  onClick={handleConnect}
+                  disabled={loading}
+                  className="flex items-center justify-center gap-2 bg-blue-500 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition-all disabled:opacity-50"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  Connect
+                </button>
+              )}
+              {/* Follow Button */}
+              <button
+                type="button"
+                onClick={networkStatus.follow.isFollowing ? handleUnfollow : handleFollow}
+                disabled={loading}
+                className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50 ${
+                  networkStatus.follow.isFollowing
+                    ? 'bg-white border border-orange-500 text-orange-500 hover:bg-orange-50'
+                    : 'bg-orange-500 text-white hover:bg-orange-600'
+                }`}
+              >
+                {networkStatus.follow.isFollowing ? (
+                  <>
+                    <UserMinus className="h-4 w-4" />
+                    Following
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="h-4 w-4" />
+                    Follow
+                  </>
+                )}
+              </button>
+              {networkStatus.follow.isFollower && !networkStatus.follow.isFollowing && (
+                <div className="text-xs text-slate-600 text-center">
+                  Follows you
+                </div>
+              )}
+            </>
+          )}
           <button
             type="button"
             onClick={(e) => {
@@ -286,6 +477,18 @@ const UserCard: React.FC<UserCardProps> = ({ user, viewMode, onInvite, onViewPro
           </button>
         </div>
       </div>
+
+      {/* Connection Request Modal */}
+      {showConnectionModal && (
+        <ConnectionRequestModal
+          user={user}
+          onClose={() => setShowConnectionModal(false)}
+          onSuccess={() => {
+            setShowConnectionModal(false);
+            fetchNetworkStatus(); // Refresh status
+          }}
+        />
+      )}
     </div>
   );
 };

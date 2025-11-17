@@ -241,8 +241,12 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
       console.log('[CreateProjectModal] Project created successfully:', response.data);
 
       // Call parent callback with the created project
+      // Normalize ID field to ensure compatibility with HomePage
       if (onProjectCreated && response.data) {
-        onProjectCreated(response.data);
+        onProjectCreated({
+          ...response.data,
+          id: response.data.id || response.data._id
+        });
       }
 
       // Show success and close modal after delay

@@ -15,10 +15,11 @@ export interface IChat extends Document {
     sender: Types.ObjectId;
     createdAt: Date;
   };
-  type: 'direct' | 'invitation' | 'application';
+  type: 'direct' | 'invitation' | 'application' | 'connection';
   relatedProject?: Types.ObjectId;
   relatedInvitation?: Types.ObjectId;
   relatedApplication?: Types.ObjectId;
+  relatedConnection?: Types.ObjectId;
   status?: 'Pending' | 'Accepted' | 'Rejected';
   createdAt: Date;
   updatedAt: Date;
@@ -63,7 +64,7 @@ const ChatSchema: Schema = new Schema(
     },
     type: {
       type: String,
-      enum: ['direct', 'invitation', 'application'],
+      enum: ['direct', 'invitation', 'application', 'connection'],
       default: 'direct',
     },
     relatedProject: {
@@ -77,6 +78,10 @@ const ChatSchema: Schema = new Schema(
     relatedApplication: {
       type: Schema.Types.ObjectId,
       ref: 'Application',
+    },
+    relatedConnection: {
+      type: Schema.Types.ObjectId,
+      ref: 'Connection',
     },
     status: {
       type: String,

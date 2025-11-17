@@ -37,6 +37,17 @@ export interface IUser extends Document {
   weeklyAvailability?: {
     hoursPerWeek: number;
   };
+  network?: {
+    connections: {
+      count: number;
+    };
+    followers: {
+      count: number;
+    };
+    following: {
+      count: number;
+    };
+  };
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -130,6 +141,17 @@ const UserSchema: Schema = new Schema(
     },
     weeklyAvailability: {
       hoursPerWeek: { type: Number, min: 0, max: 168, default: 0 },
+    },
+    network: {
+      connections: {
+        count: { type: Number, default: 0 },
+      },
+      followers: {
+        count: { type: Number, default: 0 },
+      },
+      following: {
+        count: { type: Number, default: 0 },
+      },
     },
   },
   {

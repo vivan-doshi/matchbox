@@ -8,6 +8,7 @@ import ProjectDetailsPage from './pages/ProjectDetailsPage';
 import EditProjectPage from './pages/EditProjectPage';
 import ManageTeamPage from './pages/ManageTeamPage';
 import MyProjects from './pages/MyProjects';
+import NetworkPage from './pages/NetworkPage';
 import { AuthProvider } from './context/AuthContext';
 import { SignupProvider } from './context/SignupContext';
 
@@ -26,6 +27,7 @@ export function App() {
             <Route path="/project/:id/edit" element={<EditProjectPage />} />
             <Route path="/project/:id/manage-team" element={<ManageTeamPage />} />
             <Route path="/my-projects" element={<MyProjects />} />
+            <Route path="/network" element={<NetworkPage />} />
           </Routes>
         </div>
       </BrowserRouter>

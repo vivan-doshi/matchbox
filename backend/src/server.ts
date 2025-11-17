@@ -39,6 +39,8 @@ import chatRoutes from './routes/chatRoutes';
 import matchRoutes from './routes/matchRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import invitationRoutes from './routes/invitationRoutes';
+import connectionRoutes from './routes/connectionRoutes';
+import followRoutes from './routes/followRoutes';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -47,6 +49,8 @@ app.use('/api/chats', chatRoutes);
 app.use('/api/matches', matchRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/invitations', invitationRoutes);
+app.use('/api/connections', connectionRoutes);
+app.use('/api/follows', followRoutes);
 
 // Handle payload-too-large errors gracefully
 app.use((err: any, _req: Request, res: Response, next: NextFunction) => {

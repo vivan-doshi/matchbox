@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { LinkedinIcon, GithubIcon, ExternalLinkIcon, EditIcon, FolderIcon, FileTextIcon, UploadIcon, CheckIcon, XIcon, MenuIcon, DownloadIcon } from 'lucide-react';
+import { LinkedinIcon, GithubIcon, ExternalLinkIcon, EditIcon, FolderIcon, FileTextIcon, UploadIcon, CheckIcon, XIcon, MenuIcon, DownloadIcon, UserCheck, UserPlus, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Navigation from '../components/Navigation';
 import { apiClient } from '../utils/apiClient';
 import { Project, User } from '../types/api';
 import { getProfilePictureUrl, getResumeUrl, getResumeFilename } from '../utils/profileHelpers';
+import { connectionService, followService, NetworkStatus } from '../services/connectionService';
+import ConnectionRequestModal from '../components/network/ConnectionRequestModal';
 
 type ProfileProjectCard = Project & {
   userRoleLabel: string;
@@ -34,6 +36,12 @@ const ProfilePage: React.FC = () => {
   const [profileImageUploading, setProfileImageUploading] = useState(false);
   const [profileImageError, setProfileImageError] = useState<string | null>(null);
   const canEdit = isOwnProfile;
+
+  // Network state
+  const [networkStatus, setNetworkStatus] = useState<NetworkStatus | null>(null);
+  const [networkStats, setNetworkStats] = useState<any>(null);
+  const [showConnectionModal, setShowConnectionModal] = useState(false);
+  const [loadingNetwork, setLoadingNetwork] = useState(false);
 
   const fileToDataUrl = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -424,6 +432,66 @@ const ProfilePage: React.FC = () => {
     setEditedInterests(editedInterests.filter(i => i !== interest));
   };
 
+  // Fetch network status and stats for external profiles
+  useEffect(() => {
+    if (!isOwnProfile && viewedUserId && externalUser) {
+      fetchNetworkData();
+    }
+  }, [isOwnProfile, viewedUserId, externalUser]);
+
+  const fetchNetworkData = async () => {
+    if (!viewedUserId) return;
+
+    try {
+      setLoadingNetwork(true);
+      const [statusResponse, statsResponse] = await Promise.all([
+        connectionService.getConnectionStatus(viewedUserId),
+        followService.getNetworkStats(viewedUserId),
+      ]);
+
+      if (statusResponse.success) {
+        setNetworkStatus(statusResponse.data);
+      }
+
+      if (statsResponse.success) {
+        setNetworkStats(statsResponse.data);
+      }
+    } catch (error) {
+      console.error('[ProfilePage] Error fetching network data:', error);
+    } finally {
+      setLoadingNetwork(false);
+    }
+  };
+
+  const handleConnect = () => {
+    setShowConnectionModal(true);
+  };
+
+  const handleConnectionSuccess = () => {
+    setShowConnectionModal(false);
+    fetchNetworkData();
+  };
+
+  const handleFollow = async () => {
+    if (!viewedUserId) return;
+    try {
+      await followService.followUser(viewedUserId);
+      fetchNetworkData();
+    } catch (error) {
+      console.error('[ProfilePage] Error following user:', error);
+    }
+  };
+
+  const handleUnfollow = async () => {
+    if (!viewedUserId) return;
+    try {
+      await followService.unfollowUser(viewedUserId);
+      fetchNetworkData();
+    } catch (error) {
+      console.error('[ProfilePage] Error unfollowing user:', error);
+    }
+  };
+
   const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!canEdit) return;
     const file = e.target.files?.[0];
@@ -539,7 +607,7 @@ const ProfilePage: React.FC = () => {
               </div>
               <h1 className="text-xl font-bold">Profile</h1>
             </div>
-          {canEdit && (
+          {canEdit ? (
             <div className="flex items-center">
               <Link to="/my-projects" className="flex items-center text-sm bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-full font-medium hover:bg-slate-50 transition-all mr-2">
                 <FolderIcon className="h-4 w-4 mr-1" />
@@ -569,6 +637,46 @@ const ProfilePage: React.FC = () => {
                   <XIcon className="h-4 w-4 mr-1" />
                   Cancel
                 </button>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              {networkStatus && (
+                <>
+                  {/* Connection Status and Button */}
+                  {networkStatus.connection.exists && networkStatus.connection.status === 'Accepted' ? (
+                    <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg border border-green-200">
+                      <UserCheck className="h-4 w-4" />
+                      Connected
+                    </div>
+                  ) : networkStatus.connection.exists && networkStatus.connection.status === 'Pending' ? (
+                    <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200">
+                      <UserCheck className="h-4 w-4" />
+                      {networkStatus.connection.isRequester ? 'Request Sent' : 'Pending Request'}
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleConnect}
+                      className="flex items-center text-sm bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg transition-all"
+                    >
+                      <UserPlus className="h-4 w-4 mr-1" />
+                      Connect
+                    </button>
+                  )}
+
+                  {/* Follow Button */}
+                  <button
+                    onClick={networkStatus.follow.isFollowing ? handleUnfollow : handleFollow}
+                    className={`flex items-center text-sm px-4 py-2 rounded-lg font-medium transition-all ${
+                      networkStatus.follow.isFollowing
+                        ? 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
+                        : 'bg-white border border-orange-500 text-orange-600 hover:bg-orange-50'
+                    }`}
+                  >
+                    <UserPlus className="h-4 w-4 mr-1" />
+                    {networkStatus.follow.isFollowing ? 'Following' : 'Follow'}
+                  </button>
+                </>
               )}
             </div>
           )}
@@ -854,6 +962,34 @@ const ProfilePage: React.FC = () => {
                 )}
               </div>
             </div>
+            {/* Network Stats */}
+            {!isOwnProfile && networkStats && (
+              <div className="mt-6 pt-6 border-t border-slate-200">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-bold text-slate-900">Network</h3>
+                  {networkStatus?.connection.mutualConnectionsCount > 0 && (
+                    <span className="text-xs text-slate-600">
+                      {networkStatus.connection.mutualConnectionsCount} mutual connection{networkStatus.connection.mutualConnectionsCount !== 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="text-center p-3 bg-slate-50 rounded-lg">
+                    <div className="text-2xl font-bold text-orange-600">{networkStats.connectionsCount || 0}</div>
+                    <div className="text-xs text-slate-600 mt-1">Connections</div>
+                  </div>
+                  <div className="text-center p-3 bg-slate-50 rounded-lg">
+                    <div className="text-2xl font-bold text-orange-600">{networkStats.followersCount || 0}</div>
+                    <div className="text-xs text-slate-600 mt-1">Followers</div>
+                  </div>
+                  <div className="text-center p-3 bg-slate-50 rounded-lg">
+                    <div className="text-2xl font-bold text-orange-600">{networkStats.followingCount || 0}</div>
+                    <div className="text-xs text-slate-600 mt-1">Following</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="mt-8">
               <h3 className="font-bold mb-3">About</h3>
               {isEditMode ? (
@@ -1350,6 +1486,15 @@ const ProfilePage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Connection Request Modal */}
+      {showConnectionModal && externalUser && (
+        <ConnectionRequestModal
+          user={externalUser}
+          onClose={() => setShowConnectionModal(false)}
+          onSuccess={handleConnectionSuccess}
+        />
       )}
       </div>
     </div>;

@@ -224,6 +224,21 @@ const Dashboard: React.FC = () => {
             </NavLink>
 
             <NavLink
+              to="/network"
+              onClick={handleNavClick}
+              className={({ isActive }) =>
+                `flex items-center px-4 py-3 rounded-lg transition-all ${
+                  isActive
+                    ? 'bg-white bg-opacity-20 text-white font-semibold'
+                    : 'text-white text-opacity-90 hover:bg-white hover:bg-opacity-10'
+                }`
+              }
+            >
+              <UsersIcon className="h-5 w-5 mr-3" />
+              <span>Network</span>
+            </NavLink>
+
+            <NavLink
               to="/my-projects"
               onClick={handleNavClick}
               className={({ isActive }) =>
