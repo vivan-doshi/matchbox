@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Users, UserPlus, UserCheck, Bell, Check, X } from 'lucide-react';
+import { Users, UserPlus, UserCheck, Bell, Check, X, MenuIcon } from 'lucide-react';
 import { connectionService, followService } from '../services/connectionService';
 import { getProfilePictureUrl } from '../utils/profileHelpers';
 import { useNavigate } from 'react-router-dom';
+import Navigation from '../components/Navigation';
 
 type TabType = 'connections' | 'followers' | 'following' | 'requests';
 
 const NetworkPage: React.FC = () => {
   const navigate = useNavigate();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('connections');
   const [connections, setConnections] = useState<any[]>([]);
   const [followers, setFollowers] = useState<any[]>([]);
@@ -153,11 +155,37 @@ const NetworkPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8">
-      <div className="max-w-6xl mx-auto px-4">
-        {/* Header */}
+    <div className="min-h-screen page-background-gradient flex flex-col">
+      {/* Header */}
+      <header className="bg-white border-b border-slate-200 py-4 px-6">
+        <div className="container mx-auto flex justify-between items-center">
+          <div className="flex items-center">
+            {/* Hamburger Menu Button */}
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="mr-3 p-2 rounded-lg hover:bg-slate-100 transition-colors"
+              aria-label="Open navigation menu"
+            >
+              <MenuIcon className="h-6 w-6 text-slate-700" />
+            </button>
+
+            <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center mr-2">
+              <span className="text-white font-bold text-sm">M</span>
+            </div>
+            <h1 className="text-xl font-bold">My Network</h1>
+          </div>
+        </div>
+      </header>
+
+      <Navigation isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
+
+      {/* Main Content */}
+      <main className="flex-1 container mx-auto p-6 mb-0">
+        {/* Page Title */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">My Network</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent mb-2">
+            My Network
+          </h1>
           <p className="text-slate-600">
             Manage your connections and grow your professional network
           </p>
@@ -165,58 +193,30 @@ const NetworkPage: React.FC = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Users className="h-6 w-6 text-blue-600" />
+          {[
+            { id: 'connections', label: 'Connections', count: stats.connections, icon: Users },
+            { id: 'followers', label: 'Followers', count: stats.followers, icon: UserPlus },
+            { id: 'following', label: 'Following', count: stats.following, icon: UserCheck },
+            { id: 'requests', label: 'Pending Requests', count: stats.requests, icon: Bell },
+          ].map((stat) => {
+            const IconComponent = stat.icon;
+            return (
+              <div key={stat.id} className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                <div className="flex items-center gap-3">
+                  <IconComponent className="h-6 w-6 text-slate-400" />
+                  <div>
+                    <p className="text-2xl font-bold text-slate-900">{stat.count}</p>
+                    <p className="text-sm text-slate-600">{stat.label}</p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{stats.connections}</p>
-                <p className="text-sm text-slate-600">Connections</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <UserPlus className="h-6 w-6 text-green-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{stats.followers}</p>
-                <p className="text-sm text-slate-600">Followers</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                <UserCheck className="h-6 w-6 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{stats.following}</p>
-                <p className="text-sm text-slate-600">Following</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                <Bell className="h-6 w-6 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{stats.requests}</p>
-                <p className="text-sm text-slate-600">Pending Requests</p>
-              </div>
-            </div>
-          </div>
+            );
+          })}
         </div>
 
         {/* Tabs */}
-        <div className="mb-6">
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-1 inline-flex gap-1">
+        <div className="mb-6 border-b border-slate-200">
+          <div className="flex gap-8">
             {[
               { id: 'connections', label: 'Connections', count: stats.connections },
               { id: 'followers', label: 'Followers', count: stats.followers },
@@ -226,21 +226,15 @@ const NetworkPage: React.FC = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as TabType)}
-                className={`px-6 py-3 rounded-lg font-medium text-sm transition-all ${
+                className={`pb-3 font-medium text-sm transition-colors ${
                   activeTab === tab.id
-                    ? 'bg-blue-500 text-white shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-100'
+                    ? 'text-orange-600 border-b-2 border-orange-500'
+                    : 'text-slate-600 hover:text-orange-600'
                 }`}
               >
                 {tab.label}
                 {tab.count > 0 && (
-                  <span
-                    className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
-                      activeTab === tab.id
-                        ? 'bg-white/20 text-white'
-                        : 'bg-slate-200 text-slate-700'
-                    }`}
-                  >
+                  <span className="ml-2 px-2 py-0.5 bg-slate-100 text-slate-700 rounded-full text-xs">
                     {tab.count}
                   </span>
                 )}
@@ -253,7 +247,7 @@ const NetworkPage: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
           {loading ? (
             <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-solid border-orange-500 border-r-transparent"></div>
               <p className="text-slate-600 mt-4">Loading...</p>
             </div>
           ) : (
@@ -393,14 +387,14 @@ const NetworkPage: React.FC = () => {
                           <div className="flex gap-3">
                             <button
                               onClick={() => handleAcceptRequest(request._id)}
-                              className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium"
+                              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:shadow-lg transition-all font-medium text-sm"
                             >
                               <Check className="h-4 w-4" />
                               Accept
                             </button>
                             <button
                               onClick={() => handleDeclineRequest(request._id)}
-                              className="flex items-center gap-2 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 font-medium"
+                              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-all font-medium text-sm"
                             >
                               <X className="h-4 w-4" />
                               Decline
@@ -570,7 +564,7 @@ const NetworkPage: React.FC = () => {
 
                   <button
                     onClick={() => navigate(`/profile/${suggestion.user._id}`)}
-                    className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium text-sm"
+                    className="w-full px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:shadow-lg transition-all font-medium text-sm"
                   >
                     View Profile
                   </button>
@@ -579,7 +573,7 @@ const NetworkPage: React.FC = () => {
             </div>
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 };

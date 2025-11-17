@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { HomeIcon, MessageSquareIcon, UserIcon, FolderIcon, UsersIcon, MenuIcon, XIcon, LogOutIcon } from 'lucide-react';
+import { HomeIcon, MessageSquareIcon, UserIcon, FolderIcon, UsersIcon, MenuIcon, XIcon, LogOutIcon, Network } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface NavigationProps {
@@ -110,6 +110,21 @@ const Navigation: React.FC<NavigationProps> = ({
           >
             <UsersIcon className="h-5 w-5 mr-3" />
             <span>Discover People</span>
+          </NavLink>
+
+          <NavLink
+            to="/network"
+            onClick={handleNavClick}
+            className={({ isActive }) =>
+              `flex items-center px-4 py-3 rounded-lg transition-all ${
+                isActive
+                  ? 'bg-white bg-opacity-20 text-white font-semibold'
+                  : 'text-white text-opacity-90 hover:bg-white hover:bg-opacity-10'
+              }`
+            }
+          >
+            <Network className="h-5 w-5 mr-3" />
+            <span>Network</span>
           </NavLink>
 
           <NavLink

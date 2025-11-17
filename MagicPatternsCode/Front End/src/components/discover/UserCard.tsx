@@ -205,21 +205,21 @@ const UserCard: React.FC<UserCardProps> = ({ user, viewMode, onInvite, onViewPro
             {/* Actions */}
             <div className="flex flex-wrap gap-3">
               {/* Connection Status */}
-              {showConnectionActions && networkStatus && (
+              {showConnectionActions && (
                 <>
-                  {networkStatus.connection.exists && networkStatus.connection.status === 'Accepted' && (
+                  {networkStatus?.connection.exists && networkStatus.connection.status === 'Accepted' && (
                     <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg">
                       <UserCheck className="h-4 w-4" />
                       Connected
                     </div>
                   )}
-                  {networkStatus.connection.exists && networkStatus.connection.status === 'Pending' && networkStatus.connection.isSent && (
+                  {networkStatus?.connection.exists && networkStatus.connection.status === 'Pending' && networkStatus.connection.isSent && (
                     <div className="flex items-center gap-2 text-sm text-orange-600 bg-orange-50 px-3 py-2 rounded-lg">
                       <Clock className="h-4 w-4" />
                       Request Sent
                     </div>
                   )}
-                  {networkStatus.connection.exists && networkStatus.connection.status === 'Pending' && networkStatus.connection.isReceived && (
+                  {networkStatus?.connection.exists && networkStatus.connection.status === 'Pending' && networkStatus.connection.isReceived && (
                     <button
                       type="button"
                       onClick={(e) => {
@@ -232,7 +232,7 @@ const UserCard: React.FC<UserCardProps> = ({ user, viewMode, onInvite, onViewPro
                       Accept Request
                     </button>
                   )}
-                  {!networkStatus.connection.exists && (
+                  {(!networkStatus || !networkStatus.connection.exists) && (
                     <button
                       type="button"
                       onClick={handleConnect}
@@ -246,15 +246,15 @@ const UserCard: React.FC<UserCardProps> = ({ user, viewMode, onInvite, onViewPro
                   {/* Follow Button */}
                   <button
                     type="button"
-                    onClick={networkStatus.follow.isFollowing ? handleUnfollow : handleFollow}
+                    onClick={networkStatus?.follow.isFollowing ? handleUnfollow : handleFollow}
                     disabled={loading}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50 ${
-                      networkStatus.follow.isFollowing
+                      networkStatus?.follow.isFollowing
                         ? 'bg-white border border-orange-500 text-orange-500 hover:bg-orange-50'
                         : 'bg-orange-500 text-white hover:bg-orange-600'
                     }`}
                   >
-                    {networkStatus.follow.isFollowing ? (
+                    {networkStatus?.follow.isFollowing ? (
                       <>
                         <UserMinus className="h-4 w-4" />
                         Following
@@ -266,7 +266,7 @@ const UserCard: React.FC<UserCardProps> = ({ user, viewMode, onInvite, onViewPro
                       </>
                     )}
                   </button>
-                  {networkStatus.follow.isFollower && !networkStatus.follow.isFollowing && (
+                  {networkStatus?.follow.isFollower && !networkStatus.follow.isFollowing && (
                     <div className="text-xs text-slate-600 self-center">
                       Follows you
                     </div>
@@ -397,27 +397,25 @@ const UserCard: React.FC<UserCardProps> = ({ user, viewMode, onInvite, onViewPro
 
         {/* Actions */}
         <div className="flex flex-col gap-2">
-          {/* Connection Status */}
-          {showConnectionActions && networkStatus && (
-            <>
-              {networkStatus.connection.exists && networkStatus.connection.status === 'Accepted' && (
-                <div className="flex items-center justify-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg">
+          {/* Connection and Follow Buttons */}
+          {showConnectionActions && (
+            <div className="flex gap-2">
+              {networkStatus?.connection.exists && networkStatus.connection.status === 'Accepted' ? (
+                <div className="flex items-center justify-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg flex-1">
                   <UserCheck className="h-4 w-4" />
                   Connected
                 </div>
-              )}
-              {networkStatus.connection.exists && networkStatus.connection.status === 'Pending' && networkStatus.connection.isSent && (
-                <div className="flex items-center justify-center gap-2 text-sm text-orange-600 bg-orange-50 px-3 py-2 rounded-lg">
+              ) : networkStatus?.connection.exists && networkStatus.connection.status === 'Pending' && networkStatus.connection.isSent ? (
+                <div className="flex items-center justify-center gap-2 text-sm text-orange-600 bg-orange-50 px-3 py-2 rounded-lg flex-1">
                   <Clock className="h-4 w-4" />
                   Request Sent
                 </div>
-              )}
-              {!networkStatus.connection.exists && (
+              ) : (
                 <button
                   type="button"
                   onClick={handleConnect}
                   disabled={loading}
-                  className="flex items-center justify-center gap-2 bg-blue-500 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition-all disabled:opacity-50"
+                  className="flex items-center justify-center gap-2 bg-blue-500 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition-all disabled:opacity-50 flex-1"
                 >
                   <UserPlus className="h-4 w-4" />
                   Connect
@@ -426,15 +424,11 @@ const UserCard: React.FC<UserCardProps> = ({ user, viewMode, onInvite, onViewPro
               {/* Follow Button */}
               <button
                 type="button"
-                onClick={networkStatus.follow.isFollowing ? handleUnfollow : handleFollow}
+                onClick={networkStatus?.follow.isFollowing ? handleUnfollow : handleFollow}
                 disabled={loading}
-                className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50 ${
-                  networkStatus.follow.isFollowing
-                    ? 'bg-white border border-orange-500 text-orange-500 hover:bg-orange-50'
-                    : 'bg-orange-500 text-white hover:bg-orange-600'
-                }`}
+                className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50 flex-1 bg-white border border-slate-300 text-slate-700 hover:bg-slate-50"
               >
-                {networkStatus.follow.isFollowing ? (
+                {networkStatus?.follow.isFollowing ? (
                   <>
                     <UserMinus className="h-4 w-4" />
                     Following
@@ -446,12 +440,12 @@ const UserCard: React.FC<UserCardProps> = ({ user, viewMode, onInvite, onViewPro
                   </>
                 )}
               </button>
-              {networkStatus.follow.isFollower && !networkStatus.follow.isFollowing && (
-                <div className="text-xs text-slate-600 text-center">
-                  Follows you
-                </div>
-              )}
-            </>
+            </div>
+          )}
+          {showConnectionActions && networkStatus?.follow.isFollower && !networkStatus.follow.isFollowing && (
+            <div className="text-xs text-slate-600 text-center">
+              Follows you
+            </div>
           )}
           <button
             type="button"
