@@ -4,6 +4,7 @@ import { connectionService, followService } from '../services/connectionService'
 import { getProfilePictureUrl } from '../utils/profileHelpers';
 import { useNavigate } from 'react-router-dom';
 import Navigation from '../components/Navigation';
+import NotificationBell from '../components/notifications/NotificationBell';
 
 type TabType = 'connections' | 'followers' | 'following' | 'requests';
 
@@ -169,11 +170,12 @@ const NetworkPage: React.FC = () => {
               <MenuIcon className="h-6 w-6 text-slate-700" />
             </button>
 
-            <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center mr-2">
+            <div className="w-8 h-8 bg-gradient-to-r from-cardinal to-cardinal-light rounded-lg flex items-center justify-center mr-2">
               <span className="text-white font-bold text-sm">M</span>
             </div>
             <h1 className="text-xl font-bold">My Network</h1>
           </div>
+          <NotificationBell />
         </div>
       </header>
 
@@ -183,7 +185,7 @@ const NetworkPage: React.FC = () => {
       <main className="flex-1 container mx-auto p-6 mb-0">
         {/* Page Title */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent mb-2">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-cardinal to-cardinal-light bg-clip-text text-transparent mb-2">
             My Network
           </h1>
           <p className="text-slate-600">
@@ -228,8 +230,8 @@ const NetworkPage: React.FC = () => {
                 onClick={() => setActiveTab(tab.id as TabType)}
                 className={`pb-3 font-medium text-sm transition-colors ${
                   activeTab === tab.id
-                    ? 'text-orange-600 border-b-2 border-orange-500'
-                    : 'text-slate-600 hover:text-orange-600'
+                    ? 'text-cardinal border-b-2 border-cardinal'
+                    : 'text-slate-600 hover:text-cardinal'
                 }`}
               >
                 {tab.label}
@@ -247,7 +249,7 @@ const NetworkPage: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
           {loading ? (
             <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-solid border-orange-500 border-r-transparent"></div>
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-solid border-cardinal border-r-transparent"></div>
               <p className="text-slate-600 mt-4">Loading...</p>
             </div>
           ) : (
@@ -374,7 +376,7 @@ const NetworkPage: React.FC = () => {
                                   (interest: string, idx: number) => (
                                     <span
                                       key={idx}
-                                      className="px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-xs"
+                                      className="px-2 py-1 bg-red-50 text-cardinal rounded-full text-xs"
                                     >
                                       {interest}
                                     </span>
@@ -387,7 +389,7 @@ const NetworkPage: React.FC = () => {
                           <div className="flex gap-3">
                             <button
                               onClick={() => handleAcceptRequest(request._id)}
-                              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:shadow-lg transition-all font-medium text-sm"
+                              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cardinal to-cardinal-light text-white rounded-lg hover:shadow-lg transition-all font-medium text-sm"
                             >
                               <Check className="h-4 w-4" />
                               Accept
@@ -497,7 +499,7 @@ const NetworkPage: React.FC = () => {
                             </button>
                             <button
                               onClick={() => handleUnfollow(follow.user._id)}
-                              className="px-4 py-2 border border-orange-300 text-orange-700 rounded-lg hover:bg-orange-50 text-sm font-medium"
+                              className="px-4 py-2 border border-orange-300 text-cardinal rounded-lg hover:bg-red-50 text-sm font-medium"
                             >
                               Unfollow
                             </button>
@@ -564,7 +566,7 @@ const NetworkPage: React.FC = () => {
 
                   <button
                     onClick={() => navigate(`/profile/${suggestion.user._id}`)}
-                    className="w-full px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:shadow-lg transition-all font-medium text-sm"
+                    className="w-full px-4 py-2 bg-gradient-to-r from-cardinal to-cardinal-light text-white rounded-lg hover:shadow-lg transition-all font-medium text-sm"
                   >
                     View Profile
                   </button>

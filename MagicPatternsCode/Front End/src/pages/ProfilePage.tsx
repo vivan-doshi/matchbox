@@ -8,6 +8,7 @@ import { Project, User } from '../types/api';
 import { getProfilePictureUrl, getResumeUrl, getResumeFilename } from '../utils/profileHelpers';
 import { connectionService, followService, NetworkStatus } from '../services/connectionService';
 import ConnectionRequestModal from '../components/network/ConnectionRequestModal';
+import NotificationBell from '../components/notifications/NotificationBell';
 
 type ProfileProjectCard = Project & {
   userRoleLabel: string;
@@ -308,7 +309,7 @@ const ProfilePage: React.FC = () => {
           <p className="text-slate-600 mb-4">{externalError}</p>
           <button
             onClick={() => navigate(-1)}
-            className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg font-medium hover:shadow-lg transition-all"
+            className="px-4 py-2 bg-gradient-to-r from-cardinal to-cardinal-light text-white rounded-lg font-medium hover:shadow-lg transition-all"
           >
             Go Back
           </button>
@@ -324,7 +325,7 @@ const ProfilePage: React.FC = () => {
     return (
       <div className="min-h-screen page-background-gradient flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-orange-500 border-r-transparent"></div>
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-cardinal border-r-transparent"></div>
           <p className="mt-4 text-slate-600">Loading profile...</p>
         </div>
       </div>
@@ -341,7 +342,7 @@ const ProfilePage: React.FC = () => {
           <p className="text-slate-600 mb-6">This profile could not be loaded.</p>
           <button
             onClick={() => navigate('/dashboard/discover')}
-            className="px-6 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:from-orange-600 hover:to-red-600"
+            className="px-6 py-2 bg-gradient-to-r from-cardinal to-cardinal-light text-white rounded-lg hover:from-cardinal-light hover:to-red-700"
           >
             Back to Discover People
           </button>
@@ -602,20 +603,21 @@ const ProfilePage: React.FC = () => {
               >
                 <MenuIcon className="h-6 w-6 text-slate-700" />
               </button>
-              <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center mr-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-cardinal to-cardinal-light rounded-lg flex items-center justify-center mr-2">
                 <span className="text-white font-bold text-sm">M</span>
               </div>
               <h1 className="text-xl font-bold">Profile</h1>
             </div>
           {canEdit ? (
-            <div className="flex items-center">
-              <Link to="/my-projects" className="flex items-center text-sm bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-full font-medium hover:bg-slate-50 transition-all mr-2">
+            <div className="flex items-center gap-3">
+              <NotificationBell />
+              <Link to="/my-projects" className="flex items-center text-sm bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-full font-medium hover:bg-slate-50 transition-all">
                 <FolderIcon className="h-4 w-4 mr-1" />
                 My Projects
               </Link>
               <button
                 onClick={handleEditProfile}
-                className="flex items-center text-sm px-4 py-2 rounded-full font-medium transition-all cursor-pointer bg-gradient-to-r from-orange-500 to-red-500 text-white hover:shadow-lg"
+                className="flex items-center text-sm px-4 py-2 rounded-full font-medium transition-all cursor-pointer bg-gradient-to-r from-cardinal to-cardinal-light text-white hover:shadow-lg"
               >
                 {isEditMode ? (
                   <>
@@ -632,7 +634,7 @@ const ProfilePage: React.FC = () => {
               {isEditMode && (
                 <button
                   onClick={handleCancel}
-                  className="flex items-center text-sm bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-full font-medium hover:bg-slate-50 transition-all cursor-pointer ml-2"
+                  className="flex items-center text-sm bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-full font-medium hover:bg-slate-50 transition-all cursor-pointer"
                 >
                   <XIcon className="h-4 w-4 mr-1" />
                   Cancel
@@ -657,7 +659,7 @@ const ProfilePage: React.FC = () => {
                   ) : (
                     <button
                       onClick={handleConnect}
-                      className="flex items-center text-sm bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg transition-all"
+                      className="flex items-center text-sm bg-gradient-to-r from-cardinal to-cardinal-light text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg transition-all"
                     >
                       <UserPlus className="h-4 w-4 mr-1" />
                       Connect
@@ -670,7 +672,7 @@ const ProfilePage: React.FC = () => {
                     className={`flex items-center text-sm px-4 py-2 rounded-lg font-medium transition-all ${
                       networkStatus.follow.isFollowing
                         ? 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
-                        : 'bg-white border border-orange-500 text-orange-600 hover:bg-orange-50'
+                        : 'bg-white border border-cardinal text-cardinal hover:bg-red-50'
                     }`}
                   >
                     <UserPlus className="h-4 w-4 mr-1" />
@@ -690,7 +692,7 @@ const ProfilePage: React.FC = () => {
                 <div className="relative">
                 <img src={user.profilePicture} alt={user.name} className="w-24 h-24 rounded-full object-cover border-2 border-white shadow-sm" />
                 {canEdit && (
-                  <label className="absolute -bottom-2 -right-2 bg-white border border-slate-200 rounded-full px-3 py-1 text-xs font-medium text-slate-600 shadow hover:text-orange-600 transition-colors cursor-pointer">
+                  <label className="absolute -bottom-2 -right-2 bg-white border border-slate-200 rounded-full px-3 py-1 text-xs font-medium text-slate-600 shadow hover:text-cardinal transition-colors cursor-pointer">
                     {profileImageUploading ? 'Uploading...' : 'Change'}
                     <input
                       type="file"
@@ -713,7 +715,7 @@ const ProfilePage: React.FC = () => {
                       type="text"
                       value={editedName}
                       onChange={(e) => setEditedName(e.target.value)}
-                      className="w-full text-2xl font-bold px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                      className="w-full text-2xl font-bold px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none"
                       placeholder="Name"
                     />
                     <div className="flex gap-2 flex-wrap">
@@ -721,21 +723,21 @@ const ProfilePage: React.FC = () => {
                         type="text"
                         value={editedMajor}
                         onChange={(e) => setEditedMajor(e.target.value)}
-                        className="flex-1 min-w-[150px] text-slate-600 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                        className="flex-1 min-w-[150px] text-slate-600 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none"
                         placeholder="Major"
                       />
                       <input
                         type="text"
                         value={editedUniversity}
                         onChange={(e) => setEditedUniversity(e.target.value)}
-                        className="flex-1 min-w-[200px] text-slate-600 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                        className="flex-1 min-w-[200px] text-slate-600 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none"
                         placeholder="University"
                       />
                       <input
                         type="text"
                         value={editedGradYear}
                         onChange={(e) => setEditedGradYear(e.target.value)}
-                        className="w-24 text-slate-600 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                        className="w-24 text-slate-600 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none"
                         placeholder="Year"
                       />
                     </div>
@@ -757,7 +759,7 @@ const ProfilePage: React.FC = () => {
                         type="text"
                         value={editedLinkedin}
                         onChange={(e) => setEditedLinkedin(e.target.value)}
-                        className="flex-1 text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                        className="flex-1 text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none"
                         placeholder="LinkedIn URL"
                       />
                     </div>
@@ -767,7 +769,7 @@ const ProfilePage: React.FC = () => {
                         type="text"
                         value={editedGithub}
                         onChange={(e) => setEditedGithub(e.target.value)}
-                        className="flex-1 text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                        className="flex-1 text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none"
                         placeholder="GitHub URL"
                       />
                     </div>
@@ -777,7 +779,7 @@ const ProfilePage: React.FC = () => {
                         type="text"
                         value={editedPortfolio}
                         onChange={(e) => setEditedPortfolio(e.target.value)}
-                        className="flex-1 text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                        className="flex-1 text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none"
                         placeholder="Portfolio URL"
                       />
                     </div>
@@ -806,14 +808,14 @@ const ProfilePage: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => setShowResumePreview(true)}
-                              className="text-xs text-orange-600 hover:text-orange-700 font-medium"
+                              className="text-xs text-cardinal hover:text-cardinal font-medium"
                             >
                               View
                             </button>
                           </div>
 
                           {/* Change Resume Button */}
-                          <label className="flex items-center justify-center gap-2 w-full px-4 py-2 border-2 border-dashed border-slate-300 rounded-lg hover:border-orange-500 hover:bg-orange-50 transition-colors cursor-pointer">
+                          <label className="flex items-center justify-center gap-2 w-full px-4 py-2 border-2 border-dashed border-slate-300 rounded-lg hover:border-cardinal hover:bg-red-50 transition-colors cursor-pointer">
                             <UploadIcon className="h-4 w-4 text-slate-600" />
                             <span className="text-sm font-medium text-slate-700">
                               {uploadingResume ? 'Uploading...' : 'Change Resume'}
@@ -829,7 +831,7 @@ const ProfilePage: React.FC = () => {
                         </div>
                       ) : (
                         /* No Resume - Upload Button */
-                        <label className="flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-dashed border-slate-300 rounded-lg hover:border-orange-500 hover:bg-orange-50 transition-colors cursor-pointer">
+                        <label className="flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-dashed border-slate-300 rounded-lg hover:border-cardinal hover:bg-red-50 transition-colors cursor-pointer">
                           <UploadIcon className="h-4 w-4 text-slate-600" />
                           <span className="text-sm font-medium text-slate-700">
                             {uploadingResume ? 'Uploading...' : 'Upload Resume (PDF, DOC, DOCX - Max 10MB)'}
@@ -916,7 +918,7 @@ const ProfilePage: React.FC = () => {
                       <>
                         <button
                           onClick={() => setShowResumePreview(true)}
-                          className="flex items-center text-xs bg-orange-50 text-orange-700 px-3 py-1 rounded-full hover:bg-orange-100 transition-colors cursor-pointer"
+                          className="flex items-center text-xs bg-red-50 text-cardinal px-3 py-1 rounded-full hover:bg-red-100 transition-colors cursor-pointer"
                         >
                           <FileTextIcon className="h-3 w-3 mr-1" />
                           Resume
@@ -975,15 +977,15 @@ const ProfilePage: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="text-center p-3 bg-slate-50 rounded-lg">
-                    <div className="text-2xl font-bold text-orange-600">{networkStats.connectionsCount || 0}</div>
+                    <div className="text-2xl font-bold text-cardinal">{networkStats.connectionsCount || 0}</div>
                     <div className="text-xs text-slate-600 mt-1">Connections</div>
                   </div>
                   <div className="text-center p-3 bg-slate-50 rounded-lg">
-                    <div className="text-2xl font-bold text-orange-600">{networkStats.followersCount || 0}</div>
+                    <div className="text-2xl font-bold text-cardinal">{networkStats.followersCount || 0}</div>
                     <div className="text-xs text-slate-600 mt-1">Followers</div>
                   </div>
                   <div className="text-center p-3 bg-slate-50 rounded-lg">
-                    <div className="text-2xl font-bold text-orange-600">{networkStats.followingCount || 0}</div>
+                    <div className="text-2xl font-bold text-cardinal">{networkStats.followingCount || 0}</div>
                     <div className="text-xs text-slate-600 mt-1">Following</div>
                   </div>
                 </div>
@@ -996,7 +998,7 @@ const ProfilePage: React.FC = () => {
                 <textarea
                   value={editedBio}
                   onChange={(e) => setEditedBio(e.target.value)}
-                  className="w-full text-slate-700 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none min-h-[100px]"
+                  className="w-full text-slate-700 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none min-h-[100px]"
                   placeholder="Tell us about yourself..."
                 />
               ) : (
@@ -1054,8 +1056,8 @@ const ProfilePage: React.FC = () => {
                                     }}
                                     className={`flex-1 px-3 py-2 text-xs font-medium rounded-md border transition-all ${
                                       skill.proficiency === level
-                                        ? 'bg-orange-500 text-white border-orange-500'
-                                        : 'bg-white text-slate-700 border-slate-300 hover:border-orange-300 hover:bg-orange-50'
+                                        ? 'bg-cardinal text-white border-cardinal'
+                                        : 'bg-white text-slate-700 border-slate-300 hover:border-orange-300 hover:bg-red-50'
                                     }`}
                                   >
                                     {level}
@@ -1077,7 +1079,7 @@ const ProfilePage: React.FC = () => {
                           placeholder="Skill name (e.g., JavaScript, Python)"
                           value={newSkillName}
                           onChange={(e) => setNewSkillName(e.target.value)}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-sm"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none text-sm"
                         />
                         <div className="flex gap-2">
                           {(['Beginner', 'Intermediate', 'Fluent', 'Expert'] as const).map((level) => (
@@ -1087,8 +1089,8 @@ const ProfilePage: React.FC = () => {
                               onClick={() => setNewSkillProficiency(level)}
                               className={`flex-1 px-3 py-2 text-xs font-medium rounded-md border transition-all ${
                                 newSkillProficiency === level
-                                  ? 'bg-orange-500 text-white border-orange-500'
-                                  : 'bg-white text-slate-700 border-slate-300 hover:border-orange-300 hover:bg-orange-50'
+                                  ? 'bg-cardinal text-white border-cardinal'
+                                  : 'bg-white text-slate-700 border-slate-300 hover:border-orange-300 hover:bg-red-50'
                               }`}
                             >
                               {level}
@@ -1104,7 +1106,7 @@ const ProfilePage: React.FC = () => {
                               setNewSkillProficiency('Beginner');
                             }
                           }}
-                          className="w-full px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm font-medium"
+                          className="w-full px-4 py-2 bg-cardinal text-white rounded-lg hover:bg-cardinal-light transition-colors text-sm font-medium"
                         >
                           Add Skill
                         </button>
@@ -1135,7 +1137,7 @@ const ProfilePage: React.FC = () => {
                                     key={level}
                                     className={`flex-1 px-3 py-2 text-xs font-medium rounded-md border text-center ${
                                       skill.proficiency === level
-                                        ? 'bg-orange-500 text-white border-orange-500'
+                                        ? 'bg-cardinal text-white border-cardinal'
                                         : 'bg-white text-slate-400 border-slate-200'
                                     }`}
                                   >
@@ -1177,7 +1179,7 @@ const ProfilePage: React.FC = () => {
                           max="168"
                           value={editedHoursPerWeek}
                           onChange={(e) => setEditedHoursPerWeek(parseInt(e.target.value) || 0)}
-                          className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                          className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none"
                           placeholder="Hours per week"
                         />
                         <span className="text-sm text-slate-600 font-medium">hours/week</span>
@@ -1190,8 +1192,8 @@ const ProfilePage: React.FC = () => {
                             onClick={() => setEditedHoursPerWeek(hours)}
                             className={`px-3 py-1 text-xs rounded-md border transition-all ${
                               editedHoursPerWeek === hours
-                                ? 'bg-orange-500 text-white border-orange-500'
-                                : 'bg-white text-slate-700 border-slate-300 hover:border-orange-300 hover:bg-orange-50'
+                                ? 'bg-cardinal text-white border-cardinal'
+                                : 'bg-white text-slate-700 border-slate-300 hover:border-orange-300 hover:bg-red-50'
                             }`}
                           >
                             {hours} hrs
@@ -1201,8 +1203,8 @@ const ProfilePage: React.FC = () => {
                     </div>
                   ) : (
                     <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-lg">
-                      <div className="flex flex-col items-center justify-center px-4 py-2 bg-white rounded-lg border-2 border-orange-500">
-                        <span className="text-3xl font-bold text-orange-500">
+                      <div className="flex flex-col items-center justify-center px-4 py-2 bg-white rounded-lg border-2 border-cardinal">
+                        <span className="text-3xl font-bold text-cardinal">
                           {user.weeklyAvailability.hoursPerWeek}
                         </span>
                         <span className="text-xs text-slate-600 font-medium">hours/week</span>
@@ -1239,13 +1241,13 @@ const ProfilePage: React.FC = () => {
                           value={newInterest}
                           onChange={(e) => setNewInterest(e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && handleAddInterest()}
-                          className="flex-1 text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                          className="flex-1 text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none"
                           placeholder="Add new interest..."
                         />
                         <button
                           onClick={handleAddInterest}
                           type="button"
-                          className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors"
+                          className="px-4 py-2 bg-cardinal text-white rounded-lg text-sm font-medium hover:bg-cardinal-light transition-colors"
                         >
                           Add
                         </button>
@@ -1271,7 +1273,7 @@ const ProfilePage: React.FC = () => {
           <div className="p-6">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold">My Projects</h3>
-              <Link to="/my-projects" className="text-sm text-orange-500 hover:text-orange-600 font-medium cursor-pointer">
+              <Link to="/my-projects" className="text-sm text-cardinal hover:text-cardinal-light font-medium cursor-pointer">
                 View all
               </Link>
             </div>
@@ -1294,7 +1296,7 @@ const ProfilePage: React.FC = () => {
                 onClick={() => setActiveProjectTab('active')}
                 className={`flex-1 py-3 text-sm font-medium transition-colors relative cursor-pointer ${
                   activeProjectTab === 'active'
-                    ? 'text-orange-500 border-b-2 border-orange-500'
+                    ? 'text-cardinal border-b-2 border-cardinal'
                     : 'text-slate-600 hover:text-slate-800'
                 }`}
               >
@@ -1307,7 +1309,7 @@ const ProfilePage: React.FC = () => {
                 onClick={() => setActiveProjectTab('completed')}
                 className={`flex-1 py-3 text-sm font-medium transition-colors relative cursor-pointer ${
                   activeProjectTab === 'completed'
-                    ? 'text-orange-500 border-b-2 border-orange-500'
+                    ? 'text-cardinal border-b-2 border-cardinal'
                     : 'text-slate-600 hover:text-slate-800'
                 }`}
               >
@@ -1320,7 +1322,7 @@ const ProfilePage: React.FC = () => {
 
             {projectsLoading ? (
               <div className="flex justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cardinal"></div>
               </div>
             ) : (
               <div className="space-y-4">
@@ -1337,7 +1339,7 @@ const ProfilePage: React.FC = () => {
                             className="block border border-slate-200 rounded-lg p-4 hover:border-orange-300 hover:shadow-md transition-all cursor-pointer"
                           >
                             <div className="flex justify-between items-start mb-2">
-                              <h4 className="font-bold text-slate-800 hover:text-orange-600">
+                              <h4 className="font-bold text-slate-800 hover:text-cardinal">
                                 {project.title}
                               </h4>
                               <span className={`text-xs px-2 py-1 rounded-full font-medium ${getStatusBadgeClasses(project.status)}`}>
@@ -1374,7 +1376,7 @@ const ProfilePage: React.FC = () => {
                         <p className="mb-2">No active projects yet</p>
                         <Link
                           to="/dashboard"
-                          className="text-sm text-orange-500 hover:text-orange-600 font-medium cursor-pointer"
+                          className="text-sm text-cardinal hover:text-cardinal-light font-medium cursor-pointer"
                         >
                           Explore projects to join
                         </Link>
@@ -1396,7 +1398,7 @@ const ProfilePage: React.FC = () => {
                             className="block border border-slate-200 rounded-lg p-4 hover:border-green-300 hover:shadow-md transition-all cursor-pointer"
                           >
                             <div className="flex justify-between items-start mb-2">
-                              <h4 className="font-bold text-slate-800 hover:text-orange-600">
+                              <h4 className="font-bold text-slate-800 hover:text-cardinal">
                                 {project.title}
                               </h4>
                               <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">
@@ -1462,7 +1464,7 @@ const ProfilePage: React.FC = () => {
                   href={user.links.resume.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center text-sm bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
+                  className="flex items-center text-sm bg-cardinal text-white px-4 py-2 rounded-lg hover:bg-cardinal-light transition-colors"
                 >
                   <ExternalLinkIcon className="h-4 w-4 mr-1" />
                   Open in New Tab

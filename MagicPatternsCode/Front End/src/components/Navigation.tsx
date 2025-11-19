@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { HomeIcon, MessageSquareIcon, UserIcon, FolderIcon, UsersIcon, MenuIcon, XIcon, LogOutIcon, Network } from 'lucide-react';
+import { HomeIcon, MessageSquareIcon, UserIcon, FolderIcon, UsersIcon, MenuIcon, XIcon, LogOutIcon, Network, Trophy } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface NavigationProps {
@@ -35,7 +35,7 @@ const Navigation: React.FC<NavigationProps> = ({
       {externalSidebarOpen === undefined && (
         <button
           onClick={() => setIsSidebarOpen(true)}
-          className="fixed top-6 left-6 z-[100] p-2 bg-orange-500 text-white rounded-lg shadow-lg hover:bg-orange-600 transition-colors"
+          className="fixed top-6 left-6 z-[100] p-2 bg-cardinal text-white rounded-lg shadow-lg hover:bg-cardinal transition-colors"
           aria-label="Open navigation menu"
         >
           <MenuIcon className="h-6 w-6" />
@@ -56,7 +56,7 @@ const Navigation: React.FC<NavigationProps> = ({
 
       {/* Sidebar Navigation - Slide-out drawer */}
       <nav
-        className={`fixed top-0 left-0 h-full w-64 bg-gradient-to-b from-orange-500 to-red-500 text-white shadow-2xl transform transition-transform duration-300 ease-in-out z-[120] ${
+        className={`fixed top-0 left-0 h-full w-64 bg-gradient-to-b from-cardinal to-cardinal-light text-white shadow-2xl transform transition-transform duration-300 ease-in-out z-[120] ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         aria-label="Main navigation"
@@ -74,7 +74,7 @@ const Navigation: React.FC<NavigationProps> = ({
         <div className="p-6 border-b border-white border-opacity-20">
           <div className="flex items-center">
             <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-              <span className="text-orange-500 font-bold text-xl">M</span>
+              <span className="text-cardinal font-bold text-xl">M</span>
             </div>
             <span className="ml-3 text-xl font-bold">MATCHBOX</span>
           </div>
@@ -140,6 +140,21 @@ const Navigation: React.FC<NavigationProps> = ({
           >
             <FolderIcon className="h-5 w-5 mr-3" />
             <span>My Projects</span>
+          </NavLink>
+
+          <NavLink
+            to="/competitions"
+            onClick={handleNavClick}
+            className={({ isActive }) =>
+              `flex items-center px-4 py-3 rounded-lg transition-all ${
+                isActive
+                  ? 'bg-white bg-opacity-20 text-white font-semibold'
+                  : 'text-white text-opacity-90 hover:bg-white hover:bg-opacity-10'
+              }`
+            }
+          >
+            <Trophy className="h-5 w-5 mr-3" />
+            <span>Competitions</span>
           </NavLink>
 
           <NavLink

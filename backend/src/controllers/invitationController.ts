@@ -82,6 +82,30 @@ export const acceptInvitation = async (
       { status: 'Accepted' }
     );
 
+    // Add user to project role if role was specified
+    const project = invitation.project as any;
+    if (invitation.role && project) {
+      const projectDoc = await Project.findById(project._id);
+      if (projectDoc) {
+        const roleIndex = projectDoc.roles.findIndex(
+          (r) => r.title === invitation.role
+        );
+
+        if (roleIndex !== -1) {
+          // Check if role is already filled
+          if (projectDoc.roles[roleIndex].filled) {
+            console.warn(`[acceptInvitation] Role "${invitation.role}" already filled for project ${project._id}`);
+          } else {
+            projectDoc.roles[roleIndex].filled = true;
+            projectDoc.roles[roleIndex].user = invitation.invitee;
+            await projectDoc.save();
+          }
+        } else {
+          console.warn(`[acceptInvitation] Role "${invitation.role}" not found in project ${project._id}`);
+        }
+      }
+    }
+
     // Get inviter name for notification
     const inviter = invitation.inviter as any;
     const inviterName =

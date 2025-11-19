@@ -814,7 +814,7 @@ export const inviteUserToProject = async (
       return;
     }
 
-    const { inviteeId, message } = req.body;
+    const { inviteeId, message, role } = req.body;
 
     if (!inviteeId) {
       res.status(400).json({
@@ -830,6 +830,28 @@ export const inviteUserToProject = async (
         message: 'You cannot invite yourself',
       });
       return;
+    }
+
+    // Validate role if provided
+    if (role) {
+      const roleExists = project.roles.some((r) => r.title === role);
+      if (!roleExists) {
+        res.status(400).json({
+          success: false,
+          message: `Role "${role}" does not exist in this project`,
+        });
+        return;
+      }
+
+      // Check if role is already filled
+      const roleData = project.roles.find((r) => r.title === role);
+      if (roleData?.filled) {
+        res.status(400).json({
+          success: false,
+          message: `Role "${role}" is already filled`,
+        });
+        return;
+      }
     }
 
     const invitee = await User.findById(inviteeId).select('firstName lastName preferredName');
@@ -861,11 +883,12 @@ export const inviteUserToProject = async (
       return;
     }
 
-    // Create invitation record
+    // Create invitation record with role
     const invitation = await Invitation.create({
       project: project._id,
       inviter: req.userId,
       invitee: inviteeId,
+      role: role || undefined,
       message,
       status: 'Pending',
     });
@@ -877,6 +900,9 @@ export const inviteUserToProject = async (
       relatedProject: project._id,
     });
 
+    const roleText = role ? ` for the role of ${role}` : '';
+    const defaultMessage = `Hi! I'd like to invite you to join my project "${project.title}"${roleText}. I think you'd be a great fit!`;
+
     if (!chat) {
       chat = await Chat.create({
         participants: [req.userId, inviteeId],
@@ -887,7 +913,7 @@ export const inviteUserToProject = async (
         messages: [
           {
             sender: req.userId,
-            text: message || `Hi! I'd like to invite you to join my project "${project.title}". I think you'd be a great fit!`,
+            text: message || defaultMessage,
             read: false,
             createdAt: new Date(),
           },
@@ -900,7 +926,7 @@ export const inviteUserToProject = async (
       // Add new invitation message to existing chat
       chat.messages.push({
         sender: req.userId,
-        text: message || `Hi! I'd like to invite you to join my project "${project.title}". I think you'd be a great fit!`,
+        text: message || defaultMessage,
         read: false,
         createdAt: new Date(),
       } as any);
@@ -911,10 +937,10 @@ export const inviteUserToProject = async (
     await createNotification({
       user: inviteeId,
       type: 'project_invite',
-      title: `Invitation to join ${project.title}`,
+      title: `Invitation to join ${project.title}${roleText}`,
       message:
         message ||
-        `${inviterName} invited you to join "${project.title}".`,
+        `${inviterName} invited you to join "${project.title}"${roleText}.`,
       actionUrl: `/dashboard/chat?chatId=${chat._id}`,
       metadata: {
         projectId: project._id,

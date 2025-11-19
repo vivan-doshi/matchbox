@@ -221,7 +221,7 @@ const ChatPage: React.FC = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cardinal"></div>
       </div>
     );
   }
@@ -238,7 +238,7 @@ const ChatPage: React.FC = () => {
               onClick={() => handleTabChange('active')}
               className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
                 activeTab === 'active'
-                  ? 'bg-orange-500 text-white'
+                  ? 'bg-cardinal text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -248,7 +248,7 @@ const ChatPage: React.FC = () => {
               onClick={() => handleTabChange('invitations')}
               className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
                 activeTab === 'invitations'
-                  ? 'bg-orange-500 text-white'
+                  ? 'bg-cardinal text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -258,7 +258,7 @@ const ChatPage: React.FC = () => {
               onClick={() => handleTabChange('requests')}
               className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
                 activeTab === 'requests'
-                  ? 'bg-orange-500 text-white'
+                  ? 'bg-cardinal text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -288,11 +288,11 @@ const ChatPage: React.FC = () => {
                   key={chat._id}
                   onClick={() => openChat(chat._id)}
                   className={`p-4 border-b cursor-pointer hover:bg-gray-50 ${
-                    selectedChat?._id === chat._id ? 'bg-orange-50' : ''
+                    selectedChat?._id === chat._id ? 'bg-red-50' : ''
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-r from-orange-400 to-red-400 flex items-center justify-center text-white font-semibold">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-r from-cardinal to-cardinal-light flex items-center justify-center text-white font-semibold">
                       {otherUser?.firstName?.[0] || otherUser?.preferredName?.[0] || 'U'}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -300,7 +300,7 @@ const ChatPage: React.FC = () => {
                         {otherUser?.preferredName || `${otherUser?.firstName ?? ''} ${otherUser?.lastName ?? ''}`.trim()}
                       </p>
                       {project && (
-                        <p className="text-xs text-orange-600 font-medium truncate">
+                        <p className="text-xs text-cardinal font-medium truncate">
                           {chat.type === 'invitation' ? '📩 Invitation: ' : '📝 Application: '}
                           {project.title}
                         </p>
@@ -336,7 +336,7 @@ const ChatPage: React.FC = () => {
                   const otherUser = getOtherParticipant(selectedChat);
                   return (
                     <>
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-orange-400 to-red-400 flex items-center justify-center text-white font-semibold">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-cardinal to-cardinal-light flex items-center justify-center text-white font-semibold">
                         {otherUser?.firstName?.[0] || otherUser?.preferredName?.[0] || <UserIcon className="h-5 w-5" />}
                       </div>
                       <div className="flex-1">
@@ -382,7 +382,7 @@ const ChatPage: React.FC = () => {
                         : (selectedChat.relatedProject as any)?._id;
                       navigate(`/project/${projectId}`);
                     }}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm font-medium"
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-cardinal text-white rounded-lg hover:bg-cardinal-light transition-colors text-sm font-medium"
                   >
                     <Briefcase className="h-4 w-4" />
                     View Project
@@ -393,7 +393,7 @@ const ChatPage: React.FC = () => {
                       const userId = otherUser?._id || otherUser?.id || otherUser;
                       navigate(`/profile/${userId}`);
                     }}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 border border-orange-500 text-orange-500 rounded-lg hover:bg-orange-50 transition-colors text-sm font-medium"
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 border border-cardinal text-cardinal rounded-lg hover:bg-red-50 transition-colors text-sm font-medium"
                   >
                     <UserCircle className="h-4 w-4" />
                     View Profile
@@ -418,14 +418,14 @@ const ChatPage: React.FC = () => {
                     <div
                       className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
                         isOwnMessage
-                          ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white'
+                          ? 'bg-gradient-to-r from-cardinal to-cardinal-light text-white'
                           : 'bg-white text-gray-800 border'
                       }`}
                     >
                       <p>{message.text}</p>
                       <p
                         className={`text-xs mt-1 ${
-                          isOwnMessage ? 'text-orange-100' : 'text-gray-500'
+                          isOwnMessage ? 'text-red-100' : 'text-gray-500'
                         }`}
                       >
                         {new Date(message.createdAt).toLocaleTimeString([], {
@@ -447,12 +447,12 @@ const ChatPage: React.FC = () => {
                   value={newMessage}
                   onChange={(event) => setNewMessage(event.target.value)}
                   placeholder="Type a message..."
-                  className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cardinal"
                 />
                 <button
                   type="submit"
                   disabled={!newMessage.trim() || sending}
-                  className="px-6 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:from-orange-600 hover:to-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-2 bg-gradient-to-r from-cardinal to-cardinal-light text-white rounded-lg hover:from-cardinal-light hover:to-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Send className="h-5 w-5" />
                 </button>

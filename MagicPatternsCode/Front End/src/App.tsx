@@ -9,6 +9,9 @@ import EditProjectPage from './pages/EditProjectPage';
 import ManageTeamPage from './pages/ManageTeamPage';
 import MyProjects from './pages/MyProjects';
 import NetworkPage from './pages/NetworkPage';
+import CompetitionBrowsePage from './pages/CompetitionBrowsePage';
+import CompetitionCreatePage from './pages/CompetitionCreatePage';
+import EmailVerificationPage from './pages/EmailVerificationPage';
 import { AuthProvider } from './context/AuthContext';
 import { SignupProvider } from './context/SignupContext';
 
@@ -28,6 +31,9 @@ export function App() {
             <Route path="/project/:id/manage-team" element={<ManageTeamPage />} />
             <Route path="/my-projects" element={<MyProjects />} />
             <Route path="/network" element={<NetworkPage />} />
+            <Route path="/competitions" element={<CompetitionBrowsePage />} />
+            <Route path="/competitions/create" element={<CompetitionCreatePage />} />
+            <Route path="/verify-email/:token" element={<EmailVerificationPage />} />
           </Routes>
         </div>
       </BrowserRouter>

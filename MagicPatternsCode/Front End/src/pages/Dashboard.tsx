@@ -1,23 +1,19 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Routes, Route, useLocation, Link, useNavigate } from 'react-router-dom';
-import { PlusIcon, FolderIcon, MenuIcon, BellIcon } from 'lucide-react';
+import { PlusIcon, FolderIcon, MenuIcon } from 'lucide-react';
 import HomePage from '../components/dashboard/HomePage';
 import ChatPage from '../components/dashboard/ChatPage';
 import CreateProjectModal from '../components/dashboard/CreateProjectModal';
 import DiscoverPeoplePage from '../pages/DiscoverPeoplePage';
-import NotificationDropdown from '../components/notifications/NotificationDropdown';
+import NotificationBell from '../components/notifications/NotificationBell';
 import Navigation from '../components/Navigation';
-import { apiClient } from '../utils/apiClient';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [newProject, setNewProject] = useState<any>(null);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
   const location = useLocation();
-  const notificationRef = useRef<HTMLDivElement>(null);
 
   const getTitle = () => {
     const path = location.pathname;
@@ -33,46 +29,6 @@ const Dashboard: React.FC = () => {
       navigate('/dashboard', { replace: true, state: {} });
     }
   }, [location, navigate]);
-
-  // Close notification dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
-        setShowNotifications(false);
-      }
-    };
-
-    if (showNotifications) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showNotifications]);
-
-  const fetchUnreadCount = useCallback(async () => {
-    try {
-      const response = await apiClient.getNotificationUnreadCount();
-      if (response.success && typeof response.count === 'number') {
-        setUnreadCount(response.count);
-      } else if (typeof response.count === 'number') {
-        setUnreadCount(response.count);
-      } else {
-        setUnreadCount(0);
-      }
-    } catch (error) {
-      console.error('Failed to fetch unread notification count:', error);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchUnreadCount();
-  }, [fetchUnreadCount]);
-
-  const handleNotificationRead = () => {
-    fetchUnreadCount();
-  };
 
   // Handle new project creation
   const handleProjectCreated = (project: any) => {
@@ -101,37 +57,14 @@ const Dashboard: React.FC = () => {
               <MenuIcon className="h-6 w-6 text-slate-700" />
             </button>
 
-            <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center mr-2">
+            <div className="w-8 h-8 bg-gradient-to-r from-cardinal to-cardinal-light rounded-lg flex items-center justify-center mr-2">
               <span className="text-white font-bold text-sm">M</span>
             </div>
             <h1 className="text-xl font-bold">{getTitle()}</h1>
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Notification Icon */}
-            <div className="relative" ref={notificationRef}>
-              <button
-                onClick={() => setShowNotifications(!showNotifications)}
-                className="relative p-2 hover:bg-slate-100 rounded-lg transition-colors"
-                aria-label="Notifications"
-              >
-                <BellIcon className="h-5 w-5 text-slate-700" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-sm">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                )}
-              </button>
-
-              {/* Notification Dropdown */}
-              {showNotifications && (
-                <NotificationDropdown
-                  onClose={() => setShowNotifications(false)}
-                  onNotificationRead={handleNotificationRead}
-                />
-              )}
-            </div>
-
+            <NotificationBell />
             <Link
               to="/my-projects"
               className="flex items-center bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-full text-sm font-medium hover:bg-slate-50 transition-all"
@@ -141,7 +74,7 @@ const Dashboard: React.FC = () => {
             </Link>
             <button
               onClick={() => setIsCreateModalOpen(true)}
-              className="flex items-center bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-full text-sm font-medium hover:shadow-lg transition-all"
+              className="flex items-center bg-gradient-to-r from-cardinal to-cardinal-light text-white px-4 py-2 rounded-full text-sm font-medium hover:shadow-lg transition-all"
             >
               <PlusIcon className="h-4 w-4 mr-1" />
               New Project

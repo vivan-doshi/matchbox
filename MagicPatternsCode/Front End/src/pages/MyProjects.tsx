@@ -19,6 +19,7 @@ import Navigation from '../components/Navigation';
 import CreateProjectModal from '../components/dashboard/CreateProjectModal';
 import { useAuth } from '../context/AuthContext';
 import { getProfilePictureUrl } from '../utils/profileHelpers';
+import NotificationBell from '../components/notifications/NotificationBell';
 
 interface FormattedProject {
   id: string;
@@ -209,7 +210,7 @@ const MyProjects: React.FC = () => {
     return (
       <div className="min-h-screen page-background-gradient flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-orange-500 border-r-transparent"></div>
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-cardinal border-r-transparent"></div>
           <p className="mt-4 text-slate-600">Loading your projects...</p>
         </div>
       </div>
@@ -223,7 +224,7 @@ const MyProjects: React.FC = () => {
           <p className="text-red-600 mb-4">{error}</p>
           <button
             onClick={fetchMyProjects}
-            className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+            className="px-4 py-2 bg-cardinal text-white rounded-lg hover:bg-cardinal"
           >
             Retry
           </button>
@@ -246,7 +247,7 @@ const MyProjects: React.FC = () => {
             >
               <MenuIcon className="h-6 w-6 text-slate-700" />
             </button>
-            <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center mr-2">
+            <div className="w-8 h-8 bg-gradient-to-r from-cardinal to-cardinal-light rounded-lg flex items-center justify-center mr-2">
               <span className="text-white font-bold text-sm">M</span>
             </div>
             <h1 className="text-xl font-bold">My Projects</h1>
@@ -255,8 +256,8 @@ const MyProjects: React.FC = () => {
                 onClick={() => setCurrentView('posted')}
                 className={`px-4 py-1 text-sm font-medium ${
                   currentView === 'posted'
-                    ? 'text-orange-600 border-b-2 border-orange-500'
-                    : 'text-slate-600 hover:text-orange-600'
+                    ? 'text-cardinal border-b-2 border-cardinal'
+                    : 'text-slate-600 hover:text-cardinal'
                 }`}
               >
                 Posted Projects ({projects.length})
@@ -265,8 +266,8 @@ const MyProjects: React.FC = () => {
                 onClick={() => setCurrentView('saved')}
                 className={`px-4 py-1 text-sm font-medium ${
                   currentView === 'saved'
-                    ? 'text-orange-600 border-b-2 border-orange-500'
-                    : 'text-slate-600 hover:text-orange-600'
+                    ? 'text-cardinal border-b-2 border-cardinal'
+                    : 'text-slate-600 hover:text-cardinal'
                 }`}
               >
                 Saved Projects ({savedProjects.length})
@@ -275,21 +276,24 @@ const MyProjects: React.FC = () => {
                 onClick={() => setCurrentView('joined')}
                 className={`px-4 py-1 text-sm font-medium ${
                   currentView === 'joined'
-                    ? 'text-orange-600 border-b-2 border-orange-500'
-                    : 'text-slate-600 hover:text-orange-600'
+                    ? 'text-cardinal border-b-2 border-cardinal'
+                    : 'text-slate-600 hover:text-cardinal'
                 }`}
               >
                 Projects Joined ({joinedProjects.length})
               </button>
             </div>
           </div>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="flex items-center bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-full text-sm font-medium hover:shadow-lg transition-all"
-          >
-            <PlusIcon className="h-4 w-4 mr-1" />
-            New Project
-          </button>
+          <div className="flex items-center gap-3">
+            <NotificationBell />
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center bg-gradient-to-r from-cardinal to-cardinal-light text-white px-4 py-2 rounded-full text-sm font-medium hover:shadow-lg transition-all"
+            >
+              <PlusIcon className="h-4 w-4 mr-1" />
+              New Project
+            </button>
+          </div>
         </div>
       </header>
 
@@ -305,7 +309,7 @@ const MyProjects: React.FC = () => {
                 </p>
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="inline-flex items-center bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-3 rounded-full font-medium hover:shadow-lg transition-all"
+                  className="inline-flex items-center bg-gradient-to-r from-cardinal to-cardinal-light text-white px-6 py-3 rounded-full font-medium hover:shadow-lg transition-all"
                 >
                   <PlusIcon className="h-5 w-5 mr-2" />
                   Create Project
@@ -361,7 +365,7 @@ const MyProjects: React.FC = () => {
                           {project.openRoles.length} Open Roles
                         </div>
                         {project.applicants > 0 && (
-                          <div className="text-xs text-orange-500 font-medium">
+                          <div className="text-xs text-cardinal font-medium">
                             {project.applicants} New Applicants
                           </div>
                         )}
@@ -382,7 +386,7 @@ const MyProjects: React.FC = () => {
                         <button
                           className={`px-6 py-3 text-sm font-medium ${
                             !activeTab[project.id] || activeTab[project.id] === 'team'
-                              ? 'text-orange-500 border-b-2 border-orange-500'
+                              ? 'text-cardinal border-b-2 border-cardinal'
                               : 'text-slate-600'
                           }`}
                           onClick={() => changeTab(project.id, 'team')}
@@ -392,7 +396,7 @@ const MyProjects: React.FC = () => {
                         <button
                           className={`px-6 py-3 text-sm font-medium ${
                             activeTab[project.id] === 'applicants'
-                              ? 'text-orange-500 border-b-2 border-orange-500'
+                              ? 'text-cardinal border-b-2 border-cardinal'
                               : 'text-slate-600'
                           }`}
                           onClick={() => changeTab(project.id, 'applicants')}
@@ -430,7 +434,7 @@ const MyProjects: React.FC = () => {
                                         {role.description}
                                       </p>
                                       {role.applicants > 0 && (
-                                        <span className="ml-2 text-xs px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full">
+                                        <span className="ml-2 text-xs px-2 py-0.5 bg-red-50 text-cardinal rounded-full">
                                           {role.applicants} applicant{role.applicants !== 1 ? 's' : ''}
                                         </span>
                                       )}
@@ -491,7 +495,7 @@ const MyProjects: React.FC = () => {
                         </Link>
                         <button
                           onClick={() => navigate(`/project/${project.id}/manage-team`)}
-                          className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg text-sm font-medium hover:shadow-md transition-all"
+                          className="px-4 py-2 bg-gradient-to-r from-cardinal to-cardinal-light text-white rounded-lg text-sm font-medium hover:shadow-md transition-all"
                         >
                           Manage Team
                         </button>
@@ -584,7 +588,7 @@ const MyProjects: React.FC = () => {
                             onClick={() => {
                               sessionStorage.setItem('projectReferrer', '/my-projects');
                             }}
-                            className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg text-sm font-medium hover:shadow-md transition-all"
+                            className="px-4 py-2 bg-gradient-to-r from-cardinal to-cardinal-light text-white rounded-lg text-sm font-medium hover:shadow-md transition-all"
                           >
                             View Project
                           </Link>
@@ -603,7 +607,7 @@ const MyProjects: React.FC = () => {
           <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-8">
             {loadingJoined ? (
               <div className="flex justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cardinal"></div>
               </div>
             ) : joinedError ? (
               <div className="text-center py-12 text-red-500">
@@ -611,7 +615,7 @@ const MyProjects: React.FC = () => {
                 <p className="text-sm text-red-400 mb-4">{joinedError}</p>
                 <button
                   onClick={fetchJoinedProjects}
-                  className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors"
+                  className="px-4 py-2 bg-cardinal text-white rounded-lg text-sm font-medium hover:bg-cardinal transition-colors"
                 >
                   Try Again
                 </button>
@@ -671,7 +675,7 @@ const MyProjects: React.FC = () => {
 
                           <div className="flex flex-wrap gap-2 mb-3">
                             {project.category && (
-                              <span className="px-3 py-1 bg-orange-50 text-orange-700 rounded-full text-xs font-medium">
+                              <span className="px-3 py-1 bg-red-50 text-cardinal rounded-full text-xs font-medium">
                                 {project.category}
                               </span>
                             )}
@@ -701,7 +705,7 @@ const MyProjects: React.FC = () => {
 
                         <Link
                           to={`/project/${projectId}`}
-                          className="self-start px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg text-sm font-medium hover:shadow-md transition-all"
+                          className="self-start px-4 py-2 bg-gradient-to-r from-cardinal to-cardinal-light text-white rounded-lg text-sm font-medium hover:shadow-md transition-all"
                           onClick={() => {
                             sessionStorage.setItem('projectReferrer', '/my-projects');
                           }}

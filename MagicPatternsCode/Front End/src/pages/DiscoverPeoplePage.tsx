@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { SearchIcon, FilterIcon, XIcon, UsersIcon, GridIcon, ListIcon, ClockIcon, Loader2Icon } from 'lucide-react';
+import { SearchIcon, FilterIcon, XIcon, UsersIcon, GridIcon, ListIcon, ClockIcon, Loader2Icon, Users, UserPlus, UserCheck, Bell, ChevronRight } from 'lucide-react';
 import UserCard from '../components/discover/UserCard';
 import InviteToProjectModal from '../components/discover/InviteToProjectModal';
 import UserProfileModal from '../components/discover/UserProfileModal';
@@ -8,9 +8,13 @@ import { useAuth } from '../context/AuthContext';
 import type { User as ApiUser } from '../types/api';
 import type { DiscoverUser, DiscoverUserSkill } from '../types/discover';
 import { getResumeUrl, getResumeFilename } from '../utils/profileHelpers';
+import { connectionService, followService } from '../services/connectionService';
+import { getProfilePictureUrl } from '../utils/profileHelpers';
+import { useNavigate } from 'react-router-dom';
 
 const DiscoverPeoplePage: React.FC = () => {
   const { user: authUser } = useAuth();
+  const navigate = useNavigate();
   const [users, setUsers] = useState<DiscoverUser[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<DiscoverUser[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -20,6 +24,18 @@ const DiscoverPeoplePage: React.FC = () => {
   const [profilePreviewUser, setProfilePreviewUser] = useState<DiscoverUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Network sidebar state
+  const [connections, setConnections] = useState<any[]>([]);
+  const [followers, setFollowers] = useState<any[]>([]);
+  const [following, setFollowing] = useState<any[]>([]);
+  const [requests, setRequests] = useState<any[]>([]);
+  const [networkStats, setNetworkStats] = useState({
+    connections: 0,
+    followers: 0,
+    following: 0,
+    requests: 0,
+  });
 
   const [filters, setFilters] = useState({
     school: '',
@@ -118,6 +134,55 @@ const DiscoverPeoplePage: React.FC = () => {
     applyFilters();
   }, [filters, users]);
 
+  // Fetch network data for sidebar
+  useEffect(() => {
+    fetchNetworkStats();
+    fetchConnections();
+    fetchRequests();
+  }, []);
+
+  const fetchNetworkStats = async () => {
+    try {
+      const [connectionsRes, followersRes, followingRes, requestsRes] = await Promise.all([
+        connectionService.getConnections(),
+        followService.getFollowers(),
+        followService.getFollowing(),
+        connectionService.getConnectionRequests(),
+      ]);
+
+      setNetworkStats({
+        connections: connectionsRes.data?.length || 0,
+        followers: followersRes.data?.length || 0,
+        following: followingRes.data?.length || 0,
+        requests: requestsRes.data?.length || 0,
+      });
+    } catch (error) {
+      console.error('Failed to fetch network stats:', error);
+    }
+  };
+
+  const fetchConnections = async () => {
+    try {
+      const response = await connectionService.getConnections();
+      if (response.success && response.data) {
+        setConnections(response.data.slice(0, 5)); // Show top 5
+      }
+    } catch (error) {
+      console.error('Failed to fetch connections:', error);
+    }
+  };
+
+  const fetchRequests = async () => {
+    try {
+      const response = await connectionService.getConnectionRequests();
+      if (response.success && response.data) {
+        setRequests(response.data.slice(0, 3)); // Show top 3
+      }
+    } catch (error) {
+      console.error('Failed to fetch requests:', error);
+    }
+  };
+
   const applyFilters = () => {
     let filtered = [...users];
 
@@ -183,27 +248,30 @@ const DiscoverPeoplePage: React.FC = () => {
 
   return (
     <div className="min-h-screen">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
-          Discover People
-        </h1>
-        <p className="text-slate-600">
-          Find USC students and alumni to collaborate with
-        </p>
-      </div>
+      <div className="flex gap-6">
+        {/* Main Content - Discover People */}
+        <div className="flex-1">
+          {/* Header */}
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-cardinal to-cardinal-light bg-clip-text text-transparent">
+              Discover People
+            </h1>
+            <p className="text-slate-600">
+              Find USC students and alumni to collaborate with
+            </p>
+          </div>
 
-      {error && (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          <span>{error}</span>
-          <button
-            onClick={() => fetchUsers(searchQuery.trim() || undefined)}
-            className="rounded-lg bg-white px-3 py-1 text-red-600 shadow-sm hover:bg-red-100"
-          >
-            Retry
-          </button>
-        </div>
-      )}
+          {error && (
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <span>{error}</span>
+              <button
+                onClick={() => fetchUsers(searchQuery.trim() || undefined)}
+                className="rounded-lg bg-white px-3 py-1 text-red-600 shadow-sm hover:bg-red-100"
+              >
+                Retry
+              </button>
+            </div>
+          )}
 
       {/* Search Bar */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-4">
@@ -228,14 +296,14 @@ const DiscoverPeoplePage: React.FC = () => {
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
               showFilters || hasActiveFilters
-                ? 'bg-orange-50 text-orange-600'
+                ? 'bg-red-50 text-cardinal'
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
             }`}
           >
             <FilterIcon className="h-4 w-4" />
             Filters
             {hasActiveFilters && !showFilters && (
-              <span className="bg-orange-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+              <span className="bg-cardinal text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                 !
               </span>
             )}
@@ -255,7 +323,7 @@ const DiscoverPeoplePage: React.FC = () => {
               <select
                 value={filters.school}
                 onChange={(e) => setFilters({ ...filters, school: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none"
               >
                 <option value="">All Schools</option>
                 {schools.map(school => (
@@ -272,7 +340,7 @@ const DiscoverPeoplePage: React.FC = () => {
               <select
                 value={filters.major}
                 onChange={(e) => setFilters({ ...filters, major: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none"
               >
                 <option value="">All Majors</option>
                 {majors.map(major => (
@@ -289,7 +357,7 @@ const DiscoverPeoplePage: React.FC = () => {
               <select
                 value={filters.graduationYear}
                 onChange={(e) => setFilters({ ...filters, graduationYear: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none"
               >
                 <option value="">All Years</option>
                 {graduationYears.map(year => (
@@ -309,7 +377,7 @@ const DiscoverPeoplePage: React.FC = () => {
                 max="40"
                 value={filters.minAvailability}
                 onChange={(e) => setFilters({ ...filters, minAvailability: parseInt(e.target.value) || 0 })}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none"
               />
             </div>
 
@@ -325,7 +393,7 @@ const DiscoverPeoplePage: React.FC = () => {
                     onClick={() => toggleSkillFilter(skill)}
                     className={`px-3 py-1 rounded-full text-sm transition-colors ${
                       filters.skills.includes(skill)
-                        ? 'bg-orange-500 text-white'
+                        ? 'bg-cardinal text-white'
                         : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                     }`}
                   >
@@ -341,7 +409,7 @@ const DiscoverPeoplePage: React.FC = () => {
             <div className="mt-4 pt-4 border-t border-slate-200">
               <button
                 onClick={handleClearFilters}
-                className="text-sm text-orange-600 hover:text-orange-700 font-medium"
+                className="text-sm text-cardinal hover:text-cardinal font-medium"
               >
                 Clear all filters
               </button>
@@ -387,7 +455,7 @@ const DiscoverPeoplePage: React.FC = () => {
       {/* User Grid/List */}
       {loading ? (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
-          <Loader2Icon className="h-10 w-10 animate-spin text-orange-500 mx-auto mb-3" />
+          <Loader2Icon className="h-10 w-10 animate-spin text-cardinal mx-auto mb-3" />
           <p className="text-slate-600">Loading people across the platform...</p>
         </div>
       ) : filteredUsers.length === 0 ? (
@@ -398,7 +466,7 @@ const DiscoverPeoplePage: React.FC = () => {
           {hasActiveFilters && (
             <button
               onClick={handleClearFilters}
-              className="text-orange-600 hover:text-orange-700 font-medium"
+              className="text-cardinal hover:text-cardinal font-medium"
             >
               Clear all filters
             </button>
@@ -424,24 +492,130 @@ const DiscoverPeoplePage: React.FC = () => {
         </div>
       )}
 
-      {/* Invite Modal */}
-      {inviteUser && (
-        <InviteToProjectModal
-          user={inviteUser}
-          onClose={() => setInviteUser(null)}
-        />
-      )}
+          {/* Invite Modal */}
+          {inviteUser && (
+            <InviteToProjectModal
+              user={inviteUser}
+              onClose={() => setInviteUser(null)}
+            />
+          )}
 
-      {profilePreviewUser && (
-        <UserProfileModal
-          user={profilePreviewUser}
-          onClose={() => setProfilePreviewUser(null)}
-          onInvite={() => {
-            setProfilePreviewUser(null);
-            setInviteUser(profilePreviewUser);
-          }}
-        />
-      )}
+          {profilePreviewUser && (
+            <UserProfileModal
+              user={profilePreviewUser}
+              onClose={() => setProfilePreviewUser(null)}
+              onInvite={() => {
+                setProfilePreviewUser(null);
+                setInviteUser(profilePreviewUser);
+              }}
+            />
+          )}
+        </div>
+
+        {/* Network Sidebar */}
+        <div className="hidden xl:block w-80 flex-shrink-0">
+          <div className="sticky top-6 space-y-4">
+            {/* Network Stats */}
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+              <h2 className="text-lg font-bold text-slate-900 mb-4">My Network</h2>
+              <div className="space-y-3">
+                {[
+                  { icon: Users, label: 'Connections', count: networkStats.connections, color: 'text-blue-600' },
+                  { icon: UserPlus, label: 'Followers', count: networkStats.followers, color: 'text-green-600' },
+                  { icon: UserCheck, label: 'Following', count: networkStats.following, color: 'text-purple-600' },
+                  { icon: Bell, label: 'Requests', count: networkStats.requests, color: 'text-cardinal' },
+                ].map((stat) => {
+                  const IconComponent = stat.icon;
+                  return (
+                    <div key={stat.label} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <IconComponent className={`h-5 w-5 ${stat.color}`} />
+                        <span className="text-sm text-slate-700">{stat.label}</span>
+                      </div>
+                      <span className="text-sm font-semibold text-slate-900">{stat.count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <button
+                onClick={() => navigate('/network')}
+                className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-cardinal to-cardinal-light text-white rounded-lg text-sm font-medium hover:shadow-lg transition-all"
+              >
+                View All
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Recent Connections */}
+            {connections.length > 0 && (
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <h3 className="text-sm font-bold text-slate-900 mb-3">Recent Connections</h3>
+                <div className="space-y-3">
+                  {connections.map((conn) => (
+                    <div
+                      key={conn.connectionId}
+                      className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-2 rounded-lg transition-colors"
+                      onClick={() => navigate(`/profile/${conn.user._id}`)}
+                    >
+                      <img
+                        src={getProfilePictureUrl(conn.user.profilePicture)}
+                        alt={`${conn.user.firstName} ${conn.user.lastName}`}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-slate-900 truncate">
+                          {conn.user.firstName} {conn.user.lastName}
+                        </p>
+                        <p className="text-xs text-slate-600 truncate">
+                          {conn.user.major}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Pending Requests */}
+            {requests.length > 0 && (
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <h3 className="text-sm font-bold text-slate-900 mb-3">
+                  Pending Requests ({requests.length})
+                </h3>
+                <div className="space-y-3">
+                  {requests.slice(0, 3).map((request) => (
+                    <div
+                      key={request._id}
+                      className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-2 rounded-lg transition-colors"
+                      onClick={() => navigate('/network?tab=requests')}
+                    >
+                      <img
+                        src={getProfilePictureUrl(request.requester.profilePicture)}
+                        alt={`${request.requester.firstName} ${request.requester.lastName}`}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-slate-900 truncate">
+                          {request.requester.firstName} {request.requester.lastName}
+                        </p>
+                        <p className="text-xs text-slate-600 truncate">
+                          Connection request
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={() => navigate('/network?tab=requests')}
+                  className="mt-3 w-full text-sm text-cardinal hover:text-cardinal font-medium"
+                >
+                  View All Requests
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
