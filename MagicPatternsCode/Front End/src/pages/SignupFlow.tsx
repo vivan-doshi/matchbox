@@ -30,7 +30,7 @@ const SignupEmail: React.FC = () => {
 
   const validateEmail = (email: string) => {
     const trimmedEmail = email.trim().toLowerCase();
-    return trimmedEmail.endsWith('.edu');
+    return trimmedEmail.endsWith('@usc.edu');
   };
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,7 +59,7 @@ const SignupEmail: React.FC = () => {
     }
 
     if (!validateEmail(trimmedEmail)) {
-      setError('Only academic email addresses ending with .edu are accepted');
+      setError('Only USC email addresses (@usc.edu) are accepted');
       return;
     }
 
@@ -126,14 +126,14 @@ const SignupEmail: React.FC = () => {
           <input
             id="email"
             type="email"
-            className={`w-full px-4 py-3 rounded-lg border ${error ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-slate-300 focus:ring-orange-500 focus:border-orange-500'} outline-none transition-all`}
+            className={`w-full px-4 py-3 rounded-lg border ${error ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-slate-300 focus:ring-cardinal focus:border-cardinal'} outline-none transition-all`}
             placeholder="your.name@university.edu"
             value={email}
             onChange={handleEmailChange}
             required
           />
           <p className="mt-2 text-xs text-slate-500">
-            Only .edu email addresses are accepted
+            Only USC email addresses (@usc.edu) are accepted
           </p>
         </div>
 
@@ -144,7 +144,7 @@ const SignupEmail: React.FC = () => {
           <input
             id="password"
             type="password"
-            className={`w-full px-4 py-3 rounded-lg border ${error ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-slate-300 focus:ring-orange-500 focus:border-orange-500'} outline-none transition-all`}
+            className={`w-full px-4 py-3 rounded-lg border ${error ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-slate-300 focus:ring-cardinal focus:border-cardinal'} outline-none transition-all`}
             placeholder="Enter a secure password"
             value={password}
             onChange={handlePasswordChange}
@@ -163,7 +163,7 @@ const SignupEmail: React.FC = () => {
           <input
             id="confirmPassword"
             type="password"
-            className={`w-full px-4 py-3 rounded-lg border ${error ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-slate-300 focus:ring-orange-500 focus:border-orange-500'} outline-none transition-all`}
+            className={`w-full px-4 py-3 rounded-lg border ${error ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-slate-300 focus:ring-cardinal focus:border-cardinal'} outline-none transition-all`}
             placeholder="Re-enter your password"
             value={confirmPassword}
             onChange={handleConfirmPasswordChange}
@@ -176,14 +176,14 @@ const SignupEmail: React.FC = () => {
         <button
           type="submit"
           disabled={checking}
-          className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-gradient-to-r from-cardinal to-cardinal-light text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {checking ? 'Checking email...' : 'Continue'}
         </button>
       </form>
       <p className="mt-6 text-center text-sm text-slate-600">
         Already have an account?{' '}
-        <Link to="/login" className="text-orange-600 font-medium hover:text-orange-700">
+        <Link to="/login" className="text-cardinal font-medium hover:text-cardinal">
           Log in
         </Link>
       </p>
@@ -295,7 +295,7 @@ const SignupProfile: React.FC = () => {
               </div>
             ) : (
               <label className="cursor-pointer">
-                <div className="w-32 h-32 rounded-full bg-slate-100 border-2 border-dashed border-slate-300 flex flex-col items-center justify-center hover:border-orange-500 hover:bg-orange-50 transition-all">
+                <div className="w-32 h-32 rounded-full bg-slate-100 border-2 border-dashed border-slate-300 flex flex-col items-center justify-center hover:border-cardinal hover:bg-red-50 transition-all">
                   <CameraIcon className="h-8 w-8 text-slate-400 mb-2" />
                   <span className="text-xs text-slate-500 text-center px-2">
                     Add Photo
@@ -323,21 +323,21 @@ const SignupProfile: React.FC = () => {
           <label htmlFor="firstName" className="block text-sm font-medium text-slate-700 mb-1">
             First Name
           </label>
-          <input id="firstName" name="firstName" type="text" className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all" value={formData.firstName} onChange={handleChange} required />
+          <input id="firstName" name="firstName" type="text" className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none transition-all" value={formData.firstName} onChange={handleChange} required />
         </div>
         <div className="mb-4">
           <label htmlFor="lastName" className="block text-sm font-medium text-slate-700 mb-1">
             Last Name
           </label>
-          <input id="lastName" name="lastName" type="text" className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all" value={formData.lastName} onChange={handleChange} required />
+          <input id="lastName" name="lastName" type="text" className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none transition-all" value={formData.lastName} onChange={handleChange} required />
         </div>
         <div className="mb-6">
           <label htmlFor="preferredName" className="block text-sm font-medium text-slate-700 mb-1">
             Preferred Name (optional)
           </label>
-          <input id="preferredName" name="preferredName" type="text" className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all" value={formData.preferredName} onChange={handleChange} />
+          <input id="preferredName" name="preferredName" type="text" className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none transition-all" value={formData.preferredName} onChange={handleChange} />
         </div>
-        <button type="submit" className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all">
+        <button type="submit" className="w-full bg-gradient-to-r from-cardinal to-cardinal-light text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all">
           Continue
         </button>
       </form>
@@ -430,7 +430,7 @@ const SignupLinks: React.FC = () => {
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
               <LinkedinIcon className="h-5 w-5 text-slate-400" />
             </div>
-            <input id="linkedin" name="linkedin" type="url" className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all" placeholder="https://linkedin.com/in/username" value={formData.linkedin} onChange={handleChange} />
+            <input id="linkedin" name="linkedin" type="url" className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none transition-all" placeholder="https://linkedin.com/in/username" value={formData.linkedin} onChange={handleChange} />
           </div>
         </div>
         <div className="mb-4">
@@ -441,14 +441,14 @@ const SignupLinks: React.FC = () => {
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
               <GithubIcon className="h-5 w-5 text-slate-400" />
             </div>
-            <input id="github" name="github" type="url" className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all" placeholder="https://github.com/username" value={formData.github} onChange={handleChange} />
+            <input id="github" name="github" type="url" className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none transition-all" placeholder="https://github.com/username" value={formData.github} onChange={handleChange} />
           </div>
         </div>
         <div className="mb-4">
           <label htmlFor="portfolio" className="block text-sm font-medium text-slate-700 mb-1">
             Portfolio Website
           </label>
-          <input id="portfolio" name="portfolio" type="url" className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all" placeholder="https://yourportfolio.com" value={formData.portfolio} onChange={handleChange} />
+          <input id="portfolio" name="portfolio" type="url" className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none transition-all" placeholder="https://yourportfolio.com" value={formData.portfolio} onChange={handleChange} />
         </div>
 
         {/* Resume Upload Section */}
@@ -460,7 +460,7 @@ const SignupLinks: React.FC = () => {
           {resumePreview ? (
             <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-lg">
               <div className="flex items-center">
-                <FileTextIcon className="h-5 w-5 text-orange-500 mr-3" />
+                <FileTextIcon className="h-5 w-5 text-cardinal mr-3" />
                 <div>
                   <p className="text-sm font-medium text-slate-700">{resumeName}</p>
                   <p className="text-xs text-slate-500">{resumeSize ? `${(resumeSize / 1024).toFixed(1)} KB` : ''}</p>
@@ -476,7 +476,7 @@ const SignupLinks: React.FC = () => {
             </div>
           ) : (
             <label className="cursor-pointer">
-              <div className="flex items-center justify-center p-6 border-2 border-dashed border-slate-300 rounded-lg hover:border-orange-500 hover:bg-orange-50 transition-all">
+              <div className="flex items-center justify-center p-6 border-2 border-dashed border-slate-300 rounded-lg hover:border-cardinal hover:bg-red-50 transition-all">
                 <UploadIcon className="h-6 w-6 text-slate-400 mr-3" />
                 <div>
                   <p className="text-sm font-medium text-slate-700">Upload Resume</p>
@@ -497,7 +497,7 @@ const SignupLinks: React.FC = () => {
           )}
         </div>
 
-        <button type="submit" className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all">
+        <button type="submit" className="w-full bg-gradient-to-r from-cardinal to-cardinal-light text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all">
           Continue
         </button>
         <button type="button" onClick={() => navigate('/signup/bio')} className="w-full mt-3 bg-white text-slate-700 py-3 rounded-lg font-medium border border-slate-300 hover:bg-slate-50 transition-all">
@@ -626,7 +626,7 @@ const SignupBio: React.FC = () => {
           <label htmlFor="bio" className="block text-sm font-medium text-slate-700 mb-1">
             Bio
           </label>
-          <textarea id="bio" className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all" rows={4} placeholder="Tell us about your interests, experience, and what you're looking to work on..." value={bio} onChange={e => setBio(e.target.value)} />
+          <textarea id="bio" className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none transition-all" rows={4} placeholder="Tell us about your interests, experience, and what you're looking to work on..." value={bio} onChange={e => setBio(e.target.value)} />
         </div>
 
         {/* Interests Section */}
@@ -643,12 +643,12 @@ const SignupBio: React.FC = () => {
             <div className="mb-4 p-3 bg-slate-50 rounded-lg">
               <div className="flex flex-wrap gap-2">
                 {interests.map((interest) => (
-                  <span key={interest} className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm flex items-center gap-2">
+                  <span key={interest} className="px-3 py-1 bg-red-50 text-cardinal rounded-full text-sm flex items-center gap-2">
                     {interest}
                     <button
                       type="button"
                       onClick={() => toggleInterest(interest)}
-                      className="text-orange-700 hover:text-orange-900 font-bold"
+                      className="text-cardinal hover:text-orange-900 font-bold"
                     >
                       ×
                     </button>
@@ -679,8 +679,8 @@ const SignupBio: React.FC = () => {
                       onClick={() => toggleInterest(interest)}
                       className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
                         interests.includes(interest)
-                          ? 'bg-orange-500 text-white border-2 border-orange-500'
-                          : 'bg-white text-slate-700 border-2 border-slate-200 hover:border-orange-300 hover:bg-orange-50'
+                          ? 'bg-cardinal text-white border-2 border-cardinal'
+                          : 'bg-white text-slate-700 border-2 border-slate-200 hover:border-orange-300 hover:bg-red-50'
                       }`}
                     >
                       {interest}
@@ -713,7 +713,7 @@ const SignupBio: React.FC = () => {
                 placeholder="Search skills..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 mb-4 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                className="w-full px-4 py-2 mb-4 rounded-lg border border-slate-300 focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none transition-all"
               />
 
               {/* Skills by Category - Fixed Height with Scroll */}
@@ -741,8 +741,8 @@ const SignupBio: React.FC = () => {
                             onClick={() => toggleSkillSelection(skill)}
                             className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
                               selectedSkillNames.includes(skill)
-                                ? 'bg-orange-500 text-white border-2 border-orange-500'
-                                : 'bg-white text-slate-700 border-2 border-slate-200 hover:border-orange-300 hover:bg-orange-50'
+                                ? 'bg-cardinal text-white border-2 border-cardinal'
+                                : 'bg-white text-slate-700 border-2 border-slate-200 hover:border-orange-300 hover:bg-red-50'
                             }`}
                           >
                             {skill}
@@ -769,7 +769,7 @@ const SignupBio: React.FC = () => {
                   className={`px-6 py-2 rounded-lg font-medium transition-all ${
                     selectedSkillNames.length === 0
                       ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:shadow-lg'
+                      : 'bg-gradient-to-r from-cardinal to-cardinal-light text-white hover:shadow-lg'
                   }`}
                 >
                   Set Proficiency Levels →
@@ -784,7 +784,7 @@ const SignupBio: React.FC = () => {
                 <button
                   type="button"
                   onClick={goBackToSelection}
-                  className="text-orange-500 hover:text-orange-600 font-medium text-sm flex items-center"
+                  className="text-cardinal hover:text-cardinal-light font-medium text-sm flex items-center"
                 >
                   ← Back to Skills
                 </button>
@@ -799,28 +799,28 @@ const SignupBio: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setAllProficiency('Beginner')}
-                  className="px-3 py-1 text-xs rounded-md bg-white border border-slate-300 hover:border-orange-500 hover:bg-orange-50 transition-all"
+                  className="px-3 py-1 text-xs rounded-md bg-white border border-slate-300 hover:border-cardinal hover:bg-red-50 transition-all"
                 >
                   All Beginner
                 </button>
                 <button
                   type="button"
                   onClick={() => setAllProficiency('Intermediate')}
-                  className="px-3 py-1 text-xs rounded-md bg-white border border-slate-300 hover:border-orange-500 hover:bg-orange-50 transition-all"
+                  className="px-3 py-1 text-xs rounded-md bg-white border border-slate-300 hover:border-cardinal hover:bg-red-50 transition-all"
                 >
                   All Intermediate
                 </button>
                 <button
                   type="button"
                   onClick={() => setAllProficiency('Fluent')}
-                  className="px-3 py-1 text-xs rounded-md bg-white border border-slate-300 hover:border-orange-500 hover:bg-orange-50 transition-all"
+                  className="px-3 py-1 text-xs rounded-md bg-white border border-slate-300 hover:border-cardinal hover:bg-red-50 transition-all"
                 >
                   All Fluent
                 </button>
                 <button
                   type="button"
                   onClick={() => setAllProficiency('Expert')}
-                  className="px-3 py-1 text-xs rounded-md bg-white border border-slate-300 hover:border-orange-500 hover:bg-orange-50 transition-all"
+                  className="px-3 py-1 text-xs rounded-md bg-white border border-slate-300 hover:border-cardinal hover:bg-red-50 transition-all"
                 >
                   All Expert
                 </button>
@@ -858,8 +858,8 @@ const SignupBio: React.FC = () => {
                           onClick={() => updateSkillProficiency(skill.name, level)}
                           className={`py-2 px-2 text-xs rounded-md font-medium transition-all ${
                             skill.proficiency === level
-                              ? 'bg-orange-500 text-white border-2 border-orange-500'
-                              : 'bg-white text-slate-600 border-2 border-slate-200 hover:border-orange-300 hover:bg-orange-50'
+                              ? 'bg-cardinal text-white border-2 border-cardinal'
+                              : 'bg-white text-slate-600 border-2 border-slate-200 hover:border-orange-300 hover:bg-red-50'
                           }`}
                         >
                           {level}
@@ -890,7 +890,7 @@ const SignupBio: React.FC = () => {
                 max="168"
                 value={hoursPerWeek}
                 onChange={(e) => setHoursPerWeek(parseInt(e.target.value) || 0)}
-                className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none transition-all"
                 placeholder="e.g., 10"
               />
             </div>
@@ -904,8 +904,8 @@ const SignupBio: React.FC = () => {
               onClick={() => setHoursPerWeek(5)}
               className={`px-3 py-1.5 text-sm rounded-md border transition-all ${
                 hoursPerWeek === 5
-                  ? 'bg-orange-500 text-white border-orange-500'
-                  : 'bg-white text-slate-700 border-slate-300 hover:border-orange-300 hover:bg-orange-50'
+                  ? 'bg-cardinal text-white border-cardinal'
+                  : 'bg-white text-slate-700 border-slate-300 hover:border-orange-300 hover:bg-red-50'
               }`}
             >
               5 hrs
@@ -915,8 +915,8 @@ const SignupBio: React.FC = () => {
               onClick={() => setHoursPerWeek(10)}
               className={`px-3 py-1.5 text-sm rounded-md border transition-all ${
                 hoursPerWeek === 10
-                  ? 'bg-orange-500 text-white border-orange-500'
-                  : 'bg-white text-slate-700 border-slate-300 hover:border-orange-300 hover:bg-orange-50'
+                  ? 'bg-cardinal text-white border-cardinal'
+                  : 'bg-white text-slate-700 border-slate-300 hover:border-orange-300 hover:bg-red-50'
               }`}
             >
               10 hrs
@@ -926,8 +926,8 @@ const SignupBio: React.FC = () => {
               onClick={() => setHoursPerWeek(15)}
               className={`px-3 py-1.5 text-sm rounded-md border transition-all ${
                 hoursPerWeek === 15
-                  ? 'bg-orange-500 text-white border-orange-500'
-                  : 'bg-white text-slate-700 border-slate-300 hover:border-orange-300 hover:bg-orange-50'
+                  ? 'bg-cardinal text-white border-cardinal'
+                  : 'bg-white text-slate-700 border-slate-300 hover:border-orange-300 hover:bg-red-50'
               }`}
             >
               15 hrs
@@ -937,8 +937,8 @@ const SignupBio: React.FC = () => {
               onClick={() => setHoursPerWeek(20)}
               className={`px-3 py-1.5 text-sm rounded-md border transition-all ${
                 hoursPerWeek === 20
-                  ? 'bg-orange-500 text-white border-orange-500'
-                  : 'bg-white text-slate-700 border-slate-300 hover:border-orange-300 hover:bg-orange-50'
+                  ? 'bg-cardinal text-white border-cardinal'
+                  : 'bg-white text-slate-700 border-slate-300 hover:border-orange-300 hover:bg-red-50'
               }`}
             >
               20 hrs
@@ -949,7 +949,7 @@ const SignupBio: React.FC = () => {
         <button
           type="submit"
           disabled={phase === 'selecting' && selectedSkillNames.length === 0}
-          className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-gradient-to-r from-cardinal to-cardinal-light text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Continue
         </button>
@@ -1143,7 +1143,7 @@ const SignupEducation: React.FC = () => {
             id="school"
             value={school}
             onChange={(e) => setSchool(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+            className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none transition-all"
             required
           >
             <option value="">Select your school/college...</option>
@@ -1163,7 +1163,7 @@ const SignupEducation: React.FC = () => {
             value={major}
             onChange={(e) => setMajor(e.target.value)}
             disabled={!school}
-            className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all disabled:bg-slate-100 disabled:cursor-not-allowed"
+            className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none transition-all disabled:bg-slate-100 disabled:cursor-not-allowed"
             required
           >
             <option value="">
@@ -1186,7 +1186,7 @@ const SignupEducation: React.FC = () => {
               type="text"
               value={customMajor}
               onChange={(e) => setCustomMajor(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+              className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none transition-all"
               placeholder="Enter your major"
               required
             />
@@ -1202,7 +1202,7 @@ const SignupEducation: React.FC = () => {
             id="graduationYear"
             value={graduationYear}
             onChange={(e) => setGraduationYear(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+            className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none transition-all"
             required
           >
             <option value="">Select Year</option>
@@ -1222,7 +1222,7 @@ const SignupEducation: React.FC = () => {
             type="checkbox"
             checked={isAlumni}
             onChange={(e) => setIsAlumni(e.target.checked)}
-            className="w-4 h-4 text-orange-500 border-slate-300 rounded focus:ring-orange-500"
+            className="w-4 h-4 text-cardinal border-slate-300 rounded focus:ring-cardinal"
           />
           <label htmlFor="isAlumni" className="ml-2 text-sm text-slate-700">
             I am an alumni
@@ -1238,7 +1238,7 @@ const SignupEducation: React.FC = () => {
         <button
           type="submit"
           disabled={loading}
-          className={`w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+          className={`w-full bg-gradient-to-r from-cardinal to-cardinal-light text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           {loading ? 'Creating Account...' : 'Complete Signup'}
         </button>
@@ -1271,7 +1271,7 @@ const BackButton: React.FC = () => {
   return (
     <button
       onClick={handleBack}
-      className="flex items-center text-slate-600 mb-8 hover:text-orange-500 transition-colors"
+      className="flex items-center text-slate-600 mb-8 hover:text-cardinal transition-colors"
     >
       <ArrowLeftIcon className="h-5 w-5 mr-2" />
       Back
@@ -1281,12 +1281,12 @@ const BackButton: React.FC = () => {
 
 const SignupFlow: React.FC = () => {
   return <div className="min-h-screen auth-page-background flex">
-      <div className="hidden lg:flex lg:w-[30%] bg-gradient-to-br from-orange-500 to-red-500 relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-[30%] bg-gradient-to-br from-cardinal to-cardinal-light relative overflow-hidden">
         <div className="absolute inset-0 bg-pattern opacity-10"></div>
         <div className="flex flex-col justify-center items-center h-full text-white p-6">
           <div className="w-12 h-12 bg-white bg-opacity-20 rounded-2xl flex items-center justify-center mb-4">
             <div className="w-8 h-8 bg-white rounded-xl flex items-center justify-center">
-              <span className="text-orange-500 font-bold text-lg">M</span>
+              <span className="text-cardinal font-bold text-lg">M</span>
             </div>
           </div>
           <h1 className="text-2xl font-bold mb-3">MATCHBOX</h1>
@@ -1297,7 +1297,7 @@ const SignupFlow: React.FC = () => {
             <div className="bg-white bg-opacity-10 p-4 rounded-xl">
               <div className="flex items-center mb-2">
                 <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center">
-                  <span className="text-orange-500 font-bold text-xs">JD</span>
+                  <span className="text-cardinal font-bold text-xs">JD</span>
                 </div>
                 <div className="ml-2">
                   <h3 className="font-bold text-sm">John Doe</h3>
@@ -1311,7 +1311,7 @@ const SignupFlow: React.FC = () => {
             <div className="bg-white bg-opacity-10 p-4 rounded-xl">
               <div className="flex items-center mb-2">
                 <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center">
-                  <span className="text-orange-500 font-bold text-xs">AS</span>
+                  <span className="text-cardinal font-bold text-xs">AS</span>
                 </div>
                 <div className="ml-2">
                   <h3 className="font-bold text-sm">Anna Smith</h3>

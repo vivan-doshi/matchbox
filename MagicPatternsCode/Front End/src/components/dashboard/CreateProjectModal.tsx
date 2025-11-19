@@ -290,11 +290,11 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
         <div className="px-6 pt-4 flex-shrink-0">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-medium text-slate-600">Form Completion</span>
-            <span className="text-xs font-bold text-orange-600">{progress}%</span>
+            <span className="text-xs font-bold text-cardinal">{progress}%</span>
           </div>
           <div className="w-full bg-slate-200 rounded-full h-2">
             <div
-              className="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full transition-all duration-300"
+              className="bg-gradient-to-r from-cardinal to-cardinal-light h-2 rounded-full transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -306,7 +306,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
             {/* Section 1: Project Basics */}
             <div className="mb-8">
               <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-sm font-bold mr-3">
+                <span className="w-8 h-8 rounded-full bg-red-50 text-cardinal flex items-center justify-center text-sm font-bold mr-3">
                   1
                 </span>
                 Project Basics
@@ -327,7 +327,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
                   className={`w-full px-4 py-3 rounded-lg border ${
                     errors.title && touchedFields.title
                       ? 'border-red-500 focus:ring-red-500'
-                      : 'border-slate-300 focus:ring-orange-500'
+                      : 'border-slate-300 focus:ring-cardinal'
                   } focus:ring-2 focus:border-transparent outline-none transition-all`}
                   placeholder="e.g., Campus Events Platform, AI Study Buddy, Sustainable Fashion App, Mental Health Tracker"
                   value={formData.title}
@@ -356,7 +356,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
                   className={`w-full px-4 py-3 rounded-lg border ${
                     errors.description && touchedFields.description
                       ? 'border-red-500 focus:ring-red-500'
-                      : 'border-slate-300 focus:ring-orange-500'
+                      : 'border-slate-300 focus:ring-cardinal'
                   } focus:ring-2 focus:border-transparent outline-none transition-all resize-none`}
                   rows={4}
                   placeholder="Describe your project, its goals, target users, and the impact you want to create. What problem does it solve? What technologies will you use?"
@@ -383,7 +383,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
                   className={`w-full px-4 py-3 rounded-lg border ${
                     errors.category && touchedFields.category
                       ? 'border-red-500 focus:ring-red-500'
-                      : 'border-slate-300 focus:ring-orange-500'
+                      : 'border-slate-300 focus:ring-cardinal'
                   } focus:ring-2 focus:border-transparent outline-none transition-all`}
                   value={formData.category}
                   onChange={(e) => {
@@ -410,7 +410,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
             {/* Section 2: Project Timeline */}
             <div className="mb-8">
               <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-sm font-bold mr-3">
+                <span className="w-8 h-8 rounded-full bg-red-50 text-cardinal flex items-center justify-center text-sm font-bold mr-3">
                   2
                 </span>
                 Project Timeline
@@ -431,7 +431,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
                     className={`appearance-none w-full px-4 py-3 pr-10 rounded-lg border ${
                       errors.timeCommitment && touchedFields.timeCommitment
                         ? 'border-red-500 focus:ring-red-500'
-                        : 'border-slate-300 focus:ring-orange-500'
+                        : 'border-slate-300 focus:ring-cardinal'
                     } focus:ring-2 focus:border-transparent outline-none transition-all cursor-pointer bg-white`}
                     value={formData.timeCommitment}
                     onChange={(e) => handleSelectChange('timeCommitment', e.target.value)}
@@ -502,7 +502,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
                   {/* Current value display with number input */}
                   <div className="flex items-center gap-4">
                     <div className="flex-1 text-center">
-                      <span className="inline-block px-4 py-2 bg-orange-50 text-orange-700 rounded-lg font-semibold text-lg">
+                      <span className="inline-block px-4 py-2 bg-red-50 text-cardinal rounded-lg font-semibold text-lg">
                         {formData.duration} {formData.duration === 1 ? 'week' : 'weeks'}
                       </span>
                     </div>
@@ -516,7 +516,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
                         const clampedValue = Math.min(Math.max(value, 1), 52);
                         setFormData({ ...formData, duration: clampedValue });
                       }}
-                      className="w-20 px-3 py-2 border border-slate-300 rounded-lg text-center focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                      className="w-20 px-3 py-2 border border-slate-300 rounded-lg text-center focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none"
                       placeholder="Weeks"
                     />
                   </div>
@@ -530,7 +530,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
             {/* Section 3: Team Composition */}
             <div className="mb-8">
               <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
-                <span className="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-sm font-bold mr-3">
+                <span className="w-8 h-8 rounded-full bg-red-50 text-cardinal flex items-center justify-center text-sm font-bold mr-3">
                   3
                 </span>
                 Team Composition
@@ -566,7 +566,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
                         <label className="block text-sm text-slate-700 mb-1">Role Title</label>
                         <input
                           type="text"
-                          className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
+                          className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-cardinal focus:border-transparent outline-none transition-all"
                           placeholder="e.g., UI/UX Designer, Backend Developer, ML Engineer, Product Manager, Data Analyst"
                           value={role.title}
                           onChange={(e) => handleRoleChange(index, 'title', e.target.value)}
@@ -577,7 +577,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
                           Role Description
                         </label>
                         <textarea
-                          className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all resize-none"
+                          className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-cardinal focus:border-transparent outline-none transition-all resize-none"
                           rows={2}
                           placeholder="e.g., Looking for someone with Figma experience and user research skills, Need a React developer familiar with Next.js, Seeking data scientist with Python and TensorFlow knowledge"
                           value={role.description}
@@ -589,7 +589,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
                   <button
                     type="button"
                     onClick={addRole}
-                    className="flex items-center text-sm text-orange-500 hover:text-orange-600 font-medium transition-colors"
+                    className="flex items-center text-sm text-cardinal hover:text-cardinal-light font-medium transition-colors"
                   >
                     <PlusIcon className="h-4 w-4 mr-1" />
                     Add Another Role
@@ -657,7 +657,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
                             <label className="block text-sm text-slate-700 mb-1">Name</label>
                             <input
                               type="text"
-                              className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
+                              className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-cardinal focus:border-transparent outline-none transition-all"
                               placeholder="Team member name"
                               value={member.name}
                               onChange={(e) =>
@@ -671,7 +671,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
                             </label>
                             <input
                               type="url"
-                              className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
+                              className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-cardinal focus:border-transparent outline-none transition-all"
                               placeholder="https://matchbox.com/profile/..."
                               value={member.profileLink}
                               onChange={(e) =>
@@ -684,7 +684,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
                           <label className="block text-sm text-slate-700 mb-1">Role</label>
                           <input
                             type="text"
-                            className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
+                            className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-cardinal focus:border-transparent outline-none transition-all"
                             placeholder="Their role in the project"
                             value={member.role}
                             onChange={(e) =>
@@ -697,7 +697,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
                             Role Description
                           </label>
                           <textarea
-                            className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all resize-none"
+                            className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-cardinal focus:border-transparent outline-none transition-all resize-none"
                             rows={2}
                             placeholder="What they'll be working on"
                             value={member.description}
@@ -712,7 +712,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
                     <button
                       type="button"
                       onClick={addExistingMember}
-                      className="flex items-center text-sm text-orange-500 hover:text-orange-600 font-medium transition-colors"
+                      className="flex items-center text-sm text-cardinal hover:text-cardinal-light font-medium transition-colors"
                     >
                       <PlusIcon className="h-4 w-4 mr-1" />
                       Add Team Member
@@ -724,9 +724,9 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
 
             {/* Section 4: Your Role - Visually Distinct */}
             <div className="mb-6">
-              <div className="bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-200 rounded-xl p-6">
+              <div className="bg-gradient-to-r from-red-50 to-red-100 border-2 border-red-200 rounded-xl p-6">
                 <h3 className="text-lg font-semibold text-slate-900 mb-2 flex items-center">
-                  <UserIcon className="h-6 w-6 text-orange-600 mr-3" />
+                  <UserIcon className="h-6 w-6 text-cardinal mr-3" />
                   Your Role in This Project <span className="text-red-500 ml-1">*</span>
                   {touchedFields.creatorRole &&
                     !errors.creatorRole &&
@@ -749,7 +749,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
                       className={`appearance-none w-full px-4 py-3 pr-10 rounded-lg border ${
                         errors.creatorRole && touchedFields.creatorRole
                           ? 'border-red-500 focus:ring-red-500'
-                          : 'border-slate-300 focus:ring-orange-500'
+                          : 'border-slate-300 focus:ring-cardinal'
                       } focus:ring-2 focus:border-transparent outline-none transition-all cursor-pointer bg-white`}
                       value={formData.creatorRole.title}
                       onChange={(e) => handleCreatorRoleChange('title', e.target.value)}
@@ -777,7 +777,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
                     Your Responsibilities
                   </label>
                   <textarea
-                    className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all resize-none"
+                    className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-cardinal focus:border-transparent outline-none transition-all resize-none"
                     rows={3}
                     placeholder="What will you be responsible for? e.g., Project planning, technical architecture, design system creation, team coordination..."
                     value={formData.creatorRole.responsibilities}
@@ -791,7 +791,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
                     Your Expertise / What You Bring
                   </label>
                   <textarea
-                    className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all resize-none"
+                    className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-cardinal focus:border-transparent outline-none transition-all resize-none"
                     rows={3}
                     placeholder="What skills and experience do you bring? e.g., 3 years React experience, Figma expert, Product management background..."
                     value={formData.creatorRole.expertise}
@@ -829,7 +829,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onProj
             <button
               type="submit"
               form="create-project-form"
-              className="px-6 py-3 rounded-lg bg-gradient-to-r from-orange-500 to-red-500 text-white font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              className="px-6 py-3 rounded-lg bg-gradient-to-r from-cardinal to-cardinal-light text-white font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
               disabled={isSubmitting || progress < 100}
             >
               {isSubmitting ? (

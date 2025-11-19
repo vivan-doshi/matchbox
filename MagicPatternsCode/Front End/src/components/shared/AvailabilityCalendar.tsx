@@ -102,7 +102,7 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
       {/* Header with total hours */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center">
-          <ClockIcon className="h-5 w-5 text-orange-500 mr-2" />
+          <ClockIcon className="h-5 w-5 text-cardinal mr-2" />
           <h3 className="text-lg font-semibold text-slate-700">
             Weekly Availability
           </h3>
@@ -158,7 +158,7 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                       <div
                         className={`h-8 rounded transition-all ${
                           selected
-                            ? 'bg-gradient-to-r from-orange-500 to-red-500'
+                            ? 'bg-gradient-to-r from-cardinal to-cardinal-light'
                             : editable
                             ? 'bg-slate-50 hover:bg-slate-100'
                             : 'bg-white'
@@ -176,7 +176,7 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
       {/* Legend */}
       <div className="mt-4 flex items-center justify-center text-sm text-slate-600">
         <div className="flex items-center mr-6">
-          <div className="w-4 h-4 bg-gradient-to-r from-orange-500 to-red-500 rounded mr-2"></div>
+          <div className="w-4 h-4 bg-gradient-to-r from-cardinal to-cardinal-light rounded mr-2"></div>
           <span>Available</span>
         </div>
         <div className="flex items-center">

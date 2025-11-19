@@ -135,7 +135,7 @@ const UserCard: React.FC<UserCardProps> = ({ user, viewMode, onInvite, onViewPro
             <div className="flex items-start justify-between mb-3">
               <div>
                 <h3
-                  className="text-xl font-bold text-slate-900 hover:text-orange-600 cursor-pointer transition-colors"
+                  className="text-xl font-bold text-slate-900 hover:text-cardinal cursor-pointer transition-colors"
                   onClick={handleViewProfile}
                 >
                   {user.firstName} {user.lastName}
@@ -214,7 +214,7 @@ const UserCard: React.FC<UserCardProps> = ({ user, viewMode, onInvite, onViewPro
                     </div>
                   )}
                   {networkStatus?.connection.exists && networkStatus.connection.status === 'Pending' && networkStatus.connection.isSent && (
-                    <div className="flex items-center gap-2 text-sm text-orange-600 bg-orange-50 px-3 py-2 rounded-lg">
+                    <div className="flex items-center gap-2 text-sm text-cardinal bg-red-50 px-3 py-2 rounded-lg">
                       <Clock className="h-4 w-4" />
                       Request Sent
                     </div>
@@ -250,8 +250,8 @@ const UserCard: React.FC<UserCardProps> = ({ user, viewMode, onInvite, onViewPro
                     disabled={loading}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50 ${
                       networkStatus?.follow.isFollowing
-                        ? 'bg-white border border-orange-500 text-orange-500 hover:bg-orange-50'
-                        : 'bg-orange-500 text-white hover:bg-orange-600'
+                        ? 'bg-white border border-cardinal text-cardinal hover:bg-red-50'
+                        : 'bg-cardinal text-white hover:bg-cardinal'
                     }`}
                   >
                     {networkStatus?.follow.isFollowing ? (
@@ -279,7 +279,7 @@ const UserCard: React.FC<UserCardProps> = ({ user, viewMode, onInvite, onViewPro
               e.stopPropagation();
               onInvite();
             }}
-            className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:shadow-lg transition-all"
+            className="flex items-center gap-2 bg-gradient-to-r from-cardinal to-cardinal-light text-white px-4 py-2 rounded-lg text-sm font-medium hover:shadow-lg transition-all"
           >
             <PlusIcon className="h-4 w-4" />
             Invite to Project
@@ -330,7 +330,7 @@ const UserCard: React.FC<UserCardProps> = ({ user, viewMode, onInvite, onViewPro
         <div className="flex items-start justify-between mb-2">
           <div className="flex-1">
             <h3
-              className="text-lg font-bold text-slate-900 hover:text-orange-600 cursor-pointer transition-colors"
+              className="text-lg font-bold text-slate-900 hover:text-cardinal cursor-pointer transition-colors"
               onClick={handleViewProfile}
             >
               {user.firstName} {user.lastName}
@@ -406,7 +406,7 @@ const UserCard: React.FC<UserCardProps> = ({ user, viewMode, onInvite, onViewPro
                   Connected
                 </div>
               ) : networkStatus?.connection.exists && networkStatus.connection.status === 'Pending' && networkStatus.connection.isSent ? (
-                <div className="flex items-center justify-center gap-2 text-sm text-orange-600 bg-orange-50 px-3 py-2 rounded-lg flex-1">
+                <div className="flex items-center justify-center gap-2 text-sm text-cardinal bg-red-50 px-3 py-2 rounded-lg flex-1">
                   <Clock className="h-4 w-4" />
                   Request Sent
                 </div>
@@ -453,7 +453,7 @@ const UserCard: React.FC<UserCardProps> = ({ user, viewMode, onInvite, onViewPro
               e.stopPropagation();
               onInvite();
             }}
-            className="flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:shadow-lg transition-all"
+            className="flex items-center justify-center gap-2 bg-gradient-to-r from-cardinal to-cardinal-light text-white px-4 py-2 rounded-lg text-sm font-medium hover:shadow-lg transition-all"
           >
             <PlusIcon className="h-4 w-4" />
             Invite to Project

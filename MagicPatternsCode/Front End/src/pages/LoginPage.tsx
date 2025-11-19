@@ -52,7 +52,7 @@ const LoginPage: React.FC = () => {
       <div className="w-full max-w-md">
         {/* Logo/Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent mb-2">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-cardinal to-cardinal-light bg-clip-text text-transparent mb-2">
             Matchbox
           </h1>
           <p className="text-slate-600">Welcome back!</p>
@@ -83,7 +83,7 @@ const LoginPage: React.FC = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none transition-all"
                 placeholder="your.email@university.edu"
                 disabled={isLoading}
               />
@@ -100,7 +100,7 @@ const LoginPage: React.FC = () => {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all pr-12"
+                  className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none transition-all pr-12"
                   placeholder="Enter your password"
                   disabled={isLoading}
                 />
@@ -123,7 +123,7 @@ const LoginPage: React.FC = () => {
             <div className="mb-6 text-right">
               <Link
                 to="/forgot-password"
-                className="text-sm text-orange-500 hover:text-orange-600 font-medium transition-colors"
+                className="text-sm text-cardinal hover:text-cardinal-light font-medium transition-colors"
               >
                 Forgot password?
               </Link>
@@ -133,7 +133,7 @@ const LoginPage: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-r from-cardinal to-cardinal-light text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center">
@@ -174,7 +174,7 @@ const LoginPage: React.FC = () => {
               Don't have an account?{' '}
               <Link
                 to="/signup"
-                className="text-orange-500 hover:text-orange-600 font-semibold transition-colors"
+                className="text-cardinal hover:text-cardinal-light font-semibold transition-colors"
               >
                 Sign up
               </Link>

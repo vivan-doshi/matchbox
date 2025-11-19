@@ -160,7 +160,7 @@ const InviteToProjectModal: React.FC<InviteToProjectModalProps> = ({ user, onClo
 
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2Icon className="h-8 w-8 text-orange-500 animate-spin" />
+              <Loader2Icon className="h-8 w-8 text-cardinal animate-spin" />
             </div>
           ) : success ? (
             <div className="flex flex-col items-center justify-center py-12">
@@ -187,7 +187,7 @@ const InviteToProjectModal: React.FC<InviteToProjectModalProps> = ({ user, onClo
               </p>
               <button
                 onClick={handleCreateProject}
-                className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all"
+                className="bg-gradient-to-r from-cardinal to-cardinal-light text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all"
               >
                 Create a Project
               </button>
@@ -217,7 +217,7 @@ const InviteToProjectModal: React.FC<InviteToProjectModalProps> = ({ user, onClo
                 <select
                   value={selectedProject}
                   onChange={(e) => setSelectedProject(e.target.value)}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none transition-all"
                   disabled={sending}
                 >
                   <option value="">Choose a project...</option>
@@ -228,7 +228,7 @@ const InviteToProjectModal: React.FC<InviteToProjectModalProps> = ({ user, onClo
                   ))}
                 </select>
                 {selectedProject && (
-                  <div className="mt-2 p-3 bg-orange-50 rounded-lg">
+                  <div className="mt-2 p-3 bg-red-50 rounded-lg">
                     <p className="text-sm text-slate-700">
                       {userProjects.find(p => p.id === selectedProject)?.description}
                     </p>
@@ -247,7 +247,7 @@ const InviteToProjectModal: React.FC<InviteToProjectModalProps> = ({ user, onClo
                   placeholder={`Hi ${user.firstName}, I think you'd be a great fit for this project! Would love to have you on the team.`}
                   rows={4}
                   maxLength={500}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none resize-none transition-all"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none resize-none transition-all"
                   disabled={sending}
                 />
                 <div className="flex justify-between items-center mt-2">
@@ -272,7 +272,7 @@ const InviteToProjectModal: React.FC<InviteToProjectModalProps> = ({ user, onClo
                 <button
                   onClick={handleSendInvite}
                   disabled={!selectedProject || sending}
-                  className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1 bg-gradient-to-r from-cardinal to-cardinal-light text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {sending ? (
                     <>

@@ -160,7 +160,7 @@ const EditProjectPage: React.FC = () => {
     return (
       <div className="min-h-screen page-background-gradient flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-orange-500 border-r-transparent"></div>
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-cardinal border-r-transparent"></div>
           <p className="mt-4 text-slate-600">Loading project...</p>
         </div>
       </div>
@@ -203,7 +203,7 @@ const EditProjectPage: React.FC = () => {
                 type="text"
                 value={formData.title}
                 onChange={(e) => handleInputChange('title', e.target.value)}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cardinal focus:border-transparent"
                 placeholder="Enter project title"
               />
               {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
@@ -218,7 +218,7 @@ const EditProjectPage: React.FC = () => {
                 value={formData.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 rows={4}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cardinal focus:border-transparent"
                 placeholder="Describe your project"
               />
               {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
@@ -232,7 +232,7 @@ const EditProjectPage: React.FC = () => {
               <select
                 value={formData.category}
                 onChange={(e) => handleInputChange('category', e.target.value)}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cardinal focus:border-transparent"
               >
                 <option value="">Select a category</option>
                 <option value="Technology">Technology</option>
@@ -253,7 +253,7 @@ const EditProjectPage: React.FC = () => {
               <select
                 value={formData.timeCommitment}
                 onChange={(e) => handleInputChange('timeCommitment', e.target.value)}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cardinal focus:border-transparent"
               >
                 <option value="">Select time commitment</option>
                 <option value="1-5 hours/week">1-5 hours/week</option>
@@ -274,7 +274,7 @@ const EditProjectPage: React.FC = () => {
                 onChange={(e) => handleInputChange('duration', parseInt(e.target.value) || 8)}
                 min="1"
                 max="52"
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cardinal focus:border-transparent"
               />
             </div>
 
@@ -286,7 +286,7 @@ const EditProjectPage: React.FC = () => {
               <select
                 value={formData.status}
                 onChange={(e) => handleInputChange('status', e.target.value as 'Planning' | 'In Progress' | 'Completed')}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cardinal focus:border-transparent"
               >
                 <option value="Planning">Planning</option>
                 <option value="In Progress">In Progress</option>
@@ -303,7 +303,7 @@ const EditProjectPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={addRole}
-                  className="flex items-center gap-2 px-3 py-1 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm"
+                  className="flex items-center gap-2 px-3 py-1 bg-cardinal text-white rounded-lg hover:bg-cardinal transition-colors text-sm"
                 >
                   <PlusIcon className="h-4 w-4" />
                   Add Role
@@ -328,14 +328,14 @@ const EditProjectPage: React.FC = () => {
                       value={role.title}
                       onChange={(e) => handleRoleChange(index, 'title', e.target.value)}
                       placeholder="Role title (e.g., Frontend Developer)"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg mb-2 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg mb-2 focus:ring-2 focus:ring-cardinal focus:border-transparent"
                     />
                     <textarea
                       value={role.description}
                       onChange={(e) => handleRoleChange(index, 'description', e.target.value)}
                       placeholder="Role description and responsibilities"
                       rows={2}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cardinal focus:border-transparent"
                     />
                   </div>
                 ))}
@@ -360,7 +360,7 @@ const EditProjectPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={saving}
-                className="px-6 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-6 py-2 bg-gradient-to-r from-cardinal to-cardinal-light text-white rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 <SaveIcon className="h-5 w-5" />
                 {saving ? 'Saving...' : 'Save Changes'}

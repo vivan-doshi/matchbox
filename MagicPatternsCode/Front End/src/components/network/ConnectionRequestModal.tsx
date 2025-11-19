@@ -144,7 +144,7 @@ const ConnectionRequestModal: React.FC<ConnectionRequestModalProps> = ({
           {sharedInterests.length > 0 && (
             <div className="mb-6">
               <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="h-4 w-4 text-orange-600" />
+                <Sparkles className="h-4 w-4 text-cardinal" />
                 <p className="text-sm font-semibold text-slate-700">
                   Shared Interests:
                 </p>
@@ -153,7 +153,7 @@ const ConnectionRequestModal: React.FC<ConnectionRequestModalProps> = ({
                 {sharedInterests.map((interest, index) => (
                   <span
                     key={index}
-                    className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium"
+                    className="px-3 py-1 bg-red-50 text-cardinal rounded-full text-sm font-medium"
                   >
                     {interest}
                   </span>

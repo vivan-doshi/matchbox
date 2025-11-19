@@ -74,6 +74,15 @@ export interface User {
     hoursPerWeek: number;
   };
   savedProjects?: Array<string | Project>;
+  // Email Verification
+  emailVerified: boolean;
+  // USC ID Verification for Competitions
+  uscId?: string;
+  uscIdVerified: boolean;
+  uscIdVerifiedAt?: string;
+  // Competition Participation
+  hostedCompetitions?: string[];
+  participatedTeams?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -286,6 +295,183 @@ export interface Notification {
   metadata?: Record<string, any>;
   createdAt: string;
   updatedAt: string;
+}
+
+// ============= COMPETITION TYPES =============
+export interface Milestone {
+  _id: string;
+  order: number;
+  title: string;
+  description: string;
+  dueDate: string;
+  weight?: number;
+  isRequired: boolean;
+}
+
+export interface Competition {
+  id: string;
+  _id?: string;
+  title: string;
+  description: string;
+  type: 'hackathon' | 'case-competition' | 'group-project';
+  hostId: string;
+  hostName: string;
+  startDate: string;
+  endDate: string;
+  maxTeamSize: number;
+  minTeamSize: number;
+  maxTeams?: number;
+  rules: string;
+  objectives: string;
+  evaluationCriteria?: string;
+  prize?: string;
+  milestones: Milestone[];
+  status: 'draft' | 'open' | 'in-progress' | 'closed' | 'archived';
+  requiresHostApproval: boolean;
+  allowSelfTeams: boolean;
+  registeredTeamCount: number;
+  totalParticipants: number;
+  averageProgress: number;
+  createdAt: string;
+  updatedAt: string;
+  isActive?: boolean;
+  isRegistrationOpen?: boolean;
+  hasStarted?: boolean;
+  hasEnded?: boolean;
+}
+
+export interface CreateCompetitionRequest {
+  title: string;
+  description: string;
+  type: 'hackathon' | 'case-competition' | 'group-project';
+  startDate: string;
+  endDate: string;
+  maxTeamSize: number;
+  minTeamSize: number;
+  maxTeams?: number;
+  rules: string;
+  objectives: string;
+  evaluationCriteria?: string;
+  prize?: string;
+  milestones: Omit<Milestone, '_id'>[];
+  requiresHostApproval?: boolean;
+  allowSelfTeams?: boolean;
+}
+
+// ============= TEAM TYPES =============
+export interface TeamMember {
+  userId: string;
+  name: string;
+  email: string;
+  role: 'leader' | 'member';
+  joinedAt: string;
+  status: 'active' | 'inactive';
+  contributionPercentage?: number;
+}
+
+export interface ProgressUpdate {
+  timestamp: string;
+  progressPercentage: number;
+  comment: string;
+  updatedBy: string;
+  updatedByName: string;
+}
+
+export interface Deliverable {
+  type: 'file' | 'link' | 'document';
+  title: string;
+  url: string;
+  uploadedAt: string;
+}
+
+export interface AchievedMilestone {
+  milestoneId: string;
+  achievedAt: string;
+  deliverables: Deliverable[];
+  comment: string;
+  verifiedBy?: string;
+  verificationFeedback?: string;
+}
+
+export interface FinalSubmission {
+  submittedAt: string;
+  deliverables: Deliverable[];
+  teamSummary: string;
+  contributionBreakdown: {
+    userId: string;
+    percentage: number;
+  }[];
+}
+
+export interface Team {
+  id: string;
+  _id?: string;
+  competitionId: string;
+  name: string;
+  description: string;
+  leaderId: string;
+  members: TeamMember[];
+  maxMembers: number;
+  status: 'forming' | 'active' | 'submitted' | 'disqualified';
+  joinedCompetitionAt: string;
+  currentProgress: number;
+  lastProgressUpdate?: string;
+  progressHistory: ProgressUpdate[];
+  achievedMilestones: AchievedMilestone[];
+  finalSubmission?: FinalSubmission;
+  createdAt: string;
+  updatedAt: string;
+  memberCount?: number;
+  isFull?: boolean;
+  hasSubmitted?: boolean;
+}
+
+export interface CreateTeamRequest {
+  name: string;
+  description: string;
+  initialMembers?: { email: string }[];
+}
+
+export interface UpdateProgressRequest {
+  progressPercentage: number;
+  comment: string;
+}
+
+export interface AchieveMilestoneRequest {
+  comment: string;
+  deliverables?: Deliverable[];
+}
+
+export interface SubmitFinalRequest {
+  deliverables: Deliverable[];
+  teamSummary: string;
+  contributionBreakdown: {
+    userId: string;
+    percentage: number;
+  }[];
+}
+
+export interface CompetitionStats {
+  registeredTeams: number;
+  totalParticipants: number;
+  averageProgress: number;
+  submittedTeams: number;
+  milestoneAchievementRate: {
+    milestoneId: string;
+    achievementCount: number;
+  }[];
+}
+
+export interface CompetitionDashboard {
+  competition: Competition;
+  stats: CompetitionStats;
+  teams: Team[];
+}
+
+export interface CompetitionFilters extends PaginationParams {
+  status?: string;
+  type?: string;
+  search?: string;
 }
 
 // ============= ERROR TYPES =============

@@ -48,6 +48,17 @@ export interface IUser extends Document {
       count: number;
     };
   };
+  // Email Verification
+  emailVerificationToken?: string;
+  emailVerificationExpires?: Date;
+  emailVerified: boolean;
+  // USC ID Verification for Competitions
+  uscId?: string;
+  uscIdVerified: boolean;
+  uscIdVerifiedAt?: Date;
+  // Competition Participation
+  hostedCompetitions?: Types.ObjectId[];
+  participatedTeams?: Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -60,7 +71,7 @@ const UserSchema: Schema = new Schema(
       required: [true, 'Email is required'],
       unique: true,
       lowercase: true,
-      match: [/\.edu$/, 'Email must be from an educational institution (.edu)'],
+      match: [/@usc\.edu$/, 'Email must be from USC (@usc.edu)'],
     },
     password: {
       type: String,
@@ -153,12 +164,50 @@ const UserSchema: Schema = new Schema(
         count: { type: Number, default: 0 },
       },
     },
+    emailVerificationToken: {
+      type: String,
+    },
+    emailVerificationExpires: {
+      type: Date,
+    },
+    emailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    uscId: {
+      type: String,
+    },
+    uscIdVerified: {
+      type: Boolean,
+      default: false,
+    },
+    uscIdVerifiedAt: {
+      type: Date,
+    },
+    hostedCompetitions: {
+      type: [
+        {
+          type: Schema.Types.ObjectId,
+          ref: 'Competition',
+        },
+      ],
+      default: [],
+    },
+    participatedTeams: {
+      type: [
+        {
+          type: Schema.Types.ObjectId,
+          ref: 'Team',
+        },
+      ],
+      default: [],
+    },
   },
   {
     timestamps: true,
     toJSON: {
       virtuals: true,
-      transform: function (doc, ret) {
+      transform: function (doc, ret: any) {
         ret.id = ret._id;
         delete ret._id;
         delete ret.__v;
@@ -175,7 +224,7 @@ UserSchema.pre('save', async function (next) {
     return next();
   }
   const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
+  this.password = await bcrypt.hash(this.password as string, salt);
   next();
 });
 

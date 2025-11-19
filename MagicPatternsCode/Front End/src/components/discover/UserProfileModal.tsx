@@ -119,7 +119,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ user, onClose, onIn
                     {user.interests.map((interest, index) => (
                       <span
                         key={`${interest}-${index}`}
-                        className="px-3 py-1 text-xs font-medium rounded-full bg-orange-50 text-orange-700"
+                        className="px-3 py-1 text-xs font-medium rounded-full bg-red-50 text-cardinal"
                       >
                         {interest}
                       </span>
@@ -135,7 +135,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ user, onClose, onIn
                   </p>
                   <button
                     onClick={() => setShowResumePreview(true)}
-                    className="flex items-center text-sm bg-orange-50 text-orange-700 px-4 py-2 rounded-lg hover:bg-orange-100 transition-colors"
+                    className="flex items-center text-sm bg-red-50 text-cardinal px-4 py-2 rounded-lg hover:bg-red-50 transition-colors"
                   >
                     <FileTextIcon className="h-4 w-4 mr-2" />
                     View Resume
@@ -148,7 +148,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ user, onClose, onIn
           <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-slate-200">
             <button
               onClick={onInvite}
-              className="flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold hover:shadow-lg transition-all"
+              className="flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-gradient-to-r from-cardinal to-cardinal-light text-white font-semibold hover:shadow-lg transition-all"
             >
               <PlusIcon className="h-4 w-4" />
               Invite to Project
@@ -190,7 +190,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ user, onClose, onIn
                   href={user.resume.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center text-sm bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
+                  className="flex items-center text-sm bg-cardinal text-white px-4 py-2 rounded-lg hover:bg-cardinal transition-colors"
                 >
                   <ExternalLinkIcon className="h-4 w-4 mr-1" />
                   Open in New Tab

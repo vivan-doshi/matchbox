@@ -230,7 +230,7 @@ const ManageTeamPage: React.FC = () => {
     return (
       <div className="min-h-screen page-background-gradient flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-orange-500 border-r-transparent"></div>
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-cardinal border-r-transparent"></div>
           <p className="mt-4 text-slate-600">Loading team data...</p>
         </div>
       </div>
@@ -244,7 +244,7 @@ const ManageTeamPage: React.FC = () => {
           <p className="text-red-600 mb-4">Project not found</p>
           <button
             onClick={() => navigate('/my-projects')}
-            className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+            className="px-4 py-2 bg-cardinal text-white rounded-lg hover:bg-cardinal"
           >
             Back to My Projects
           </button>
@@ -303,8 +303,8 @@ const ManageTeamPage: React.FC = () => {
                     {project.roles.filter((r) => !r.filled).length}
                   </p>
                 </div>
-                <div className="bg-orange-100 p-3 rounded-lg">
-                  <AlertCircleIcon className="h-6 w-6 text-orange-600" />
+                <div className="bg-red-50 p-3 rounded-lg">
+                  <AlertCircleIcon className="h-6 w-6 text-cardinal" />
                 </div>
               </div>
             </div>
@@ -330,7 +330,7 @@ const ManageTeamPage: React.FC = () => {
                   onClick={() => setActiveTab('team')}
                   className={`px-6 py-4 text-sm font-medium transition-colors ${
                     activeTab === 'team'
-                      ? 'text-orange-500 border-b-2 border-orange-500'
+                      ? 'text-cardinal border-b-2 border-cardinal'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
@@ -340,7 +340,7 @@ const ManageTeamPage: React.FC = () => {
                   onClick={() => setActiveTab('applications')}
                   className={`px-6 py-4 text-sm font-medium transition-colors relative ${
                     activeTab === 'applications'
-                      ? 'text-orange-500 border-b-2 border-orange-500'
+                      ? 'text-cardinal border-b-2 border-cardinal'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
@@ -366,7 +366,7 @@ const ManageTeamPage: React.FC = () => {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search team members..."
-                      className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cardinal focus:border-transparent"
                     />
                   </div>
                 </div>

@@ -3,6 +3,8 @@ import User from '../models/User';
 import { generateToken } from '../utils/generateToken';
 import { AuthRequest } from '../middleware/auth';
 import { uploadProfilePicture, uploadResumeFile } from '../utils/fileUpload';
+import { sendVerificationEmail } from '../utils/emailService';
+import { v4 as uuidv4 } from 'uuid';
 
 // @desc    Check if email exists
 // @route   POST /api/auth/check-email
@@ -100,6 +102,10 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       };
     }
 
+    // Generate email verification token
+    const verificationToken = uuidv4();
+    const verificationExpires = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48 hours
+
     // Create user
     const user = await User.create({
       email,
@@ -118,7 +124,20 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       resume: resumeData,
       interests: parsedInterests,
       weeklyAvailability: parsedWeeklyAvailability,
+      emailVerificationToken: verificationToken,
+      emailVerificationExpires: verificationExpires,
+      emailVerified: false,
+      uscIdVerified: false, // Will be set to true after email verification
     });
+
+    // Send verification email
+    try {
+      const userName = user.preferredName || user.firstName;
+      await sendVerificationEmail(user.email, verificationToken, userName);
+    } catch (emailError: any) {
+      console.error('Error sending verification email:', emailError);
+      // Continue with signup even if email fails
+    }
 
     const token = generateToken(user._id.toString());
 
@@ -222,6 +241,115 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
     res.status(500).json({
       success: false,
       message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Verify email with token
+// @route   GET /api/auth/verify-email/:token
+// @access  Public
+export const verifyEmail = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { token } = req.params;
+
+    // Find user with matching token and not expired
+    const user = await User.findOne({
+      emailVerificationToken: token,
+      emailVerificationExpires: { $gt: new Date() },
+    });
+
+    if (!user) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid or expired verification token',
+      });
+      return;
+    }
+
+    // Check if already verified
+    if (user.emailVerified) {
+      res.status(200).json({
+        success: true,
+        message: 'Email already verified',
+      });
+      return;
+    }
+
+    // Update user - mark as verified
+    user.emailVerified = true;
+    user.uscIdVerified = true; // Auto-verify USC affiliation since email is @usc.edu
+    user.uscIdVerifiedAt = new Date();
+    user.emailVerificationToken = undefined;
+    user.emailVerificationExpires = undefined;
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Email verified successfully! You can now access all features including competitions.',
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Resend verification email
+// @route   POST /api/auth/resend-verification
+// @access  Public
+export const resendVerificationEmail = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      res.status(400).json({
+        success: false,
+        message: 'Email is required',
+      });
+      return;
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: 'No account found with this email',
+      });
+      return;
+    }
+
+    // Check if already verified
+    if (user.emailVerified) {
+      res.status(200).json({
+        success: true,
+        message: 'Email is already verified',
+      });
+      return;
+    }
+
+    // Generate new verification token
+    const verificationToken = uuidv4();
+    const verificationExpires = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48 hours
+
+    user.emailVerificationToken = verificationToken;
+    user.emailVerificationExpires = verificationExpires;
+    await user.save();
+
+    // Send verification email
+    const userName = user.preferredName || user.firstName;
+    await sendVerificationEmail(user.email, verificationToken, userName);
+
+    res.status(200).json({
+      success: true,
+      message: 'Verification email sent successfully. Please check your inbox.',
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to send verification email',
     });
   }
 };

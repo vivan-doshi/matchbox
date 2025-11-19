@@ -125,7 +125,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
     const iconClass = 'h-5 w-5';
     switch (type) {
       case 'project_invite':
-        return <UserPlusIcon className={`${iconClass} text-orange-600`} />;
+        return <UserPlusIcon className={`${iconClass} text-cardinal`} />;
       case 'project_application':
         return <FolderIcon className={`${iconClass} text-blue-600`} />;
       case 'message':
@@ -167,7 +167,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
   return (
     <div className="absolute top-full right-0 mt-2 w-96 bg-white rounded-xl shadow-2xl border border-slate-200 z-50 overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-orange-500 to-red-500 px-5 py-4">
+      <div className="bg-gradient-to-r from-cardinal to-cardinal-light px-5 py-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             <div className="bg-white bg-opacity-10 rounded-full p-2">
@@ -190,7 +190,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
             onClick={() => setFilter('all')}
             className={`flex-1 text-sm py-1.5 rounded-lg transition-colors ${
               filter === 'all'
-                ? 'bg-white text-orange-600 font-semibold'
+                ? 'bg-white text-cardinal font-semibold'
                 : 'text-white text-opacity-80 hover:text-white hover:bg-white hover:bg-opacity-20'
             }`}
           >
@@ -200,7 +200,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
             onClick={() => setFilter('unread')}
             className={`flex-1 text-sm py-1.5 rounded-lg transition-colors ${
               filter === 'unread'
-                ? 'bg-white text-orange-600 font-semibold'
+                ? 'bg-white text-cardinal font-semibold'
                 : 'text-white text-opacity-80 hover:text-white hover:bg-white hover:bg-opacity-20'
             }`}
           >
@@ -218,7 +218,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
 
         {loading ? (
           <div className="flex justify-center py-12">
-            <Loader2Icon className="h-6 w-6 text-orange-500 animate-spin" />
+            <Loader2Icon className="h-6 w-6 text-cardinal animate-spin" />
           </div>
         ) : notifications.length === 0 ? (
           <div className="text-center py-10">
@@ -242,7 +242,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                     className={`p-3 rounded-xl border transition-all cursor-pointer ${
                       notification.read
                         ? 'border-slate-100 bg-white hover:border-slate-200'
-                        : 'border-orange-200 bg-orange-50 hover:border-orange-300'
+                        : 'border-red-200 bg-red-50 hover:border-orange-300'
                     }`}
                     onClick={() => handleNotificationClick(notification)}
                   >
@@ -259,7 +259,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                                 {notification.title}
                               </h5>
                               {!notification.read && (
-                                <span className="text-[10px] font-bold uppercase text-orange-600 bg-white px-2 py-0.5 rounded-full">
+                                <span className="text-[10px] font-bold uppercase text-cardinal bg-white px-2 py-0.5 rounded-full">
                                   New
                                 </span>
                               )}
@@ -275,7 +275,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                                 handleMarkAsRead(notification.id);
                               }
                             }}
-                            className="text-xs text-orange-600 hover:text-orange-700 font-medium"
+                            className="text-xs text-cardinal hover:text-cardinal font-medium"
                           >
                             {notification.read ? 'Read' : 'Mark read'}
                           </button>
@@ -303,7 +303,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                 onClose();
                 navigate('/notifications');
               }}
-              className="inline-flex items-center gap-2 text-sm font-medium text-orange-600 hover:text-orange-700"
+              className="inline-flex items-center gap-2 text-sm font-medium text-cardinal hover:text-cardinal"
             >
               <CheckIcon className="h-4 w-4" />
               View all notifications

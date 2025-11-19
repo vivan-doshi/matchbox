@@ -17,6 +17,15 @@ import type {
   Invitation,
   Notification,
   ErrorResponse,
+  Competition,
+  CreateCompetitionRequest,
+  CompetitionFilters,
+  CompetitionDashboard,
+  Team,
+  CreateTeamRequest,
+  UpdateProgressRequest,
+  AchieveMilestoneRequest,
+  SubmitFinalRequest,
 } from '../types/api';
 
 // =============================================
@@ -372,6 +381,103 @@ class ApiClient {
 
   async markAllNotificationsAsRead(): Promise<ApiResponse> {
     const response = await this.client.put<ApiResponse>('/notifications/read-all');
+    return response.data;
+  }
+
+  // ============= COMPETITION ENDPOINTS =============
+
+  async getCompetitions(params?: CompetitionFilters): Promise<PaginatedResponse<Competition>> {
+    const response = await this.client.get<PaginatedResponse<Competition>>('/competitions', { params });
+    return response.data;
+  }
+
+  async getCompetitionById(id: string): Promise<ApiResponse<Competition>> {
+    const response = await this.client.get<ApiResponse<Competition>>(`/competitions/${id}`);
+    return response.data;
+  }
+
+  async createCompetition(data: CreateCompetitionRequest): Promise<ApiResponse<Competition>> {
+    const response = await this.client.post<ApiResponse<Competition>>('/competitions', data);
+    return response.data;
+  }
+
+  async updateCompetition(id: string, data: Partial<CreateCompetitionRequest>): Promise<ApiResponse<Competition>> {
+    const response = await this.client.put<ApiResponse<Competition>>(`/competitions/${id}`, data);
+    return response.data;
+  }
+
+  async closeCompetition(id: string): Promise<ApiResponse<Competition>> {
+    const response = await this.client.post<ApiResponse<Competition>>(`/competitions/${id}/close`);
+    return response.data;
+  }
+
+  async getCompetitionDashboard(id: string): Promise<ApiResponse<CompetitionDashboard>> {
+    const response = await this.client.get<ApiResponse<CompetitionDashboard>>(`/competitions/${id}/dashboard`);
+    return response.data;
+  }
+
+  async getCompetitionAnalytics(id: string): Promise<ApiResponse<any>> {
+    const response = await this.client.get<ApiResponse<any>>(`/competitions/${id}/analytics`);
+    return response.data;
+  }
+
+  async getHostedCompetitions(): Promise<ApiResponse<Competition[]>> {
+    const response = await this.client.get<ApiResponse<Competition[]>>('/competitions/hosted/my-competitions');
+    return response.data;
+  }
+
+  // ============= TEAM ENDPOINTS =============
+
+  async getTeamsByCompetition(competitionId: string): Promise<ApiResponse<Team[]>> {
+    const response = await this.client.get<ApiResponse<Team[]>>(`/teams/competitions/${competitionId}/teams`);
+    return response.data;
+  }
+
+  async getTeamById(competitionId: string, teamId: string): Promise<ApiResponse<Team>> {
+    const response = await this.client.get<ApiResponse<Team>>(`/teams/competitions/${competitionId}/teams/${teamId}`);
+    return response.data;
+  }
+
+  async createTeam(competitionId: string, data: CreateTeamRequest): Promise<ApiResponse<Team>> {
+    const response = await this.client.post<ApiResponse<Team>>(`/teams/competitions/${competitionId}/teams`, data);
+    return response.data;
+  }
+
+  async inviteToTeam(competitionId: string, teamId: string, email: string): Promise<ApiResponse> {
+    const response = await this.client.post<ApiResponse>(`/teams/competitions/${competitionId}/teams/${teamId}/invite`, { email });
+    return response.data;
+  }
+
+  async acceptTeamInvitation(competitionId: string, teamId: string): Promise<ApiResponse<Team>> {
+    const response = await this.client.post<ApiResponse<Team>>(`/teams/competitions/${competitionId}/teams/${teamId}/accept-invite`);
+    return response.data;
+  }
+
+  async updateTeamProgress(competitionId: string, teamId: string, data: UpdateProgressRequest): Promise<ApiResponse<Team>> {
+    const response = await this.client.patch<ApiResponse<Team>>(`/teams/competitions/${competitionId}/teams/${teamId}/progress`, data);
+    return response.data;
+  }
+
+  async achieveMilestone(competitionId: string, teamId: string, milestoneId: string, data: AchieveMilestoneRequest): Promise<ApiResponse<Team>> {
+    const response = await this.client.post<ApiResponse<Team>>(`/teams/competitions/${competitionId}/teams/${teamId}/milestones/${milestoneId}/achieve`, data);
+    return response.data;
+  }
+
+  async submitFinalDeliverables(competitionId: string, teamId: string, data: SubmitFinalRequest): Promise<ApiResponse<Team>> {
+    const response = await this.client.post<ApiResponse<Team>>(`/teams/competitions/${competitionId}/teams/${teamId}/submit`, data);
+    return response.data;
+  }
+
+  async getMyTeams(): Promise<ApiResponse<Team[]>> {
+    const response = await this.client.get<ApiResponse<Team[]>>('/teams/my-teams');
+    return response.data;
+  }
+
+  async verifyMilestone(competitionId: string, teamId: string, milestoneId: string, verified: boolean, feedback?: string): Promise<ApiResponse<Team>> {
+    const response = await this.client.post<ApiResponse<Team>>(
+      `/teams/competitions/${competitionId}/teams/${teamId}/milestones/${milestoneId}/verify`,
+      { verified, feedback }
+    );
     return response.data;
   }
 

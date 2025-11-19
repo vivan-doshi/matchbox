@@ -393,7 +393,7 @@ const ProjectDetailsPage: React.FC = () => {
     return (
       <div className="min-h-screen page-background-gradient flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-orange-500 border-r-transparent"></div>
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-cardinal border-r-transparent"></div>
           <p className="mt-4 text-slate-600">Loading project details...</p>
         </div>
       </div>
@@ -408,7 +408,7 @@ const ProjectDetailsPage: React.FC = () => {
           <p className="text-red-600 mb-4">{error || 'Project not found'}</p>
           <button
             onClick={() => navigate(-1)}
-            className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 mr-2"
+            className="px-4 py-2 bg-cardinal text-white rounded-lg hover:bg-cardinal mr-2"
           >
             Go Back
           </button>
@@ -451,7 +451,7 @@ const ProjectDetailsPage: React.FC = () => {
                   navigate('/dashboard');
                 }
               }}
-              className="text-slate-600 hover:text-orange-500 transition-colors mr-4 cursor-pointer"
+              className="text-slate-600 hover:text-cardinal transition-colors mr-4 cursor-pointer"
               aria-label="Go back"
             >
               <ArrowLeftIcon className="h-6 w-6" />
@@ -476,7 +476,7 @@ const ProjectDetailsPage: React.FC = () => {
                     alt={project.creator.name}
                     className="w-10 h-10 rounded-full mr-2 ring-2 ring-transparent group-hover:ring-orange-300 transition-all transform group-hover:scale-105"
                   />
-                  <span className="font-semibold text-base text-slate-900 group-hover:text-orange-500 transition-colors">
+                  <span className="font-semibold text-base text-slate-900 group-hover:text-cardinal transition-colors">
                     {project.creator.name}
                   </span>
                 </button>
@@ -496,12 +496,12 @@ const ProjectDetailsPage: React.FC = () => {
               <button
                 onClick={handleSaveToggle}
                 disabled={checkingSaved}
-                className="p-3 rounded-full hover:bg-orange-50 transition-all transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-3 rounded-full hover:bg-red-50 transition-all transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label={isSaved ? 'Remove bookmark' : 'Bookmark project'}
               >
                 <BookmarkIcon
                   className={`h-6 w-6 transition-all ${
-                    isSaved ? 'fill-orange-500 text-orange-500' : 'text-slate-400 hover:text-orange-500'
+                    isSaved ? 'fill-orange-500 text-cardinal' : 'text-slate-400 hover:text-cardinal'
                   }`}
                 />
               </button>
@@ -510,17 +510,17 @@ const ProjectDetailsPage: React.FC = () => {
             {/* Metadata */}
             <div className="flex flex-wrap gap-4 mb-6">
               <div className="flex items-center text-base text-slate-600 bg-slate-50 px-4 py-2 rounded-lg">
-                <UsersIcon className="h-5 w-5 mr-2 text-orange-500" />
+                <UsersIcon className="h-5 w-5 mr-2 text-cardinal" />
                 <span className="font-medium">
                   {filledRoles}/{totalRoles} roles filled
                 </span>
               </div>
               <div className="flex items-center text-base text-slate-600 bg-slate-50 px-4 py-2 rounded-lg">
-                <CalendarIcon className="h-5 w-5 mr-2 text-orange-500" />
+                <CalendarIcon className="h-5 w-5 mr-2 text-cardinal" />
                 <span className="font-medium">{project.duration} weeks</span>
               </div>
               <div className="flex items-center text-base text-slate-600 bg-slate-50 px-4 py-2 rounded-lg">
-                <ClockIcon className="h-5 w-5 mr-2 text-orange-500" />
+                <ClockIcon className="h-5 w-5 mr-2 text-cardinal" />
                 <span className="font-medium">{project.timeCommitment}</span>
               </div>
             </div>
@@ -570,7 +570,7 @@ const ProjectDetailsPage: React.FC = () => {
                           </div>
                           <button
                             onClick={() => handleMessageClick(role.user!)}
-                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-orange-600 hover:bg-orange-50 transition-all transform hover:scale-105"
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-cardinal hover:bg-red-50 transition-all transform hover:scale-105"
                             aria-label={`Message ${role.user.name}`}
                           >
                             <MessageCircleIcon className="h-4 w-4" />
@@ -583,7 +583,7 @@ const ProjectDetailsPage: React.FC = () => {
                           Applied
                         </div>
                       ) : (
-                        <div className="flex items-center bg-orange-50 text-orange-700 px-4 py-2 rounded-full text-sm font-semibold ml-4">
+                        <div className="flex items-center bg-red-50 text-cardinal px-4 py-2 rounded-full text-sm font-semibold ml-4">
                           Open
                         </div>
                       )}
@@ -603,7 +603,7 @@ const ProjectDetailsPage: React.FC = () => {
                             className="w-10 h-10 rounded-full mr-3 ring-2 ring-transparent group-hover:ring-orange-300 transition-all transform group-hover:scale-110"
                           />
                           <div className="text-left">
-                            <p className="text-base font-semibold text-slate-900 group-hover:text-orange-500 transition-colors">
+                            <p className="text-base font-semibold text-slate-900 group-hover:text-cardinal transition-colors">
                               {role.user.name}
                             </p>
                             <p className="text-sm text-slate-500">{role.user.university}</p>
@@ -628,7 +628,7 @@ const ProjectDetailsPage: React.FC = () => {
                   </button>
                   <button
                     onClick={() => navigate(`/project/${project.id}/manage-team`)}
-                    className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-3 rounded-full text-base font-bold hover:shadow-2xl transition-all transform hover:scale-105 flex items-center gap-2"
+                    className="bg-gradient-to-r from-cardinal to-cardinal-light text-white px-6 py-3 rounded-full text-base font-bold hover:shadow-2xl transition-all transform hover:scale-105 flex items-center gap-2"
                   >
                     <UsersIcon className="h-5 w-5" />
                     Manage Team
@@ -650,7 +650,7 @@ const ProjectDetailsPage: React.FC = () => {
                       <button
                         onClick={handleApplyClick}
                         disabled={checkingApplications}
-                        className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-8 py-4 rounded-full text-lg font-bold hover:shadow-2xl transition-all transform hover:scale-105 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                        className="bg-gradient-to-r from-cardinal to-cardinal-light text-white px-8 py-4 rounded-full text-lg font-bold hover:shadow-2xl transition-all transform hover:scale-105 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                       >
                         {checkingApplications ? 'Loading...' : 'Apply to Project'}
                         <CheckCircleIcon className="h-5 w-5" />
@@ -703,15 +703,15 @@ const ProjectDetailsPage: React.FC = () => {
             {/* Modal Content */}
             <div className="p-6 space-y-6">
               {/* Project Summary */}
-              <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-xl p-6 border border-orange-100">
+              <div className="bg-gradient-to-r from-red-50 to-red-100 rounded-xl p-6 border border-orange-100">
                 <h4 className="text-lg font-bold text-slate-900 mb-3">{project.title}</h4>
                 <div className="flex flex-wrap gap-3">
                   <div className="flex items-center text-sm text-slate-600 bg-white px-3 py-2 rounded-lg">
-                    <CalendarIcon className="h-4 w-4 mr-2 text-orange-500" />
+                    <CalendarIcon className="h-4 w-4 mr-2 text-cardinal" />
                     <span className="font-medium">{project.duration} weeks</span>
                   </div>
                   <div className="flex items-center text-sm text-slate-600 bg-white px-3 py-2 rounded-lg">
-                    <ClockIcon className="h-4 w-4 mr-2 text-orange-500" />
+                    <ClockIcon className="h-4 w-4 mr-2 text-cardinal" />
                     <span className="font-medium">{project.timeCommitment}</span>
                   </div>
                 </div>
@@ -723,7 +723,7 @@ const ProjectDetailsPage: React.FC = () => {
                   <h4 className="text-lg font-bold text-slate-900">Select Roles to Apply For</h4>
                   <button
                     onClick={selectAllRoles}
-                    className="text-sm font-semibold text-orange-600 hover:text-orange-700 transition-colors"
+                    className="text-sm font-semibold text-cardinal hover:text-cardinal transition-colors"
                   >
                     Select All
                   </button>
@@ -740,7 +740,7 @@ const ProjectDetailsPage: React.FC = () => {
                           type="checkbox"
                           checked={selectedRoles.includes(role.title)}
                           onChange={() => toggleRoleSelection(role.title)}
-                          className="mt-1 h-5 w-5 text-orange-500 rounded border-slate-300 focus:ring-2 focus:ring-orange-500 cursor-pointer"
+                          className="mt-1 h-5 w-5 text-cardinal rounded border-slate-300 focus:ring-2 focus:ring-cardinal cursor-pointer"
                         />
                         <div className="flex-1">
                           <p className="text-base font-semibold text-slate-900 mb-1">{role.title}</p>
@@ -761,7 +761,7 @@ const ProjectDetailsPage: React.FC = () => {
                   value={applicationMessage}
                   onChange={(e) => setApplicationMessage(e.target.value)}
                   placeholder="Tell the project creator why you're a great fit..."
-                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-base resize-none"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-cardinal focus:border-cardinal outline-none transition-all text-base resize-none"
                   rows={5}
                 />
               </div>
@@ -781,7 +781,7 @@ const ProjectDetailsPage: React.FC = () => {
                 className={`px-6 py-3 rounded-xl text-base font-semibold transition-all transform ${
                   selectedRoles.length === 0 || isSubmitting
                     ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:shadow-lg hover:scale-105'
+                    : 'bg-gradient-to-r from-cardinal to-cardinal-light text-white hover:shadow-lg hover:scale-105'
                 }`}
               >
                 {isSubmitting ? 'Submitting...' : 'Submit Application'}
@@ -822,7 +822,7 @@ const ProjectDetailsPage: React.FC = () => {
                 {[...Array(20)].map((_, i) => (
                   <div
                     key={i}
-                    className="absolute w-2 h-2 bg-orange-500 rounded-full animate-confetti"
+                    className="absolute w-2 h-2 bg-cardinal rounded-full animate-confetti"
                     style={{
                       left: '50%',
                       top: '50%',

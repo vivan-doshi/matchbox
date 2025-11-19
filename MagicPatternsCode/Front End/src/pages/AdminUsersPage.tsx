@@ -38,7 +38,7 @@ const AdminUsersPage: React.FC = () => {
       <header className="bg-white border-b border-slate-200 py-4 px-6">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center">
-            <Link to="/dashboard" className="text-slate-600 hover:text-orange-500 transition-colors mr-4">
+            <Link to="/dashboard" className="text-slate-600 hover:text-cardinal transition-colors mr-4">
               <ArrowLeftIcon className="h-5 w-5" />
             </Link>
             <h1 className="text-xl font-bold">User Database</h1>
@@ -57,7 +57,7 @@ const AdminUsersPage: React.FC = () => {
       <main className="container mx-auto p-6">
         {loading ? (
           <div className="text-center py-12">
-            <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <div className="w-16 h-16 border-4 border-cardinal border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-slate-600">Loading users...</p>
           </div>
         ) : error ? (
@@ -73,7 +73,7 @@ const AdminUsersPage: React.FC = () => {
           </div>
         ) : (
           <>
-            <div className="mb-6 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg p-6">
+            <div className="mb-6 bg-gradient-to-r from-cardinal to-cardinal-light text-white rounded-lg p-6">
               <h2 className="text-2xl font-bold mb-2">Database Overview</h2>
               <p className="text-lg">Total Users: <span className="font-bold">{users.length}</span></p>
             </div>
@@ -120,7 +120,7 @@ const AdminUsersPage: React.FC = () => {
                           <td className="px-6 py-4 text-sm text-slate-600">{user.major}</td>
                           <td className="px-6 py-4 text-sm text-slate-600">
                             {user.graduationYear || '-'}
-                            {user.isAlumni && <span className="ml-1 text-xs text-orange-500">(Alumni)</span>}
+                            {user.isAlumni && <span className="ml-1 text-xs text-cardinal">(Alumni)</span>}
                           </td>
                           <td className="px-6 py-4 text-sm text-slate-600">
                             {totalSkills > 0 ? (
@@ -137,7 +137,7 @@ const AdminUsersPage: React.FC = () => {
                           <td className="px-6 py-4 text-center">
                             <Link
                               to={`/profile`}
-                              className="inline-flex items-center text-sm text-orange-500 hover:text-orange-600 font-medium"
+                              className="inline-flex items-center text-sm text-cardinal hover:text-cardinal-light font-medium"
                             >
                               <UserIcon className="h-4 w-4 mr-1" />
                               View

@@ -32,9 +32,9 @@ const EmailExistsModal: React.FC<EmailExistsModalProps> = ({ isOpen, onClose, em
 
         {/* Icon */}
         <div className="flex justify-center mb-4">
-          <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center">
+          <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center">
             <svg
-              className="w-8 h-8 text-orange-500"
+              className="w-8 h-8 text-cardinal"
               fill="none"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -64,7 +64,7 @@ const EmailExistsModal: React.FC<EmailExistsModalProps> = ({ isOpen, onClose, em
         <div className="space-y-3">
           <Link
             to="/login"
-            className="block w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all text-center"
+            className="block w-full bg-gradient-to-r from-cardinal to-cardinal-light text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all text-center"
           >
             Go to Login
           </Link>

@@ -117,7 +117,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, isNew = false }) => 
         {/* "New" Badge for Recently Created Projects */}
         {isNew && (
           <div className="pointer-events-auto">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg animate-pulse">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-cardinal to-cardinal-light text-white shadow-lg animate-pulse">
               NEW
             </span>
           </div>
@@ -136,8 +136,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, isNew = false }) => 
           <BookmarkIcon
             className={`h-5 w-5 transition-colors ${
               isSaved
-                ? 'fill-orange-500 text-orange-500'
-                : 'text-slate-400 hover:text-orange-500'
+                ? 'fill-orange-500 text-cardinal'
+                : 'text-slate-400 hover:text-cardinal'
             }`}
           />
         </button>
@@ -146,7 +146,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, isNew = false }) => 
       <div className="p-6 pt-16 flex-grow flex flex-col">
         {/* Project Title - Clickable */}
         <div className="mb-3">
-          <h3 className="font-bold text-lg mb-1 hover:text-orange-500 transition-colors">
+          <h3 className="font-bold text-lg mb-1 hover:text-cardinal transition-colors">
             {project.title}
           </h3>
           <div className="flex items-center text-sm text-slate-500">
@@ -172,7 +172,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, isNew = false }) => 
                 e.stopPropagation();
                 handleCardClick();
               }}
-              className="ml-1 text-orange-500 hover:text-orange-600 font-medium transition-colors"
+              className="ml-1 text-cardinal hover:text-cardinal-light font-medium transition-colors"
             >
               See More
             </button>
@@ -220,7 +220,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, isNew = false }) => 
                       e.stopPropagation();
                       handleCardClick();
                     }}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all bg-slate-50 border border-slate-200 hover:border-orange-300 hover:bg-orange-50 hover:shadow-sm cursor-pointer transform hover:scale-105"
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all bg-slate-50 border border-slate-200 hover:border-orange-300 hover:bg-red-50 hover:shadow-sm cursor-pointer transform hover:scale-105"
                   >
                     <CircleIcon className="h-4 w-4 text-slate-400" />
                     <span className="text-xs font-medium text-slate-600">{role.title}</span>
