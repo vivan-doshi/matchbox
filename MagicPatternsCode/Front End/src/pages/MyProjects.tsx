@@ -122,7 +122,8 @@ const MyProjects: React.FC = () => {
     } else if (tabParam === 'posted') {
       setCurrentView('posted');
     }
-  }, [searchParams, fetchJoinedProjects]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   // Listen for changes to saved projects from other components
   useEffect(() => {
@@ -201,7 +202,8 @@ const MyProjects: React.FC = () => {
     if (currentView === 'joined' && !hasFetchedJoined) {
       fetchJoinedProjects();
     }
-  }, [currentView, hasFetchedJoined, fetchJoinedProjects]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentView, hasFetchedJoined]);
 
   const toggleExpand = (projectId: string) => {
     setExpandedProject(expandedProject === projectId ? null : projectId);
