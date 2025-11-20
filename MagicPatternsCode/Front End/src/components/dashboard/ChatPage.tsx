@@ -377,10 +377,21 @@ const ChatPage: React.FC = () => {
                 <div className="flex gap-2">
                   <button
                     onClick={() => {
-                      const projectId = typeof selectedChat.relatedProject === 'string'
-                        ? selectedChat.relatedProject
-                        : (selectedChat.relatedProject as any)?._id;
-                      navigate(`/project/${projectId}`);
+                      let projectId: string | undefined;
+
+                      if (typeof selectedChat.relatedProject === 'string') {
+                        projectId = selectedChat.relatedProject;
+                      } else if (selectedChat.relatedProject) {
+                        // Handle populated project object - try both _id and id
+                        projectId = (selectedChat.relatedProject as any)?._id || (selectedChat.relatedProject as any)?.id;
+                      }
+
+                      if (projectId) {
+                        navigate(`/project/${projectId}`);
+                      } else {
+                        console.error('Project ID not found in chat:', selectedChat);
+                        alert('Unable to navigate to project - project ID not found');
+                      }
                     }}
                     className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-cardinal text-white rounded-lg hover:bg-cardinal-light transition-colors text-sm font-medium"
                   >
