@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   PlusIcon,
   ChevronDownIcon,
@@ -37,6 +37,7 @@ interface FormattedProject {
 
 const MyProjects: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [projects, setProjects] = useState<FormattedProject[]>([]);
   const [savedProjects, setSavedProjects] = useState<FormattedProject[]>([]);
   const [loading, setLoading] = useState(true);
@@ -109,6 +110,19 @@ const MyProjects: React.FC = () => {
     fetchMyProjects();
     fetchSavedProjects();
   }, []);
+
+  // Handle tab query parameter
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'joined') {
+      setCurrentView('joined');
+      fetchJoinedProjects();
+    } else if (tabParam === 'saved') {
+      setCurrentView('saved');
+    } else if (tabParam === 'posted') {
+      setCurrentView('posted');
+    }
+  }, [searchParams, fetchJoinedProjects]);
 
   // Listen for changes to saved projects from other components
   useEffect(() => {

@@ -116,7 +116,12 @@ const ChatPage: React.FC = () => {
           : (selectedChat.relatedInvitation as any)?._id;
 
         await apiClient.acceptInvitation(invitationId);
-        alert('Invitation accepted successfully!');
+        alert('Invitation accepted successfully! Redirecting to your projects...');
+
+        // Navigate to Projects Joined tab
+        setTimeout(() => {
+          navigate('/my-projects?tab=joined');
+        }, 1000);
       } else if (selectedChat.type === 'application' && selectedChat.relatedApplication) {
         const projectId = typeof selectedChat.relatedProject === 'string'
           ? selectedChat.relatedProject
@@ -127,11 +132,11 @@ const ChatPage: React.FC = () => {
 
         await apiClient.updateApplicationStatus(projectId, applicationId, 'Accepted');
         alert('Application accepted successfully!');
-      }
 
-      // Refresh chat and messages
-      await openChat(selectedChat._id);
-      await fetchChats(activeTab);
+        // Refresh chat and messages
+        await openChat(selectedChat._id);
+        await fetchChats(activeTab);
+      }
     } catch (error: any) {
       console.error('Error accepting:', error);
       alert(error.response?.data?.message || 'Failed to accept');

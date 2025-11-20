@@ -130,7 +130,9 @@ export const getChat = async (
   try {
     const chat = await Chat.findById(req.params.id)
       .populate('participants', 'firstName lastName preferredName university profilePicture')
-      .populate('relatedProject', 'title description creator');
+      .populate('relatedProject', 'title description creator')
+      .populate('relatedInvitation')
+      .populate('relatedApplication');
 
     if (!chat) {
       res.status(404).json({
