@@ -82,26 +82,49 @@ export const acceptInvitation = async (
       { status: 'Accepted' }
     );
 
-    // Add user to project role if role was specified
+    // Add user to project role
     const project = invitation.project as any;
-    if (invitation.role && project) {
+    if (project) {
       const projectDoc = await Project.findById(project._id);
       if (projectDoc) {
-        const roleIndex = projectDoc.roles.findIndex(
-          (r) => r.title === invitation.role
-        );
+        let roleAssigned = false;
 
-        if (roleIndex !== -1) {
-          // Check if role is already filled
-          if (projectDoc.roles[roleIndex].filled) {
-            console.warn(`[acceptInvitation] Role "${invitation.role}" already filled for project ${project._id}`);
+        if (invitation.role) {
+          // If specific role was requested, try to assign to that role
+          const roleIndex = projectDoc.roles.findIndex(
+            (r) => r.title === invitation.role
+          );
+
+          if (roleIndex !== -1) {
+            if (projectDoc.roles[roleIndex].filled) {
+              console.warn(`[acceptInvitation] Role "${invitation.role}" already filled for project ${project._id}`);
+            } else {
+              projectDoc.roles[roleIndex].filled = true;
+              projectDoc.roles[roleIndex].user = invitation.invitee;
+              roleAssigned = true;
+            }
           } else {
-            projectDoc.roles[roleIndex].filled = true;
-            projectDoc.roles[roleIndex].user = invitation.invitee;
-            await projectDoc.save();
+            console.warn(`[acceptInvitation] Role "${invitation.role}" not found in project ${project._id}`);
           }
-        } else {
-          console.warn(`[acceptInvitation] Role "${invitation.role}" not found in project ${project._id}`);
+        }
+
+        // If no specific role or role assignment failed, assign to first available unfilled role
+        if (!roleAssigned && projectDoc.roles.length > 0) {
+          const firstUnfilledRoleIndex = projectDoc.roles.findIndex(
+            (r) => !r.filled
+          );
+
+          if (firstUnfilledRoleIndex !== -1) {
+            projectDoc.roles[firstUnfilledRoleIndex].filled = true;
+            projectDoc.roles[firstUnfilledRoleIndex].user = invitation.invitee;
+            roleAssigned = true;
+          } else {
+            console.warn(`[acceptInvitation] No unfilled roles available in project ${project._id}`);
+          }
+        }
+
+        if (roleAssigned) {
+          await projectDoc.save();
         }
       }
     }
